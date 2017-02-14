@@ -13,7 +13,6 @@ namespace MasterThesis
         public static IDictionary<string, LinearRateModel> LinearRateModels = new Dictionary<string, LinearRateModel>();
         public static IDictionary<string, FwdCurves> FwdCurveCollections = new Dictionary<string, FwdCurves>();
 
-
         public static IDictionary<string, RawMarketData> RawMarketData = new Dictionary<string, RawMarketData>();
         public static IDictionary<string, MarketDataInstrument> MarketDataInstruments = new Dictionary<string, MarketDataInstrument>();
 

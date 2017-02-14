@@ -131,6 +131,9 @@ namespace Sandbox
             RawMarketData Data = new RawMarketData("EURAB1E18M", "SWAP", "1M", 0.02);
             MarketQuote SwapQuote = QuoteFactory.CreateMarketQuote(Data);
 
+            RawMarketData Data2 = new RawMarketData("EUR12X1S", "SWAP", "1M", -0.003);
+            MarketQuote SwapQuote2 = QuoteFactory.CreateMarketQuote(Data2);
+
             Console.WriteLine("IMM: " + Calender.NextIMMDate(new DateTime(2019, 3, 1)).DayOfWeek);
             Console.WriteLine("IMM: " + Calender.IMMDate(2019, 4).DayOfWeek);
             Console.WriteLine("Press anything to exit...");

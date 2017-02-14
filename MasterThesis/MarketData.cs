@@ -176,6 +176,12 @@ namespace MasterThesis
             else if (QuoteType == SwapQuoteType.ShortSwap)
             {
                 // For 1M tenor
+                FloatFreq = CurveTenor.Fwd1M;
+                string Temp = Identifier;
+                Currency = Temp.Left(3);
+                Temp = Temp.Replace(Currency, "");
+                Temp = Temp.Replace("X1S", "");
+                MaturityTenor = Temp + "M";
             }
 
         }
