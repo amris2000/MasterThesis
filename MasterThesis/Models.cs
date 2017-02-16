@@ -122,7 +122,7 @@ namespace MasterThesis
             return FloatPv / FixedAnnuity;
         }
 
-        public double ValueInstrument(Instrument MyInstrument)
+        public double ValueInstrument(Asset MyInstrument)
         {
             double TheValue = 0.0;
             InstrumentType Type = MyInstrument.Type;
@@ -163,6 +163,7 @@ namespace MasterThesis
         {
         }
     }
+
     //public class Sabr : NonLinearRateModel
     //{
 

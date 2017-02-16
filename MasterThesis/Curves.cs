@@ -6,19 +6,27 @@ using System.Threading.Tasks;
 
 namespace MasterThesis
 {
-    public abstract class Curve
+    public class Curve
     {
-        protected List<DateTime> Dates;
-        protected List<double> Values;
-        public CurveTenor Frequency { get; internal set; }
-        public CurveType CurveType { get; internal set; }
+        public List<DateTime> Dates;
+        public List<double> Values;
+        public CurveTenor Frequency { get; set; }
+        public CurveType Type { get; set; }
 
-        public Curve(List<DateTime> Dates, List<double> Values, CurveType CurveType, CurveTenor Frequency = CurveTenor.Simple)
+        public Curve(List<DateTime> dates, List<double> values, CurveType curveType, CurveTenor frequency = CurveTenor.Simple)
+        {
+            this.Dates = dates;
+            this.Values = values;
+            this.Type = curveType;
+            this.Frequency = frequency;
+        }
+
+        public Curve(List<DateTime> Dates, List<double> Values)
         {
             this.Dates = Dates;
             this.Values = Values;
-            this.CurveType = CurveType;
-            this.Frequency = Frequency;
+            this.Type = CurveType.None;
+            this.Frequency = CurveTenor.None;
         }
 
         public double Interp(DateTime Date, InterpMethod Method)

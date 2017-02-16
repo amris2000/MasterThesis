@@ -11,8 +11,8 @@ using System.Data;
 
 namespace MasterThesis
 {
-    public enum CurveTenor { Simple, DiscOis, DiscLibor, Fwd1D, Fwd1M, Fwd3M, Fwd6M, Fwd1Y }
-    public enum CurveType { Fwd, DiscOis, DiscLibor }
+    public enum CurveTenor { Simple, DiscOis, DiscLibor, Fwd1D, Fwd1M, Fwd3M, Fwd6M, Fwd1Y, None }
+    public enum CurveType { Fwd, DiscOis, DiscLibor, None }
     public enum QuoteType { SwapRate, BasisSpread, Fixing, FraRate, FutureRate, BaseSpread}
     public enum InstrumentType { Swap, Fra, Future, IrSwap, MmBasisSwap, BasisSwap, FxFwd, Deposit, Swaption }
     public enum InstrumentComplexity { Linear, NonLinear }

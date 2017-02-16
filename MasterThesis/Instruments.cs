@@ -6,12 +6,12 @@ using System.Threading.Tasks;
 
 namespace MasterThesis
 {
-    public abstract class Instrument
+    public abstract class Asset
     {
         public InstrumentComplexity Complexity;
         public InstrumentType Type;
 
-        protected Instrument(InstrumentComplexity Complexity, InstrumentType Type)
+        protected Asset(InstrumentComplexity Complexity, InstrumentType Type)
         {
             this.Complexity = Complexity;
             this.Type = Type;
@@ -60,7 +60,7 @@ namespace MasterThesis
         }
     }
 
-    public abstract class Swap : Instrument
+    public abstract class Swap : Asset
     {
         public SwapLeg Leg1;
         public SwapLeg Leg2;
@@ -107,7 +107,7 @@ namespace MasterThesis
     }
 
 
-    public class SwapSimple : Instrument
+    public class SwapSimple : Asset
     {
         public SwapSchedule FloatSchedule, FixedSchedule;
         public double Notional, FixedRate;

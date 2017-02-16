@@ -33,7 +33,6 @@ namespace Sandbox
 
             Calender.PrintDateList(Calender.IMMSchedule(DateTime.Now, new DateTime(2040, 1, 1)), "IMM Dates");
         }
-
         private static void AADTest()
         {
             AADFunc.Func1(new ADouble(3.0), new ADouble(2.0), new ADouble(5.0));
@@ -50,7 +49,6 @@ namespace Sandbox
             AADFunc.BlackScholes(new ADouble(0.20), new ADouble(100.0), new ADouble(0.05), new ADouble (0.0), new ADouble(1.0), new ADouble(90.0));
             AADFunc.FuncDiv3(new ADouble(10), new ADouble(-2.5), 5.0);
         }
-
         private static void InterpolationTest()
         {
 
@@ -67,14 +65,19 @@ namespace Sandbox
             Console.WriteLine("Interpolation Test " + MyDate.ToString("dd/MM/yyyy") + ". Value: " + Maths.InterpolateCurve(MyDates, MyDate, MyValues, InterpMethod.Hermite));
             Console.WriteLine("Interpolation Test " + MyDate.ToString("dd/MM/yyyy") + ". Value: " + Maths.InterpolateCurve(MyDates, MyDate, MyValues, InterpMethod.LogLinear));
         }
+        private static double DelegateTest(double x, double y, double z)
+        {
+            return x + y + z;
+        }
 
-
-        static void Main(string[] args)
-       {
-            //DateTest();
-            //InterpolationTest();
-            AADTest();
-
+        delegate double Del(double x, double y);
+        public static void TestIt()
+        {
+            Del MyDeletegate = (x, y) => DelegateTest(x, y, 0.2);
+            Console.WriteLine(MyDeletegate(2.0, 3.0));
+        }
+        public static void ModelTesting()
+        {
             Stopwatch sv = new Stopwatch();
             sv.Start();
             ExcelUtility.DataReader();
@@ -137,6 +140,16 @@ namespace Sandbox
             Console.WriteLine("IMM: " + Calender.NextIMMDate(new DateTime(2019, 3, 1)).DayOfWeek);
             Console.WriteLine("IMM: " + Calender.IMMDate(2019, 4).DayOfWeek);
             Console.WriteLine("Press anything to exit...");
+        }
+
+        static void Main(string[] args)
+       {
+            //DateTest();
+            //InterpolationTest();
+            //AADTest();
+
+            TestIt();
+           
             Console.ReadLine();
         }
     }

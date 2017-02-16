@@ -11,7 +11,7 @@ namespace MasterThesis
     {
         public static CurveTenor CurveIdent(string CurveIdent)
         {
-            switch(CurveIdent)
+            switch (CurveIdent)
             {
                 case "1D":
                     return CurveTenor.Fwd1D;
@@ -34,7 +34,7 @@ namespace MasterThesis
 
         public static MarketDataInstrument TypeIdent(string TypeIdent)
         {
-            switch(TypeIdent)
+            switch (TypeIdent)
             {
                 case "SWAP":
                     return MarketDataInstrument.Swap;
@@ -76,13 +76,13 @@ namespace MasterThesis
     {
         public static MarketQuote CreateMarketQuote(RawMarketData MarketData)
         {
-            switch(MarketData.MarketDataInstrument)
+            switch (MarketData.MarketDataInstrument)
             {
                 case MarketDataInstrument.Swap:
-                        if (IsOisSwap(MarketData.Identifier))
-                            return new OisSwapQuote(MarketData);
-                        else
-                            return new SwapQuote(MarketData);
+                    if (IsOisSwap(MarketData.Identifier))
+                        return new OisSwapQuote(MarketData);
+                    else
+                        return new SwapQuote(MarketData);
                 case MarketDataInstrument.BaseSpread:
                     return new BaseSpreadQuote(MarketData);
                 case MarketDataInstrument.BasisSwap:
@@ -106,16 +106,17 @@ namespace MasterThesis
                 return false;
         }
     }
-    
+
     public abstract class MarketQuote
     {
         public double Quote;
         public string Identifier;
         public string InstrumentString;
-        public Instrument Instrument;
+        public Asset Instrument;
         public CurveTenor AsInputFor;
         public MarketDataInstrument InstrumentType;
         public RawMarketData MarketData;
+        public DateTime StartDate, EndDate;
 
         protected MarketQuote(RawMarketData MarketData)
         {
@@ -128,6 +129,9 @@ namespace MasterThesis
         protected abstract void ParseQuote();
     }
 
+    
+
+
 
     public class SwapQuote : MarketQuote
     {
@@ -137,7 +141,7 @@ namespace MasterThesis
         SwapQuoteType QuoteType;
         CurveTenor FloatFreq;
 
-        public SwapQuote(RawMarketData MarketData) : base (MarketData)
+        public SwapQuote(RawMarketData MarketData) : base(MarketData)
         {
             if (Identifier.Contains("X"))
                 QuoteType = SwapQuoteType.ShortSwap;
@@ -188,7 +192,7 @@ namespace MasterThesis
     }
     public class OisSwapQuote : MarketQuote
     {
-        public OisSwapQuote(RawMarketData MarketData) : base (MarketData)
+        public OisSwapQuote(RawMarketData MarketData) : base(MarketData)
         {
 
         }
@@ -200,12 +204,12 @@ namespace MasterThesis
     }
     public class BaseSpreadQuote : MarketQuote
     {
-        public BaseSpreadQuote(RawMarketData MarketData) : base (MarketData)
+        public BaseSpreadQuote(RawMarketData MarketData) : base(MarketData)
         {
 
         }
 
-       protected override void ParseQuote()
+        protected override void ParseQuote()
         {
 
         }
@@ -213,7 +217,7 @@ namespace MasterThesis
     }
     public class BasisSwapQuote : MarketQuote
     {
-        public BasisSwapQuote(RawMarketData MarketData) : base (MarketData)
+        public BasisSwapQuote(RawMarketData MarketData) : base(MarketData)
         {
 
         }
@@ -225,7 +229,7 @@ namespace MasterThesis
     }
     public class FraQuote : MarketQuote
     {
-        public FraQuote(RawMarketData MarketData) : base (MarketData)
+        public FraQuote(RawMarketData MarketData) : base(MarketData)
         {
 
         }
@@ -238,7 +242,7 @@ namespace MasterThesis
     }
     public class FutureQuote : MarketQuote
     {
-        public FutureQuote(RawMarketData MarketData) : base (MarketData)
+        public FutureQuote(RawMarketData MarketData) : base(MarketData)
         {
 
         }
@@ -250,7 +254,7 @@ namespace MasterThesis
     }
     public class CashQuote : MarketQuote
     {
-        public CashQuote(RawMarketData MarketData) : base (MarketData)
+        public CashQuote(RawMarketData MarketData) : base(MarketData)
         {
 
         }
@@ -267,7 +271,7 @@ namespace MasterThesis
     {
         MarketDataInstrument InstrumentType;
         CurveTenor CurveType;
-        Instrument InstrumentObject;
+        Asset InstrumentObject;
         public string InstrumentString;
 
         public OldMarketDataQuote(string Identifier, string TypeIdent, string CurveIdent)
@@ -275,7 +279,7 @@ namespace MasterThesis
             InstrumentType = StrToEnum.TypeIdent(TypeIdent);
             CurveType = StrToEnum.CurveIdent(CurveIdent);
 
-            switch(InstrumentType)
+            switch (InstrumentType)
             {
                 case MarketDataInstrument.Swap:
                     ParseSwap(Identifier);
@@ -321,11 +325,5 @@ namespace MasterThesis
     }
 
 
-    public class InputInstrument
-    {
-        Instrument Instrument;
-        double Quote;
-        InstrumentType Type;
-        InstrumentComplexity Complexity;
-    }
+
 }

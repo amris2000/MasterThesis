@@ -14,6 +14,8 @@ namespace MasterThesis
 
     public static class Maths
     {
+        
+
 
         public static double InterpolateCurve(List<DateTime> Dates, DateTime Date, List<double> Values, InterpMethod Method = InterpMethod.Linear)
         {
