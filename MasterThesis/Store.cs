@@ -8,8 +8,7 @@ namespace MasterThesis
 {
     public static class Store
     {
-        public static IDictionary<string, FwdCurve> FwdCurves = new Dictionary<string, FwdCurve>();
-        public static IDictionary<string, DiscCurve> DiscCurves = new Dictionary<string, DiscCurve>();
+        public static IDictionary<CurveTenor, Curve> Curves = new Dictionary<CurveTenor, Curve>();
         public static IDictionary<string, LinearRateModel> LinearRateModels = new Dictionary<string, LinearRateModel>();
         public static IDictionary<string, FwdCurves> FwdCurveCollections = new Dictionary<string, FwdCurves>();
 

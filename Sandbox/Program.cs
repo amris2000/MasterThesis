@@ -69,7 +69,6 @@ namespace Sandbox
         {
             return x + y + z;
         }
-
         delegate double Del(double x, double y);
         public static void TestIt()
         {
@@ -86,7 +85,7 @@ namespace Sandbox
 
             sv.Reset();
             sv.Start();
-            LinearRateModelAdvanced MyModel = new LinearRateModelAdvanced(Store.FwdCurveCollections["MYCURVES"], Store.DiscCurves["LIBOR"]);
+            LinearRateModel MyModel = new LinearRateModel(Store.Curves[CurveTenor.DiscOis], Store.FwdCurveCollections["MYCURVES"]);
             Console.WriteLine("Model - Elapsed time: " + sv.ElapsedMilliseconds);
 
             sv.Reset();
@@ -94,7 +93,7 @@ namespace Sandbox
 
             DateTime AsOf = new DateTime(2017, 1, 31);
             DateTime StartDate = Calender.AddTenor(AsOf, "2B", DayRule.MF);
-            DateTime EndDate = Calender.AddTenor(AsOf, "9Y", DayRule.MF);
+            DateTime EndDate = Calender.AddTenor(AsOf, "4Y", DayRule.MF);
 
             CurveTenor Float = CurveTenor.Fwd6M;
             CurveTenor Fixed = CurveTenor.Fwd1Y;
@@ -102,11 +101,11 @@ namespace Sandbox
 
             SwapSimple MySwap = new SwapSimple(AsOf, StartDate, EndDate, 0.01, Fixed, Float, DayCount.THIRTY360, DayCount.ACT360, DayRule.MF, DayRule.MF, 1000000.0);
 
-            double Value = MyModel.ValueInstrument(MySwap);
+            double Value = MyModel.Value(MySwap);
 
             double SwapRate = MyModel.SwapRate(MySwap);
             MySwap = new SwapSimple(AsOf, StartDate, EndDate, SwapRate, Fixed, Float, DayCount.THIRTY360, DayCount.ACT360, DayRule.MF, DayRule.MF, 1000000.0);
-            double ValueSwapRate = MyModel.ValueInstrument(MySwap);
+            double ValueSwapRate = MyModel.Value(MySwap);
 
             IrSwap IrSwap = new IrSwap(AsOf, StartDate, EndDate, 0.01, Fixed, Float, DayCount.THIRTY360, DayCount.ACT360, DayRule.MF, DayRule.MF, 1000000.0);
             double SwapRate2 = MyModel.IrParSwapRate(IrSwap);
@@ -131,10 +130,10 @@ namespace Sandbox
             MyQuote = new OldMarketDataQuote("EUREON11Y", "SWAP", "1D");
             Console.WriteLine(MyQuote.InstrumentString);
 
-            RawMarketData Data = new RawMarketData("EURAB1E18M", "SWAP", "1M", 0.02);
+            RawMarketData Data = new RawMarketData(AsOf, "EURAB1E18M", "SWAP", "1M", 0.02);
             MarketQuote SwapQuote = QuoteFactory.CreateMarketQuote(Data);
 
-            RawMarketData Data2 = new RawMarketData("EUR12X1S", "SWAP", "1M", -0.003);
+            RawMarketData Data2 = new RawMarketData(AsOf, "EUR12X1S", "SWAP", "1M", -0.003);
             MarketQuote SwapQuote2 = QuoteFactory.CreateMarketQuote(Data2);
 
             Console.WriteLine("IMM: " + Calender.NextIMMDate(new DateTime(2019, 3, 1)).DayOfWeek);
@@ -142,11 +141,116 @@ namespace Sandbox
             Console.WriteLine("Press anything to exit...");
         }
 
+        public static void DayCompoundingTest()
+        {
+
+            DateTime AsOf = new DateTime(2017, 1, 15);
+            DateTime Start = new DateTime(2017, 1, 31);
+            DateTime End = new DateTime(2017, 2, 19);
+            DayRule DayRule = DayRule.F;
+            DayCount DayCount = DayCount.ACT360;
+
+            DateTime Temp = Start;
+            double Compound = 1;
+
+            while (Temp<End)
+            {
+                double Rate = 0.1;
+                DateTime NewDate = Calender.AddTenor(Temp, "1B", DayRule);
+                double Days = NewDate.Subtract(Temp).TotalDays;
+
+                Console.WriteLine("Day: " + Temp.DayOfWeek + " to " + NewDate.DayOfWeek + ". Days: " + Days);
+                Temp = NewDate;
+                Compound *= (1 + Rate * Days/365);
+                Console.Write("  .. Compound: " + Compound + " . ");
+            }
+
+            Compound = (Compound - 1) / (Calender.Cvg(Start, End, DayCount));
+            Console.WriteLine("Compound: " + Compound);
+
+
+
+            OisSchedule Schedule1 = new OisSchedule(AsOf, Start, DayCount.ACT360, DayRule.MF, "5B");
+            Schedule1.Print();
+
+            DateTime End2 = Calender.AddTenor(Start, "68M");
+            SwapSchedule SwapSchedule = new SwapSchedule(AsOf, Start, End2, DayCount.ACT360, DayRule.MF, CurveTenor.Fwd6M, StubPlacement.Beginning);
+            SwapSchedule.Print();
+            SwapSchedule SwapSchedule2 = new SwapSchedule(AsOf, Start, End2, DayCount.ACT360, DayRule.MF, CurveTenor.Fwd6M, StubPlacement.End);
+            SwapSchedule2.Print();
+
+
+
+        }
+
+        public static void BootStrappingTest()
+        {
+
+            var sw = new Stopwatch();
+
+            sw.Start();
+            DateTime AsOf = new DateTime(2017, 1, 31);
+            List<RawMarketData> rawMarketData = new List<RawMarketData>();
+
+            //rawMarketData.Add(new RawMarketData(AsOf, "R6M", "FIXING", "6M", -0.001));
+            rawMarketData.Add(new RawMarketData(AsOf, "EURAB6E6M", "SWAP", "6M", -0.0015)); // Synthetic
+            rawMarketData.Add(new RawMarketData(AsOf, "EURAB6E1Y", "SWAP", "6M", -0.00216));
+            rawMarketData.Add(new RawMarketData(AsOf, "EURAB6E18M", "SWAP", "6M", -0.001819));
+            rawMarketData.Add(new RawMarketData(AsOf, "EURAB6E2Y", "SWAP", "6M", -0.001436));
+            rawMarketData.Add(new RawMarketData(AsOf, "EURAB6E3Y", "SWAP", "6M", -0.000439));
+            rawMarketData.Add(new RawMarketData(AsOf, "EURAB6E4Y", "SWAP", "6M", -0.000762));
+            rawMarketData.Add(new RawMarketData(AsOf, "EURAB6E5Y", "SWAP", "6M", 0.0021));
+            rawMarketData.Add(new RawMarketData(AsOf, "EURAB6E6Y", "SWAP", "6M", 0.003439));
+            rawMarketData.Add(new RawMarketData(AsOf, "EURAB6E7Y", "SWAP", "6M", 0.004761));
+            rawMarketData.Add(new RawMarketData(AsOf, "EURAB6E8Y", "SWAP", "6M", 0.006078));
+            rawMarketData.Add(new RawMarketData(AsOf, "EURAB6E9Y", "SWAP", "6M", 0.007319));
+
+            List<MarketQuote> Quotes = QuoteFactory.CreateMarketQuoteCollection(rawMarketData);
+
+            CurveFactory Factory = new CurveFactory(Quotes, CurveTenor.DiscOis);
+            Curve MyCurve = Factory.BootstrapCurve();
+
+            sw.Stop();
+            Console.WriteLine("Run-time: " + sw.ElapsedMilliseconds);
+
+            List<RawMarketData> OisBootstrap = new List<RawMarketData>();
+
+            OisBootstrap.Add(new RawMarketData(AsOf, "EUREONON", "SWAP", "OIS", -0.0035));
+            OisBootstrap.Add(new RawMarketData(AsOf, "EUREONTN", "SWAP", "OIS", -0.0035));
+            OisBootstrap.Add(new RawMarketData(AsOf, "EUREONSW", "SWAP", "OIS", -0.00352));
+            OisBootstrap.Add(new RawMarketData(AsOf, "EUREON2W", "SWAP", "OIS", -0.00352));
+            OisBootstrap.Add(new RawMarketData(AsOf, "EUREON3W", "SWAP", "OIS", -0.00352));
+            OisBootstrap.Add(new RawMarketData(AsOf, "EUREON1M", "SWAP", "OIS", -0.00351));
+            OisBootstrap.Add(new RawMarketData(AsOf, "EUREON2M", "SWAP", "OIS", -0.0035));
+            OisBootstrap.Add(new RawMarketData(AsOf, "EUREON3M", "SWAP", "OIS", -0.0035));
+            OisBootstrap.Add(new RawMarketData(AsOf, "EUREON4M", "SWAP", "OIS", -0.0035));
+            OisBootstrap.Add(new RawMarketData(AsOf, "EUREON5M", "SWAP", "OIS", -0.00348));
+            OisBootstrap.Add(new RawMarketData(AsOf, "EUREON6M", "SWAP", "OIS", -0.003471));
+            OisBootstrap.Add(new RawMarketData(AsOf, "EUREON7M", "SWAP", "OIS", -0.00345));
+            OisBootstrap.Add(new RawMarketData(AsOf, "EUREON8M", "SWAP", "OIS", -0.00343));
+            OisBootstrap.Add(new RawMarketData(AsOf, "EUREON9M", "SWAP", "OIS", -0.00341));
+            OisBootstrap.Add(new RawMarketData(AsOf, "EUREON10M", "SWAP", "OIS", -0.00326));
+            OisBootstrap.Add(new RawMarketData(AsOf, "EUREON11M", "SWAP", "OIS", -0.00304));
+            OisBootstrap.Add(new RawMarketData(AsOf, "EUREON1Y", "SWAP", "OIS", -0.002273));
+            OisBootstrap.Add(new RawMarketData(AsOf, "EUREON18M", "SWAP", "OIS", -0.001282));
+            OisBootstrap.Add(new RawMarketData(AsOf, "EUREON2Y", "SWAP", "OIS", -0.000112));
+
+            List<MarketQuote> QuotesOis = QuoteFactory.CreateMarketQuoteCollection(OisBootstrap);
+
+            CurveFactory FactoryOis = new CurveFactory(QuotesOis, CurveTenor.DiscOis);
+            Curve MyCurve2 = FactoryOis.BootstrapCurve();
+
+        }
         static void Main(string[] args)
-       {
+      {
             //DateTest();
             //InterpolationTest();
             //AADTest();
+            //ModelTesting();
+
+            BootStrappingTest();
+
+            //DayCompoundingTest();
 
             TestIt();
            

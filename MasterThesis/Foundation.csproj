@@ -58,6 +58,7 @@
     <Compile Include="Conventions.cs" />
     <Compile Include="CurveConstruction.cs" />
     <Compile Include="Curves.cs" />
+    <Compile Include="Extensions\OtherExtensions.cs" />
     <Compile Include="Models.cs" />
     <Compile Include="Extensions\DateTimeExtensions.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />

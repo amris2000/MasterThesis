@@ -37,7 +37,7 @@ namespace MasterThesis
             switch (TypeIdent)
             {
                 case "SWAP":
-                    return MarketDataInstrument.Swap;
+                    return MarketDataInstrument.IrSwapRate;
                 case "BASIS SWAP":
                     return MarketDataInstrument.BasisSwap;
                 case "BASESPREAD":
@@ -48,6 +48,8 @@ namespace MasterThesis
                     return MarketDataInstrument.Fra;
                 case "FUTURE":
                     return MarketDataInstrument.Future;
+                case "FIXING":
+                    return MarketDataInstrument.Fixing;
                 default:
                     throw new ArgumentException("CANNOT FIND MARKETDATAINSTRUMENT FOR INPUT STRING.");
             }
@@ -60,12 +62,14 @@ namespace MasterThesis
         public MarketDataInstrument MarketDataInstrument;
         public CurveTenor AsInputFor;
         public double Quote;
+        public DateTime AsOf;
 
-        public RawMarketData(string Identifier, string TypeIdent, string CurveIdent, double Quote)
+        public RawMarketData(DateTime asOf, string Identifier, string TypeIdent, string CurveIdent, double Quote)
         {
             this.Identifier = Identifier;
             this.TypeIdent = TypeIdent;
             this.CurveIdent = CurveIdent;
+            this.AsOf = asOf;
             MarketDataInstrument = StrToEnum.TypeIdent(TypeIdent);
             AsInputFor = StrToEnum.CurveIdent(CurveIdent);
             this.Quote = Quote;
@@ -76,26 +80,40 @@ namespace MasterThesis
     {
         public static MarketQuote CreateMarketQuote(RawMarketData MarketData)
         {
+            DateTime AsOf = MarketData.AsOf;
             switch (MarketData.MarketDataInstrument)
             {
-                case MarketDataInstrument.Swap:
+                case MarketDataInstrument.IrSwapRate:
                     if (IsOisSwap(MarketData.Identifier))
-                        return new OisSwapQuote(MarketData);
+                        return new OisSwapQuote(AsOf, MarketData);
                     else
-                        return new SwapQuote(MarketData);
+                        return new SwapQuote(AsOf, MarketData);
                 case MarketDataInstrument.BaseSpread:
-                    return new BaseSpreadQuote(MarketData);
-                case MarketDataInstrument.BasisSwap:
-                    return new BasisSwapQuote(MarketData);
+                    return new BaseSpreadQuote(AsOf, MarketData);
+                //case MarketDataInstrument.BasisSwap:
+                //    return new BasisSwapQuote(AsOf, MarketData);
                 case MarketDataInstrument.Fra:
-                    return new FraQuote(MarketData);
+                    return new FraQuote(AsOf, MarketData);
                 case MarketDataInstrument.Future:
-                    return new FutureQuote(MarketData);
+                    return new FutureQuote(AsOf, MarketData);
                 case MarketDataInstrument.Cash:
-                    return new CashQuote(MarketData);
+                    return new CashQuote(AsOf, MarketData);
+                case MarketDataInstrument.Fixing:
+                    return new FixingQuote(AsOf, MarketData);
                 default:
                     throw new ArgumentException("Cannot find definition for input");
             }
+        }
+
+        public static List<MarketQuote> CreateMarketQuoteCollection(List<RawMarketData> rawMarketData)
+        {
+            List<MarketQuote> Out = new List<MarketQuote>();
+
+            for (int i = 0; i < rawMarketData.Count; i++)
+                Out.Add(CreateMarketQuote(rawMarketData[i]));
+
+            return Out;
+
         }
 
         public static bool IsOisSwap(string Identifier)
@@ -113,13 +131,15 @@ namespace MasterThesis
         public string Identifier;
         public string InstrumentString;
         public Asset Instrument;
+        public DateTime AsOf;
         public CurveTenor AsInputFor;
         public MarketDataInstrument InstrumentType;
         public RawMarketData MarketData;
         public DateTime StartDate, EndDate;
 
-        protected MarketQuote(RawMarketData MarketData)
+        protected MarketQuote(DateTime asOf, RawMarketData MarketData)
         {
+            this.AsOf = asOf;
             this.Quote = MarketData.Quote;
             this.Identifier = MarketData.Identifier;
             this.InstrumentType = MarketData.MarketDataInstrument;
@@ -129,9 +149,19 @@ namespace MasterThesis
         protected abstract void ParseQuote();
     }
 
-    
+    public class FixingQuote : MarketQuote
+    {
+        public FixingQuote(DateTime asOf, RawMarketData MarketData) : base(asOf, MarketData)
+        {
+            StartDate = AsOf;
+            EndDate = AsOf;
+        }
 
+        protected override void ParseQuote()
+        {
 
+        }
+    }
 
     public class SwapQuote : MarketQuote
     {
@@ -141,7 +171,7 @@ namespace MasterThesis
         SwapQuoteType QuoteType;
         CurveTenor FloatFreq;
 
-        public SwapQuote(RawMarketData MarketData) : base(MarketData)
+        public SwapQuote(DateTime asOf, RawMarketData MarketData) : base(asOf, MarketData)
         {
             if (Identifier.Contains("X"))
                 QuoteType = SwapQuoteType.ShortSwap;
@@ -149,6 +179,10 @@ namespace MasterThesis
                 QuoteType = SwapQuoteType.Vanilla;
 
             ParseQuote();
+
+            StartDate = asOf;
+            EndDate = Calender.AddTenor(StartDate, MaturityTenor, DayRule.MF);
+            Instrument = new SwapSimple(AsOf, StartDate, EndDate, 0.01, CurveTenor.Fwd1Y, CurveTenor.Fwd6M, DayCount.THIRTY360, DayCount.ACT360, DayRule.MF, DayRule.MF, 1);
         }
 
         protected override void ParseQuote()
@@ -187,24 +221,46 @@ namespace MasterThesis
                 Temp = Temp.Replace("X1S", "");
                 MaturityTenor = Temp + "M";
             }
-
         }
     }
     public class OisSwapQuote : MarketQuote
     {
-        public OisSwapQuote(RawMarketData MarketData) : base(MarketData)
-        {
 
+        string Tenor;
+
+        public OisSwapQuote(DateTime AsOf, RawMarketData MarketData) : base(AsOf, MarketData)
+        {
+            ParseQuote();
+            StartDate = Calender.AddTenor(AsOf, "2B", DayRule.MF);
+            EndDate = Calender.AddTenor(StartDate, Tenor, DayRule.MF);
+            Instrument = new OisSwap(AsOf, StartDate, Tenor, 0.1, DayCount.ACT360, DayCount.ACT360, DayRule.MF, DayRule.MF, 1);
+            InstrumentType = MarketDataInstrument.OisRate;
         }
 
         protected override void ParseQuote()
         {
-
+            string Temp = Identifier.Replace("EUREON", "");
+            
+            switch(Temp)
+            {
+                case "ON":
+                    Tenor = "1B";
+                    break;
+                case "TN":
+                    Tenor = "2B";
+                    break;
+                case "SW":
+                    Tenor = "1W";
+                    break;
+                default:
+                    Tenor = Temp;
+                    break;
+            }
         }
     }
     public class BaseSpreadQuote : MarketQuote
     {
-        public BaseSpreadQuote(RawMarketData MarketData) : base(MarketData)
+        public BaseSpreadQuote(DateTime asOf, RawMarketData MarketData) : base(asOf, MarketData)
         {
 
         }
@@ -215,21 +271,21 @@ namespace MasterThesis
         }
 
     }
-    public class BasisSwapQuote : MarketQuote
-    {
-        public BasisSwapQuote(RawMarketData MarketData) : base(MarketData)
-        {
+    //public class BasisSwapQuote : MarketQuote
+    //{
+    //    public BasisSwapQuote(RawMarketData MarketData) : base(MarketData)
+    //    {
 
-        }
+    //    }
 
-        protected override void ParseQuote()
-        {
+    //    protected override void ParseQuote()
+    //    {
 
-        }
-    }
+    //    }
+    //}
     public class FraQuote : MarketQuote
     {
-        public FraQuote(RawMarketData MarketData) : base(MarketData)
+        public FraQuote(DateTime asOf, RawMarketData MarketData) : base(asOf, MarketData)
         {
 
         }
@@ -242,7 +298,7 @@ namespace MasterThesis
     }
     public class FutureQuote : MarketQuote
     {
-        public FutureQuote(RawMarketData MarketData) : base(MarketData)
+        public FutureQuote(DateTime asOf, RawMarketData MarketData) : base(asOf, MarketData)
         {
 
         }
@@ -254,7 +310,7 @@ namespace MasterThesis
     }
     public class CashQuote : MarketQuote
     {
-        public CashQuote(RawMarketData MarketData) : base(MarketData)
+        public CashQuote(DateTime asOf, RawMarketData MarketData) : base(asOf, MarketData)
         {
 
         }
@@ -281,7 +337,7 @@ namespace MasterThesis
 
             switch (InstrumentType)
             {
-                case MarketDataInstrument.Swap:
+                case MarketDataInstrument.IrSwapRate:
                     ParseSwap(Identifier);
                     break;
                 default:

@@ -11,16 +11,16 @@ using System.Data;
 
 namespace MasterThesis
 {
-    public enum CurveTenor { Simple, DiscOis, DiscLibor, Fwd1D, Fwd1M, Fwd3M, Fwd6M, Fwd1Y, None }
-    public enum CurveType { Fwd, DiscOis, DiscLibor, None }
+    public enum CurveTenor { Simple, DiscOis, DiscLibor, Fwd1D, Fwd1M, Fwd3M, Fwd6M, Fwd1Y }
     public enum QuoteType { SwapRate, BasisSpread, Fixing, FraRate, FutureRate, BaseSpread}
-    public enum InstrumentType { Swap, Fra, Future, IrSwap, MmBasisSwap, BasisSwap, FxFwd, Deposit, Swaption }
+    public enum InstrumentType { Swap, Fra, Future, IrSwap, MmBasisSwap, BasisSwap, FxFwd, OisSwap, Deposit, Swaption, Fixing }
     public enum InstrumentComplexity { Linear, NonLinear }
     public enum Tenor { T1D, T1M, T3M, T6M, T1Y }
     public enum DayRule {  MF, F, P, N }
+    public enum StubPlacement { Beginning, End, NullStub };
     public enum DayCount { ACT360, ACT365, ACT36525, THIRTY360 }
     public enum InterpMethod { Constant, Linear, LogLinear, Hermite, Catrom }
-    public enum MarketDataInstrument { Swap, BaseSpread, Fra, Future, BasisSwap, Cash }
+    public enum MarketDataInstrument { IrSwapRate, OisRate, BaseSpread, Fra, Future, BasisSwap, Cash, Fixing }
     public enum SwapQuoteType { Vanilla, ShortSwap }
 
     public static class EnumToStr
@@ -86,8 +86,8 @@ namespace MasterThesis
         public static string Sheet = "CURVES";
         public static string Path = @"C:\Users\Frede\Dropbox\Polit\12. SPECIALE\ExcelFiles\Data\Test.xlsx";
         public static DataSet MyData;
-        public static FwdCurve Fwd1d, Fwd1m, Fwd3m, Fwd6m, Fwd1y;
-        public static DiscCurve DiscOis, DiscLibor;
+        public static Curve Fwd1d, Fwd1m, Fwd3m, Fwd6m, Fwd1y;
+        public static Curve DiscOis, DiscLibor;
 
         public static void DataReader()
         {
@@ -160,20 +160,14 @@ namespace MasterThesis
             }
 
             FwdCurves MyCurves = new MasterThesis.FwdCurves();
-            MyCurves.AddCurve(new FwdCurveAdvanced(Fwd1d, Fwd1dVal, CurveTenor.Fwd1D));
-            MyCurves.AddCurve(new FwdCurveAdvanced(Fwd1m, Fwd1mVal, CurveTenor.Fwd1M));
-            MyCurves.AddCurve(new FwdCurveAdvanced(Fwd3m, Fwd3mVal, CurveTenor.Fwd3M));
-            MyCurves.AddCurve(new FwdCurveAdvanced(Fwd6m, Fwd6mVal, CurveTenor.Fwd6M));
-            MyCurves.AddCurve(new FwdCurveAdvanced(Fwd1y, Fwd1yVal, CurveTenor.Fwd1Y));
+            MyCurves.AddCurve(new Curve(Fwd1d, Fwd1dVal), CurveTenor.Fwd1D);
+            MyCurves.AddCurve(new Curve(Fwd1m, Fwd1mVal), CurveTenor.Fwd1M);
+            MyCurves.AddCurve(new Curve(Fwd3m, Fwd3mVal), CurveTenor.Fwd3M);
+            MyCurves.AddCurve(new Curve(Fwd6m, Fwd6mVal), CurveTenor.Fwd6M);
+            MyCurves.AddCurve(new Curve(Fwd1y, Fwd1yVal), CurveTenor.Fwd1Y);
             Store.FwdCurveCollections["MYCURVES"] = MyCurves;
-
-            Store.FwdCurves["1D"] = new FwdCurveAdvanced(Fwd1d, Fwd1dVal, CurveTenor.Fwd1D);
-            Store.FwdCurves["1M"] = new FwdCurveAdvanced(Fwd1d, Fwd1dVal, CurveTenor.Fwd1M);
-            Store.FwdCurves["3M"] = new FwdCurveAdvanced(Fwd1d, Fwd1dVal, CurveTenor.Fwd3M);
-            Store.FwdCurves["6M"] = new FwdCurveAdvanced(Fwd1d, Fwd1dVal, CurveTenor.Fwd6M);
-            Store.FwdCurves["1Y"] = new FwdCurveAdvanced(Fwd1d, Fwd1dVal, CurveTenor.Fwd1Y);
-            Store.DiscCurves["OIS"] = new MasterThesis.DiscCurve(DiscOis, DiscOisVal);
-            Store.DiscCurves["LIBOR"] = new MasterThesis.DiscCurve(DiscLibor, DiscLiborVal);
+            Store.Curves[CurveTenor.DiscLibor] = new MasterThesis.Curve(DiscLibor, DiscLiborVal, CurveTenor.DiscLibor);
+            Store.Curves[CurveTenor.DiscOis] = new MasterThesis.Curve(DiscOis, DiscOisVal, CurveTenor.DiscLibor);
         }
 
         public static void CreateCurveOld()

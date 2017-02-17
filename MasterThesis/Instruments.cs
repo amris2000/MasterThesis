@@ -39,24 +39,66 @@ namespace MasterThesis
         }
 
     }
-
     public class FloatLeg : SwapLeg
     {
         double Spread;
         public FloatLeg(DateTime AsOf, DateTime StartDate, DateTime EndDate,
-                        CurveTenor Frequency, DayCount DayCount, DayRule DayRule, double Notional, double Spread = 0.0) : base(AsOf, StartDate, EndDate, Frequency, DayCount, DayRule, Notional)
+                        CurveTenor Frequency, DayCount DayCount, DayRule DayRule, double Notional, double Spread = 0.0, StubPlacement stub = StubPlacement.NullStub) : base(AsOf, StartDate, EndDate, Frequency, DayCount, DayRule, Notional)
         {
             this.Spread = Spread;
         }
     }
-
     public class FixedLeg : SwapLeg
     {
         public double FixedRate;
         public FixedLeg(DateTime AsOf, DateTime StartDate, DateTime EndDate, double FixedRate,
-                        CurveTenor Frequency, DayCount DayCount, DayRule DayRule, double Notional) : base(AsOf, StartDate, EndDate, Frequency, DayCount, DayRule, Notional)
+                        CurveTenor Frequency, DayCount DayCount, DayRule DayRule, double Notional, StubPlacement stub = StubPlacement.NullStub) : base(AsOf, StartDate, EndDate, Frequency, DayCount, DayRule, Notional)
         {
             this.FixedRate = FixedRate;
+        }
+    }
+
+    public class OisFloatLeg
+    {
+        public OisSchedule Schedule;
+        public DateTime AsOf, StartDate, EndDate;
+        public double Notional;
+        public DayRule DayRule;
+        public DayCount DayCount;
+
+        public OisFloatLeg(DateTime AsOf, DateTime StartDate, string Tenor, DayCount DayCount, DayRule DayRule, double notional)
+        {
+            this.AsOf = AsOf;
+            this.StartDate = StartDate;
+            this.EndDate = Calender.AddTenor(StartDate, Tenor, DayRule.N);
+            Schedule = new OisSchedule(AsOf, StartDate, DayCount, DayRule, Tenor);
+            this.Notional = notional;
+        }
+    }
+
+    public class OisFixedLeg
+    {
+
+    }
+
+
+    public class OisSwap : Asset
+    {
+        public OisSchedule FloatSchedule, FixedSchedule;
+        public DateTime AsOf, StartDate, EndDate;
+        public double Notional;
+        public double FixedRate;
+
+        public OisSwap(DateTime AsOf, DateTime StartDate, string tenor, double fixedRate, DayCount dayCountFixed,
+                            DayCount dayCountFloat, DayRule dayRuleFixed, DayRule dayRuleFloat, double notional) : base (InstrumentComplexity.Linear, InstrumentType.OisSwap)
+        {
+            this.AsOf = AsOf;
+            this.StartDate = StartDate;
+            this.EndDate = Calender.AddTenor(StartDate, tenor, dayRuleFloat);
+            this.FloatSchedule = new OisSchedule(AsOf, StartDate, dayCountFloat, dayRuleFloat, tenor);
+            this.FixedSchedule = new OisSchedule(AsOf, StartDate, dayCountFixed, dayRuleFixed, tenor);
+            this.Notional = notional;
+            this.FixedRate = notional;
         }
     }
 
