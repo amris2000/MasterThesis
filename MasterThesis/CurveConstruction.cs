@@ -9,31 +9,30 @@ namespace MasterThesis
 {
     public class CurveFactory
     {
-        List<DateTime> CurveDates = new List<DateTime>();
-        List<double> CurveValues = new List<double>();
-        List<double> Quotes = new List<double>();
-
-        List<MarketQuote> MarketQuotes;
-        int CurvePoints;
-        CurveTenor Tenor;
+        private List<DateTime> _curveDates = new List<DateTime>();
+        private List<double> _curveValues = new List<double>();
+        private List<double> _quotes = new List<double>();
+        private List<MarketQuote> _marketQuotes;
+        private int _curvePoints;
+        private CurveTenor _tenor;
 
         // This allows us to define Quote calculation function as a function of the curve
         protected delegate double QuoteValue(Curve curve);
 
         public CurveFactory(List<MarketQuote> marketQuotes, CurveTenor curveTenor)
         {
-            this.Tenor = curveTenor;
+            this._tenor = curveTenor;
 
             // Sort MarketQuote objects according to EndDate (does not check if they are overlapping here)
             marketQuotes.Sort(new Comparison<MarketQuote>((x, y) => DateTime.Compare(x.EndDate, y.EndDate)));
-            MarketQuotes = marketQuotes;
-            CurvePoints = MarketQuotes.Count;
+            _marketQuotes = marketQuotes;
+            _curvePoints = _marketQuotes.Count;
 
-            for (int i = 0; i < CurvePoints; i++)
+            for (int i = 0; i < _curvePoints; i++)
             {
-                CurveDates.Add(marketQuotes[i].EndDate);
-                Quotes.Add(marketQuotes[i].Quote);
-                CurveValues.Add(0.001);
+                _curveDates.Add(marketQuotes[i].EndDate);
+                _quotes.Add(marketQuotes[i].Quote);
+                _curveValues.Add(0.001);
             }
         }
 
@@ -49,11 +48,11 @@ namespace MasterThesis
 
         public Curve BootstrapCurve()
         {
-            Curve Out = new MasterThesis.Curve(CurveDates, CurveValues);
-            for (int i = 0; i < CurveDates.Count; i++)
+            Curve Out = new MasterThesis.Curve(_curveDates, _curveValues);
+            for (int i = 0; i < _curveDates.Count; i++)
             {
-                CurveValues[i] = BootstrapCurveValue(Out, i, Quotes[i], MarketQuotes[i].InstrumentType);
-                Console.WriteLine(CurveDates[i].ToString("dd/MM/yyyy") + " " + CurveValues[i]);
+                _curveValues[i] = BootstrapCurveValue(Out, i, _quotes[i], _marketQuotes[i].InstrumentType);
+                Console.WriteLine(_curveDates[i].ToString("dd/MM/yyyy") + " " + _curveValues[i]);
             }
             return Out;
         }
@@ -63,9 +62,9 @@ namespace MasterThesis
             switch(type)
             {
                 case MarketDataInstrument.IrSwapRate:
-                    return BiSectionCurveValues(DeclareDelegate((SwapSimple)MarketQuotes[Index].Instrument).Invoke, curve, Index, quote, -0.5, 0.5);
+                    return BiSectionCurveValues(DeclareDelegate((SwapSimple)_marketQuotes[Index].Instrument).Invoke, curve, Index, quote, -0.03, 0.03);
                 case MarketDataInstrument.OisRate:
-                    return BiSectionCurveValues(DeclareDelegate((OisSwap)MarketQuotes[Index].Instrument).Invoke, curve, Index, quote, -0.5, 0.5);
+                    return BiSectionCurveValues(DeclareDelegate((OisSwap)_marketQuotes[Index].Instrument).Invoke, curve, Index, quote, -0.03, 0.03);
                 default:
                     throw new ArgumentException("MarketDataInstrument is not supported for bisection");
             }
@@ -74,7 +73,7 @@ namespace MasterThesis
         public static double BiSectionCurveValues(Func<Curve, double> Function, Curve MyCurve, int ValueIndex, double Quote, double InitLower, double InitUpper)
         {
             double X = 0.1;
-            double Tolerance = 0.00000000001;
+            double Tolerance = 0.0001;
             uint MaxIterations = 190;
 
             List<double> SolutionVector = new List<double>();
@@ -112,8 +111,8 @@ namespace MasterThesis
 
                 SolutionValue = Function(SolutionCurve);
                 LowerValue = Function(LowerCurve);
-
-                if (Function(SolutionCurve) - Quote == 0.0 || (Upper - Lower) * 0.5 < Tolerance)
+                //Function(SolutionCurve) - Quote == 0.0 ||
+                if ( (Upper - Lower) * 0.5*10000 < Tolerance*10000)
                 {
                     Console.Write("   Iterations: " + i + "    ");
                     return SolutionVector[ValueIndex];

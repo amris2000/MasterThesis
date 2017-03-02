@@ -50,18 +50,19 @@ namespace MasterThesis
         }
         public double OisCompoundedRate(DateTime asOf, DateTime startDate, DateTime endDate, DayRule dayRule, DayCount dayCount, InterpMethod method)
         {
-            double CompoundedRate = 0.0;
+            double CompoundedRate = 1;
             DateTime RollDate = startDate;
-            while (RollDate.Date<=endDate.Date)
+            while (RollDate.Date<endDate.Date)
             {
                 DateTime NextBusinessDay = Calender.AddTenor(RollDate, "1B", DayRule.F);
-                double Rate = DiscCurve.OisRate(asOf, startDate, RollDate, dayRule, dayCount, method);
+                //double Rate = DiscCurve.ZeroRate(asOf, startDate, RollDate, dayRule, dayCount, method);
+                double Rate = DiscCurve.ZeroRate(NextBusinessDay, InterpMethod.Linear);
                 double Days = NextBusinessDay.Subtract(RollDate).TotalDays;
                 RollDate = NextBusinessDay;
-                CompoundedRate *= (1 + Rate * Days / 365); // CHECK THAT THIS IS ACTUALLY 365
+                CompoundedRate *= (1 + Rate * Days / 360);
             }
-
-            return (CompoundedRate - 1) / (Calender.Cvg(startDate, endDate, dayCount));
+            double coverage = Calender.Cvg(startDate, endDate, dayCount);
+            return (CompoundedRate - 1) / coverage;
         }
         public double OisRate(OisSwap swap)
         {
@@ -76,7 +77,8 @@ namespace MasterThesis
                 DateTime End = swap.FloatSchedule.AdjEndDates[i];
                 double CompoundedRate = OisCompoundedRate(AsOf, Start, End, swap.FloatSchedule.DayRule, swap.FloatSchedule.DayCount, InterpMethod.Linear);
                 double DiscountFactor = DiscCurve.DiscFactor(AsOf, End, InterpMethod.Linear);
-                FloatContribution += DiscountFactor * CompoundedRate * Calender.Cvg(Start, End, swap.FloatSchedule.DayCount);
+                double coverage = Calender.Cvg(Start, End, swap.FloatSchedule.DayCount);
+                FloatContribution += DiscountFactor * CompoundedRate * coverage;
             }
             return FloatContribution / Annuity;
         }

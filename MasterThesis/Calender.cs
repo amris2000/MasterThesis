@@ -36,6 +36,7 @@ namespace MasterThesis
             double TenorNumber = Calender.ParseTenor(Tenor).Item1;
             string TenorLetter = Calender.ParseTenor(Tenor).Item2;
 
+            this.AsOf = asOf;
             this.StartDate = startDate;
             this.EndDate = Calender.AddTenor(StartDate, Tenor);
 

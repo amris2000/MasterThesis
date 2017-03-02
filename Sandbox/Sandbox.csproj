@@ -43,6 +43,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AADTests.cs" />
+    <Compile Include="CalenderTests.cs" />
+    <Compile Include="CurveCalibrationTests.cs" />
+    <Compile Include="MathTests.cs" />
+    <Compile Include="MiscTests.cs" />
+    <Compile Include="MultiThreading.cs" />
+    <Compile Include="PricingTests.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

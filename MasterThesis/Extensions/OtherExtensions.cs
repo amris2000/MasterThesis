@@ -13,4 +13,28 @@ namespace MasterThesis.Extensions
             return listToClone.Select(item => (T)item.Clone()).ToList();
         }
     }
+
+    public static class Logging
+    {
+        public static void WriteLine(string message, ConsoleColor col = ConsoleColor.White)
+        {
+            var oldColor = Console.ForegroundColor;
+            Console.ForegroundColor = col;
+            Console.WriteLine(message);
+            Console.ForegroundColor = oldColor;
+        }
+
+        public static void WriteSectionHeader(string header, ConsoleColor col = ConsoleColor.Cyan)
+        {
+            var oldColor = Console.ForegroundColor;
+            Console.ForegroundColor = col;
+            Console.WriteLine("");
+            Console.WriteLine("----------------------------------------------");
+            Console.WriteLine("   " + header);
+            Console.WriteLine("----------------------------------------------");
+            Console.WriteLine("");
+            Console.ForegroundColor = oldColor;
+        }
+    }
+
 }
