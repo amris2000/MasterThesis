@@ -11,6 +11,14 @@ namespace Sandbox
 {
     public static class CurveCalibrationTests
     {
+        public static void CurvesFromFile()
+        {
+            ExcelUtility.DataReader();
+            ExcelUtility.LoadCurvesFromFile();
+            Logging.WriteSectionHeader("Curve. Freq: " + Store.Curves[CurveTenor.DiscOis].Frequency.ToString());
+            Store.Curves[CurveTenor.DiscOis].Print();
+
+        }
 
         public static void SimpleBootStrap()
         {

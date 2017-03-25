@@ -20,14 +20,19 @@ namespace Sandbox
             //MathTests.InterpolationTest();
             //AADTests.AADTest();
 
+            //CurveCalibrationTests.SimpleBootStrap();
+            CurveCalibrationTests.CurvesFromFile();
+            CurveCalibrationTests.OisBootStrap();
+
             //PricingTests.ModelTesting();
             //PricingTests.TestOisSwap();
+            PricingTests.OisSwapPricingTest();
 
-            //CurveCalibrationTests.SimpleBootStrap();
-            //CurveCalibrationTests.OisBootStrap();
+
+            
 
             //MiscTests.TestIt();
-            MultiThreadingTests.SimpleTest();
+            //MultiThreadingTests.SimpleTest();
 
             Console.ReadLine();
         }

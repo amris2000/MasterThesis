@@ -9,6 +9,71 @@ namespace MasterThesis
 {
     public static class StrToEnum
     {
+        public static CurveTenor CurveTenorConvert(string tenor)
+        {
+            tenor = tenor.ToUpper();
+
+            switch (tenor)
+            {
+                case "FWD1D":
+                    return MasterThesis.CurveTenor.Fwd1D;
+                case "FWD1M":
+                    return MasterThesis.CurveTenor.Fwd1M;
+                case "FWD3M":
+                    return MasterThesis.CurveTenor.Fwd3M;
+                case "FWD6M":
+                    return MasterThesis.CurveTenor.Fwd6M;
+                case "FWD1Y":
+                    return MasterThesis.CurveTenor.Fwd1Y;
+                case "DISCOIS":
+                    return MasterThesis.CurveTenor.DiscOis;
+                case "DISCLIBOR":
+                    return MasterThesis.CurveTenor.DiscLibor;
+                default:
+                    throw new InvalidOperationException("Invalid CurveTenor " + tenor);
+            }
+        }
+
+        public static DayCount DayCountConvert(string dayCount)
+        {
+            dayCount = dayCount.ToUpper();
+
+            switch (dayCount)
+            {
+                case "ACT/360":
+                    return MasterThesis.DayCount.ACT360;
+                case "ACT/365":
+                    return MasterThesis.DayCount.ACT365;
+                case "ACT/365.25":
+                    return MasterThesis.DayCount.ACT36525;
+                case "30/360":
+                    return MasterThesis.DayCount.THIRTY360;
+                default:
+                    throw new InvalidOperationException("Invalid dayCount: " + dayCount);
+            }
+        }
+
+        public static DayRule DayRuleConvert(string dayRule)
+        {
+            dayRule = dayRule.ToUpper();
+
+            switch (dayRule)
+            {
+                case "MF":
+                    return MasterThesis.DayRule.MF;
+                case "F":
+                    return MasterThesis.DayRule.F;
+                case "P":
+                    return MasterThesis.DayRule.P;
+                case "NONE":
+                    return MasterThesis.DayRule.N;
+                case "N":
+                    return MasterThesis.DayRule.N;
+                default:
+                    throw new InvalidOperationException("Invalid dayRule: " + dayRule);
+            }
+        }
+
         public static CurveTenor CurveIdent(string CurveIdent)
         {
             switch (CurveIdent)
@@ -231,8 +296,13 @@ namespace MasterThesis
         public OisSwapQuote(DateTime AsOf, RawMarketData MarketData) : base(AsOf, MarketData)
         {
             ParseQuote();
-            StartDate = Calender.AddTenor(AsOf, "2B", DayRule.MF);
-            EndDate = Calender.AddTenor(StartDate, Tenor, DayRule.MF);
+            string[] noFwdTenor = new string[] { "0B", "1B" };
+            if (noFwdTenor.Contains(Tenor) == false)
+                StartDate = Calender.AddTenor(AsOf, "2B", DayRule.F);
+            else
+                StartDate = AsOf;
+
+            EndDate = Calender.AddTenor(StartDate, Tenor, DayRule.F);
             Instrument = new OisSwap(AsOf, StartDate, Tenor, 0.1, DayCount.ACT360, DayCount.ACT360, DayRule.MF, DayRule.MF, 1);
             InstrumentType = MarketDataInstrument.OisRate;
         }

@@ -181,7 +181,9 @@ namespace MasterThesis
             double YearLower = Calender.Cvg(AsOf, AdjStart, dayCount);
 
             int WholePeriods = 0;
+#pragma warning disable CS0219 // Variable is assigned but its value is never used
             double Excess = 0.0;
+#pragma warning restore CS0219 // Variable is assigned but its value is never used
 
             // Will be sorted at end (when coverages are also calculated)
             UnAdjStartDates.Add(StartDate);

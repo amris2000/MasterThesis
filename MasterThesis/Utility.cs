@@ -23,6 +23,7 @@ namespace MasterThesis
     public enum MarketDataInstrument { IrSwapRate, OisRate, BaseSpread, Fra, Future, BasisSwap, Cash, Fixing }
     public enum SwapQuoteType { Vanilla, ShortSwap }
 
+
     public static class EnumToStr
     {
 
@@ -167,7 +168,7 @@ namespace MasterThesis
             MyCurves.AddCurve(new Curve(Fwd1y, Fwd1yVal), CurveTenor.Fwd1Y);
             Store.FwdCurveCollections["MYCURVES"] = MyCurves;
             Store.Curves[CurveTenor.DiscLibor] = new MasterThesis.Curve(DiscLibor, DiscLiborVal, CurveTenor.DiscLibor);
-            Store.Curves[CurveTenor.DiscOis] = new MasterThesis.Curve(DiscOis, DiscOisVal, CurveTenor.DiscLibor);
+            Store.Curves[CurveTenor.DiscOis] = new MasterThesis.Curve(DiscOis, DiscOisVal, CurveTenor.DiscOis);
         }
 
         public static void CreateCurveOld()

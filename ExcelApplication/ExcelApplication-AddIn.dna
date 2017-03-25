@@ -1,4 +1,4 @@
-<DnaLibrary Name="ExcelApplication Add-In" RuntimeVersion="v4.0">
+<DnaLibrary Name="MasterThesisLibrary" RuntimeVersion="v4.0">
   <ExternalLibrary Path="ExcelApplication.dll" LoadFromBytes="true" Pack="true" />
   
   <!-- 

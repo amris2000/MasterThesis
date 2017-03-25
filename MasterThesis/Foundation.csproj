@@ -24,7 +24,7 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
+    <Optimize>false</Optimize>
     <OutputPath>..\bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -58,6 +58,7 @@
     <Compile Include="Conventions.cs" />
     <Compile Include="CurveConstruction.cs" />
     <Compile Include="Curves.cs" />
+    <Compile Include="ExcelInterface\Functions.cs" />
     <Compile Include="Extensions\OtherExtensions.cs" />
     <Compile Include="Models.cs" />
     <Compile Include="Extensions\DateTimeExtensions.cs" />

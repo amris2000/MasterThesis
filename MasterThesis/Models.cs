@@ -43,6 +43,7 @@ namespace MasterThesis
             DateTime PayDate;
             for (int i = 0; i<Schedule.AdjEndDates.Count; i++)
             {
+
                 PayDate = Schedule.AdjEndDates[i];
                 Out += Schedule.Coverages[i] * DiscCurve.DiscFactor(Schedule.AsOf, Schedule.EndDate, method);
             }
@@ -51,18 +52,26 @@ namespace MasterThesis
         public double OisCompoundedRate(DateTime asOf, DateTime startDate, DateTime endDate, DayRule dayRule, DayCount dayCount, InterpMethod method)
         {
             double CompoundedRate = 1;
+            double CompoundedRate2 = 1;
             DateTime RollDate = startDate;
             while (RollDate.Date<endDate.Date)
             {
                 DateTime NextBusinessDay = Calender.AddTenor(RollDate, "1B", DayRule.F);
                 //double Rate = DiscCurve.ZeroRate(asOf, startDate, RollDate, dayRule, dayCount, method);
                 double Rate = DiscCurve.ZeroRate(NextBusinessDay, InterpMethod.Linear);
+                double fwdOisRate = DiscCurve.FwdRate(asOf, RollDate, NextBusinessDay, DayRule.F, dayCount, method);
+
+                double disc1 = DiscCurve.DiscFactor(asOf, RollDate, method);
+                double disc2 = DiscCurve.DiscFactor(asOf, NextBusinessDay, method);
+
                 double Days = NextBusinessDay.Subtract(RollDate).TotalDays;
+                double shortCvg = Calender.Cvg(RollDate, NextBusinessDay, dayCount);
                 RollDate = NextBusinessDay;
-                CompoundedRate *= (1 + Rate * Days / 360);
+                CompoundedRate *= (1 + fwdOisRate * shortCvg);
+                CompoundedRate2 *= disc1 / disc2;
             }
             double coverage = Calender.Cvg(startDate, endDate, dayCount);
-            return (CompoundedRate - 1) / coverage;
+            return (CompoundedRate2 - 1) / coverage;
         }
         public double OisRate(OisSwap swap)
         {
@@ -82,37 +91,68 @@ namespace MasterThesis
             }
             return FloatContribution / Annuity;
         }
+
+        public double OisRateSimple(OisSwap swap)
+        {
+            double Annuity = OisAnnuity(swap.FixedSchedule, InterpMethod.Linear);
+            DateTime AsOf = swap.AsOf;
+            DateTime Start = swap.StartDate;
+            DateTime End = swap.EndDate;
+            double disc1 = DiscCurve.DiscFactor(AsOf, Start, InterpMethod.Linear);
+            double disc2 = DiscCurve.DiscFactor(AsOf, End, InterpMethod.Linear);
+            return (disc1 - disc2) / Annuity;
+        }
+
+        public double OisRateSimple2(OisSwap swap)
+        {
+            double Annuity = OisAnnuity(swap.FixedSchedule, InterpMethod.Linear);
+            DateTime asOf = swap.AsOf;
+            double FloatContribution = 0.0;
+            
+            for (int i = 0; i < swap.FloatSchedule.AdjEndDates.Count; i++)
+            {
+                DateTime Start = swap.FloatSchedule.AdjStartDates[i];
+                DateTime End = swap.FloatSchedule.AdjEndDates[i];
+                double cvg = Calender.Cvg(Start, End, swap.FloatSchedule.DayCount);
+                double disc1 = DiscCurve.DiscFactor(asOf, Start, InterpMethod.Linear);
+                double disc2 = DiscCurve.DiscFactor(asOf, End, InterpMethod.Linear);
+                FloatContribution += (disc1 - disc2) / cvg;
+            }
+
+            return FloatContribution / Annuity;
+        }
         #endregion
 
         #region SWAPS
-        public double ValueFloatLeg(FloatLeg FloatLeg)
+        public double ValueFloatLeg(FloatLeg floatLeg)
         {
             double FloatValue = 0.0;
+            double spread = floatLeg.Spread;
 
-            for (int i = 0; i < FloatLeg.Schedule.Periods; i++)
+            for (int i = 0; i < floatLeg.Schedule.AdjStartDates.Count; i++)
             {
-                DateTime Begin = FloatLeg.Schedule.AdjStartDates[i];
-                DateTime End = FloatLeg.Schedule.AdjEndDates[i];
-                double Cvg = FloatLeg.Schedule.Coverages[i];
-                double FwdRate = FwdCurveCollection.GetCurve(FloatLeg.Tenor).FwdRate(FloatLeg.AsOf, Begin, End, FloatLeg.Schedule.DayRule, FloatLeg.Schedule.DayCount, InterpMethod.Linear);
-                double DiscFactor = DiscCurve.DiscFactor(FloatLeg.AsOf, End, InterpMethod.Linear);
-                FloatValue += FwdRate * Cvg * DiscFactor;
+                DateTime Begin = floatLeg.Schedule.AdjStartDates[i];
+                DateTime End = floatLeg.Schedule.AdjEndDates[i];
+                double Cvg = floatLeg.Schedule.Coverages[i];
+                double FwdRate = FwdCurveCollection.GetCurve(floatLeg.Tenor).FwdRate(floatLeg.AsOf, Begin, End, floatLeg.Schedule.DayRule, floatLeg.Schedule.DayCount, InterpMethod.Linear);
+                double DiscFactor = DiscCurve.DiscFactor(floatLeg.AsOf, End, InterpMethod.Linear);
+                FloatValue += (FwdRate + spread) * Cvg * DiscFactor;
             }
 
-            return FloatValue;
+            return FloatValue * floatLeg.Notional;
         }
         public double ValueFixedLeg(FixedLeg FixedLeg)
         {
             double FixedAnnuity = Annuity(FixedLeg.Schedule, InterpMethod.Linear);
-            return FixedLeg.FixedRate * FixedAnnuity;
+            return FixedLeg.FixedRate * FixedAnnuity * FixedLeg.Notional;
         }
         public double IrSwapPv(IrSwap Swap)
         {
-            return Swap.Leg1.Notional * ValueFloatLeg((FloatLeg) Swap.Leg1) - Swap.Leg2.Notional * ValueFixedLeg((FixedLeg) Swap.Leg1);
+            return ValueFloatLeg((FloatLeg) Swap.Leg1) - ValueFixedLeg((FixedLeg) Swap.Leg2);
         }
         public double IrParSwapRate(IrSwap Swap)
         {
-            double FloatPv = ValueFloatLeg((FloatLeg)Swap.Leg1);
+            double FloatPv = ValueFloatLeg((FloatLeg)Swap.Leg1)/Swap.Leg1.Notional;
             double FixedAnnuity = Annuity(Swap.Leg2.Schedule, InterpMethod.Linear);
             return FloatPv / FixedAnnuity;
         }

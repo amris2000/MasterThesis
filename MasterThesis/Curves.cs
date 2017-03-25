@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using MasterThesis.Extensions;
 
 namespace MasterThesis
 {
@@ -10,6 +11,7 @@ namespace MasterThesis
     {
         public List<DateTime> Dates;
         public List<double> Values;
+        public int Dimension;
         public CurveTenor Frequency { get; set; }
 
         public Curve(List<DateTime> dates, List<double> values, CurveTenor curveType = CurveTenor.Simple)
@@ -17,12 +19,14 @@ namespace MasterThesis
             this.Dates = dates;
             this.Values = values;
             this.Frequency = curveType;
+            this.Dimension = values.Count;
         }
         public Curve(List<DateTime> Dates, List<double> Values)
         {
             this.Dates = Dates;
             this.Values = Values;
             this.Frequency = CurveTenor.Simple;
+            this.Dimension = Values.Count;
         }
 
         public double Interp(DateTime Date, InterpMethod Method)
@@ -45,12 +49,12 @@ namespace MasterThesis
 
             return (Ps / Pe - 1) / Cvg;
         }
-
-        public double OisRate(DateTime AsOf, DateTime StartDate, DateTime EndDate, DayRule DayRule, DayCount DayCount, InterpMethod Method)
+        public void Print()
         {
-            double Out = 0.1;
-
-            return Out;
+            for (int i = 0; i < Dates.Count; i++)
+            {
+                Console.WriteLine(Dates[i].Date + " " + Math.Round(Values[i], 5));
+            }
         }
 
     }

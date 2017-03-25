@@ -41,9 +41,10 @@ namespace MasterThesis
     }
     public class FloatLeg : SwapLeg
     {
-        double Spread;
+        public double Spread;
         public FloatLeg(DateTime AsOf, DateTime StartDate, DateTime EndDate,
-                        CurveTenor Frequency, DayCount DayCount, DayRule DayRule, double Notional, double Spread = 0.0, StubPlacement stub = StubPlacement.NullStub) : base(AsOf, StartDate, EndDate, Frequency, DayCount, DayRule, Notional)
+                        CurveTenor Frequency, DayCount DayCount, DayRule DayRule, double Notional, double Spread = 0.0, StubPlacement stub = StubPlacement.NullStub)
+            : base(AsOf, StartDate, EndDate, Frequency, DayCount, DayRule, Notional)
         {
             this.Spread = Spread;
         }
