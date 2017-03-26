@@ -117,11 +117,8 @@ namespace Sandbox
 
             SwapSimple MySwap = new SwapSimple(AsOf, StartDate, EndDate, 0.01, Fixed, Float, DayCount.THIRTY360, DayCount.ACT360, DayRule.MF, DayRule.MF, 1000000.0);
 
-            double Value = MyModel.Value(MySwap);
-
             double SwapRate = MyModel.SwapRate(MySwap);
             MySwap = new SwapSimple(AsOf, StartDate, EndDate, SwapRate, Fixed, Float, DayCount.THIRTY360, DayCount.ACT360, DayRule.MF, DayRule.MF, 1000000.0);
-            double ValueSwapRate = MyModel.Value(MySwap);
 
             IrSwap IrSwap = new IrSwap(AsOf, StartDate, EndDate, 0.01, Fixed, Float, DayCount.THIRTY360, DayCount.ACT360, DayRule.MF, DayRule.MF, 1000000.0);
             double SwapRate2 = MyModel.IrParSwapRate(IrSwap);
@@ -132,11 +129,9 @@ namespace Sandbox
             //        0.01, "1Y", "6M", "30/360", "ACT/360", "MF", "MF", 1000000.0);
             //    Value = MyModel.ValueInstrument(MySwap);
             //}
-
-            Console.WriteLine("SwapValue: " + Value);
+          
             Console.WriteLine("Par swap rate: " + Math.Round(SwapRate * 100, 4) + "%");
             Console.WriteLine("Par swap rate: " + Math.Round(SwapRate2 * 100, 4) + "%");
-            Console.WriteLine("SwapValue at par: " + ValueSwapRate);
             Console.WriteLine("Price Swap - Elapsed time: " + sv.ElapsedMilliseconds);
 
             Console.WriteLine(" ");

@@ -148,7 +148,26 @@ namespace ExcelApplication
             return baseName;
         }
 
+        [ExcelFunction(Description = "Some description.", Name = "mt.InstrumentFactory.Make", IsVolatile = true)]
+        public static string Factory_InstrumentFactory_Make(string baseName, DateTime asOf)
+        {
+            InstrumentFactoryFunctions.InstrumentFactory_Make(baseName, asOf);
+            return baseName;
+        }
 
+        [ExcelFunction(Description = "some description.", Name = "mt.InstrumentFactory.AddSwaps", IsVolatile = true)]
+        public static string Factory_InstrumentFactory_AddSwaps(string baseName, object[] swapStrings)
+        {
+            var swapStringsString = swapStrings.Cast<string>().ToArray();
+            InstrumentFactoryFunctions.InstrumentFactory_AddSwaps(baseName, swapStringsString);
+            return "Added " + swapStrings.Length + " swap-instruments to " + baseName;
+        }
+
+        [ExcelFunction(Description = "Some description.", Name = "mt.InstrumentFactory.ValueInstrument", IsVolatile = true)]
+        public static double Factory_InstrumentFactory_ValueInstruments(string instrumentFactory, string model, string instrument)
+        {
+            return InstrumentFactoryFunctions.InstrumentFactory_ValueInstrument(instrumentFactory, model, instrument);
+        }
 
 
     }

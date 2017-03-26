@@ -191,36 +191,36 @@ namespace MasterThesis
             double FixedAnnuity = Annuity(MySwap.AsOf, MySwap.StartDate, MySwap.EndDate, MySwap.FixedFreq, MySwap.FixedSchedule.DayCount, MySwap.FixedSchedule.DayRule, InterpMethod.Linear);
             return FloatPv / FixedAnnuity;
         }
-        public double Value(Asset MyInstrument)
-        {
-            double TheValue = 0.0;
-            InstrumentType Type = MyInstrument.Type;
-            InstrumentComplexity Complexity = MyInstrument.Complexity;
+        //public double Value(Asset MyInstrument)
+        //{
+        //    double TheValue = 0.0;
+        //    InstrumentType Type = MyInstrument.Type;
+        //    //InstrumentComplexity Complexity = MyInstrument.Complexity;
 
-            // To do, verify that it's a linear product
+        //    // To do, verify that it's a linear product
 
-            switch (Type)
-            {
-                case InstrumentType.Swap:
-                    {
-                        SwapSimple MySwap = (SwapSimple) MyInstrument;
-                        double FloatValue = SwapFloatPv(MySwap);
-                        double FixedValue = SwapFixedPv(MySwap);
-                        TheValue = MySwap.Notional*(FloatValue - FixedValue);
-                    }
-                    break;
-                case InstrumentType.Fra:
-                    {
-                        TheValue = 1.0;
-                    }
-                    break;
-                default:
-                    TheValue = 0.0;
-                    break;
-            }
+        //    switch (Type)
+        //    {
+        //        case InstrumentType.Swap:
+        //            {
+        //                SwapSimple MySwap = (SwapSimple) MyInstrument;
+        //                double FloatValue = SwapFloatPv(MySwap);
+        //                double FixedValue = SwapFixedPv(MySwap);
+        //                TheValue = MySwap.Notional*(FloatValue - FixedValue);
+        //            }
+        //            break;
+        //        case InstrumentType.Fra:
+        //            {
+        //                TheValue = 1.0;
+        //            }
+        //            break;
+        //        default:
+        //            TheValue = 0.0;
+        //            break;
+        //    }
 
-            return TheValue;
-        }
+        //    return TheValue;
+        //}
     }
 
     public class LinearRateModelSimple : LinearRateModel

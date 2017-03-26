@@ -59,6 +59,7 @@
     <Compile Include="CurveConstruction.cs" />
     <Compile Include="Curves.cs" />
     <Compile Include="ExcelInterface\Functions.cs" />
+    <Compile Include="ExcelInterface\InstrumentFactory.cs" />
     <Compile Include="Extensions\OtherExtensions.cs" />
     <Compile Include="Models.cs" />
     <Compile Include="Extensions\DateTimeExtensions.cs" />

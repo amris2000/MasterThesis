@@ -8,14 +8,14 @@ namespace MasterThesis
 {
     public abstract class Asset
     {
-        public InstrumentComplexity Complexity;
-        public InstrumentType Type;
+        //public InstrumentComplexity Complexity;
+        //public InstrumentType Type;
 
-        protected Asset(InstrumentComplexity Complexity, InstrumentType Type)
-        {
-            this.Complexity = Complexity;
-            this.Type = Type;
-        }
+        //protected Asset(InstrumentComplexity Complexity, InstrumentType Type)
+        //{
+        //    this.Complexity = Complexity;
+        //    this.Type = Type;
+        //}
     }
 
     public abstract class SwapLeg
@@ -59,6 +59,7 @@ namespace MasterThesis
         }
     }
 
+    // MAKE OISFLOATFLEG A SWAP LEG TO MAKE THEM CONSISTENT.
     public class OisFloatLeg
     {
         public OisSchedule Schedule;
@@ -82,7 +83,8 @@ namespace MasterThesis
 
     }
 
-
+    // MAKE OISSWAP A SWAP!
+    // CONSIDER IF WE REALLY NEED AN "OIS SCHEDULE"
     public class OisSwap : Asset
     {
         public OisSchedule FloatSchedule, FixedSchedule;
@@ -91,7 +93,8 @@ namespace MasterThesis
         public double FixedRate;
 
         public OisSwap(DateTime AsOf, DateTime StartDate, string tenor, double fixedRate, DayCount dayCountFixed,
-                            DayCount dayCountFloat, DayRule dayRuleFixed, DayRule dayRuleFloat, double notional) : base (InstrumentComplexity.Linear, InstrumentType.OisSwap)
+                            DayCount dayCountFloat, DayRule dayRuleFixed, DayRule dayRuleFloat, double notional) 
+            //: base (InstrumentComplexity.Linear, InstrumentType.OisSwap)
         {
             this.AsOf = AsOf;
             this.StartDate = StartDate;
@@ -108,19 +111,22 @@ namespace MasterThesis
         public SwapLeg Leg1;
         public SwapLeg Leg2;
 
-        public Swap(FloatLeg SwapLeg1, FloatLeg SwapLeg2) : base(InstrumentComplexity.Linear, InstrumentType.MmBasisSwap)
+        public Swap(FloatLeg SwapLeg1, FloatLeg SwapLeg2) 
+            //: base(InstrumentComplexity.Linear, InstrumentType.MmBasisSwap)
         {
             Leg1 = SwapLeg1;
             Leg2 = SwapLeg2;
         }
 
-        public Swap(FloatLeg SwapLeg1, FixedLeg SwapLeg2) : base(InstrumentComplexity.Linear, InstrumentType.Swap)
+        public Swap(FloatLeg SwapLeg1, FixedLeg SwapLeg2) 
+            //: base(InstrumentComplexity.Linear, InstrumentType.Swap)
         {
             Leg1 = SwapLeg1;
             Leg2 = SwapLeg2;
         }
 
-        public Swap() : base(InstrumentComplexity.Linear, InstrumentType.Swap)
+        public Swap() 
+            // : base(InstrumentComplexity.Linear, InstrumentType.Swap)
         {
 
         }
@@ -159,7 +165,8 @@ namespace MasterThesis
 
         public SwapSimple(DateTime AsOf, DateTime StartDate, DateTime EndDate, double FixedRate,
                         CurveTenor FixedFreq, CurveTenor FloatFreq, DayCount FixedDayCount, DayCount FloatDayCount,
-                        DayRule FixedDayRule, DayRule FloatDayRule, double Notional) : base(InstrumentComplexity.Linear, InstrumentType.Swap)
+                        DayRule FixedDayRule, DayRule FloatDayRule, double Notional) 
+            //: base(InstrumentComplexity.Linear, InstrumentType.Swap)
         {
             FloatSchedule = new MasterThesis.SwapSchedule(AsOf, StartDate, EndDate, FloatDayCount, FloatDayRule, FloatFreq);
             FixedSchedule = new SwapSchedule(AsOf, StartDate, EndDate, FixedDayCount, FixedDayRule, FixedFreq);
@@ -172,23 +179,21 @@ namespace MasterThesis
             this.FloatFreq = FloatFreq;
         }
     }
-    //public class Fra : Instrument
-    //{
+    public class Fra : Asset
+    {
 
-    //}
-    //public class Future : Instrument
-    //{
+    }
+    public class Future : Asset
+    {
 
-    //}
-    //public class BasisSwap : Instrument
-    //{
+    }
+    public class BasisSwap : Asset
+    {
+        public IrSwap ModSide;
+        public IrSwap BaseSide;
 
-    //}
+    }
     //public class FxFwd : Instrument
-    //{
-
-    //}
-    //public class Deposit
     //{
 
     //}

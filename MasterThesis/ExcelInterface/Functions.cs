@@ -19,6 +19,10 @@ namespace MasterThesis.ExcelInterface
         public static IDictionary<string, FloatLeg> FloatLegs = new Dictionary<string, FloatLeg>();
         public static IDictionary<string, IrSwap> Swaps = new Dictionary<string, IrSwap>();
 
+        // InstrumentFactories
+        public static IDictionary<string, InstrumentFactory> InstrumentFactories = new Dictionary<string, InstrumentFactory>();
+
+
 
         public static void CheckExists<T>(IDictionary<string, T> dictionary, string key, string errMessage)
         {
@@ -51,6 +55,25 @@ namespace MasterThesis.ExcelInterface
             return output;
         }
 
+    }
+
+    public static class InstrumentFactoryFunctions
+    {
+        public static void InstrumentFactory_Make(string baseName, DateTime asOf)
+        {
+            ObjectMap.InstrumentFactories[baseName] = new InstrumentFactory(asOf);
+        }
+
+        public static void InstrumentFactory_AddSwaps(string baseName, string[] swapStrings)
+        {
+            ObjectMap.InstrumentFactories[baseName].AddSwaps(swapStrings);
+        }
+
+        public static double InstrumentFactory_ValueInstrument(string instrumentFactory, string model, string instrument)
+        {
+            IrSwap swap = ObjectMap.InstrumentFactories[instrumentFactory].IrSwaps[instrument];
+            return ObjectMap.LinearRateModels[model].IrParSwapRate(swap);
+        }
     }
 
     public static class LinearRateFunctions

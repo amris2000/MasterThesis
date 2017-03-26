@@ -34,6 +34,29 @@ namespace MasterThesis
             }
         }
 
+        public static CurveTenor CurveTenorFromSimpleTenor(string tenor)
+        {
+            tenor = tenor.ToUpper();
+
+            switch (tenor)
+            {
+                case "1D":
+                    return CurveTenor.Fwd1D;
+                case "1M":
+                    return CurveTenor.Fwd1M;
+                case "3M":
+                    return CurveTenor.Fwd3M;
+                case "6M":
+                    return CurveTenor.Fwd6M;
+                case "1Y":
+                    return CurveTenor.Fwd1Y;
+                case "12M":
+                    return CurveTenor.Fwd1Y;
+                default:
+                    throw new InvalidOperationException("Invalid simple curve tenor " + tenor);
+            }
+        }
+
         public static DayCount DayCountConvert(string dayCount)
         {
             dayCount = dayCount.ToUpper();
