@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace Sandbox
 {
-    public class MiscTests
+    public static class MiscTests
     {
-        private static double DelegateTest(double x, double y, double z)
+        public static double DelegateTest(double x, double y, double z)
         {
             return x + y + z;
         }
@@ -17,6 +17,19 @@ namespace Sandbox
         {
             Del MyDeletegate = (x, y) => DelegateTest(x, y, 0.2);
             Console.WriteLine(MyDeletegate(2.0, 3.0));
+        }
+
+        public static object StringIsDate(string str)
+        {
+            try
+            {
+                DateTime myDate = Convert.ToDateTime(str);
+                return myDate;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

@@ -54,22 +54,26 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AAD.cs" />
-    <Compile Include="Conventions.cs" />
-    <Compile Include="CurveConstruction.cs" />
+    <Compile Include="ExcelInterface\ObjectMap.cs" />
+    <Compile Include="Math\AAD.cs" />
+    <Compile Include="Math\AADTestFunctions.cs" />
+    <Compile Include="Models\NonLinearRate.cs" />
+    <Compile Include="Old\Conventions.cs" />
+    <Compile Include="Old\CurveConstruction.cs" />
     <Compile Include="Curves.cs" />
-    <Compile Include="ExcelInterface\Functions.cs" />
+    <Compile Include="ExcelInterface\CurveCalibrationProblem.cs" />
+    <Compile Include="ExcelInterface\InterfaceFunctions.cs" />
     <Compile Include="ExcelInterface\InstrumentFactory.cs" />
     <Compile Include="Extensions\OtherExtensions.cs" />
-    <Compile Include="Models.cs" />
+    <Compile Include="Models\LinearRate.cs" />
     <Compile Include="Extensions\DateTimeExtensions.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
-    <Compile Include="Instruments.cs" />
-    <Compile Include="MarketData.cs" />
-    <Compile Include="Maths.cs" />
+    <Compile Include="InterestRateProducts.cs" />
+    <Compile Include="Old\MarketData.cs" />
+    <Compile Include="Math\Maths.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Calender.cs" />
-    <Compile Include="Store.cs" />
+    <Compile Include="Old\Store.cs" />
     <Compile Include="Utility.cs" />
   </ItemGroup>
   <ItemGroup>

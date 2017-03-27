@@ -21,12 +21,15 @@ namespace Sandbox
             //AADTests.AADTest();
 
             //CurveCalibrationTests.SimpleBootStrap();
-            CurveCalibrationTests.CurvesFromFile();
-            CurveCalibrationTests.OisBootStrap();
+            //CurveCalibrationTests.CurvesFromFile();
+            //CurveCalibrationTests.OisBootStrap();
 
             //PricingTests.ModelTesting();
             //PricingTests.TestOisSwap();
-            PricingTests.OisSwapPricingTest();
+            //PricingTests.OisSwapPricingTest();
+
+            Console.WriteLine(MiscTests.StringIsDate("15-Sep-26"));
+
 
 
             

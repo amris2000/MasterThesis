@@ -9,7 +9,7 @@ using MasterThesis.ExcelInterface;
 
 namespace ExcelApplication
 {
-    public class LinearRateFunctions2
+    public class ExcelFunctions
     {
         // ------- CURVE FUNCTIONS
 
@@ -82,15 +82,33 @@ namespace ExcelApplication
             return LinearRateFunctions.FwdCurve_GetFromCollection(collectionName, tenorEnum);
         }
 
+        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.DiscCurve.GetValue", IsVolatile =true)]
+        public static double LinearRate_DiscCurve_GetValue(string baseName, double date, string interpolationMethod)
+        {
+            DateTime dateTime = DateTime.FromOADate(date);
+            InterpMethod interpolation = StrToEnum.InterpolationConvert(interpolationMethod);
+            return LinearRateFunctions.DiscCurve_GetValue(baseName, dateTime, interpolation);
+        }
+
+        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.FwdCurve.GetValue", IsVolatile = true)]
+        public static double LinearRate_FwdCurve_GetValue(string baseName, double date, string interpolationMethod)
+        {
+            DateTime dateTime = DateTime.FromOADate(date);
+            InterpMethod interpolation = StrToEnum.InterpolationConvert(interpolationMethod);
+            return LinearRateFunctions.FwdCurve_GetValue(baseName, dateTime, interpolation);
+        }
+
         // ------- LINEAR RATE FUNTIONS
 
         [ExcelFunction(Description = "Some description.", Name = "mt.LinearRateModel.Make", IsVolatile = true)]
-        public static string LinearRate_LinearRateModel_Make(string baseName, string fwdCurveCollectionName, string discCurveName)
+        public static string LinearRate_LinearRateModel_Make(string baseName, string fwdCurveCollectionName, string discCurveName, string interpolation)
         {
-            LinearRateFunctions.LinearRateModel_Make(baseName, fwdCurveCollectionName, discCurveName);
+            InterpMethod interpMethod = StrToEnum.InterpolationConvert(interpolation);
+            LinearRateFunctions.LinearRateModel_Make(baseName, fwdCurveCollectionName, discCurveName, interpMethod);
             return baseName;
         }
 
+        // Swap functions
         [ExcelFunction(Description = "Some description.", Name = "mt.LinearRateModel.SwapValue", IsVolatile =true)]
         public static double LinearRate_LinearRateModel_ValueSwap(string linearRateModel, string swap)
         {
@@ -103,6 +121,20 @@ namespace ExcelApplication
             return LinearRateFunctions.LinearRateModel_SwapParRate(linearRateModel, swap);
         }
 
+        // BasisSwap Valuation
+        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRateModel.BasisSwapValue", IsVolatile =true)]
+        public static double LinearRate_LinearRateModel_ValueBasisSwap(string linearRateModel, string swap)
+        {
+            return LinearRateFunctions.LinearRateModel_BasisSwapValue(linearRateModel, swap);
+        }
+
+        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRateModel.ParBasisSpread", IsVolatile = true)]
+        public static double LinearRate_LinearRateModel_ParBasisSpread(string model, string basisSwap)
+        {
+            return LinearRateFunctions.LinearRateModel_BasisParSpread(model, basisSwap);
+        }
+
+        // SwapLeg valuation
         [ExcelFunction(Description = "Some description.", Name = "mt.LinearRateModel.FloatLegValue", IsVolatile = true)]
         public static double LinearRate_LinearRateModel_FloatLegValue(string linearRateModel, string floatLeg)
         {
@@ -121,6 +153,13 @@ namespace ExcelApplication
         public static string LinearRate_PlainVanillaSwap_Make(string baseName, string fixedLegName, string floatLegName)
         {
             LinearRateFunctions.PlainVanillaSwap_Make(baseName, fixedLegName, floatLegName);
+            return baseName;
+        }
+
+        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.BasisSwap.Make", IsVolatile = true)]
+        public static string LinearRate_BasisSwap_Make(string baseName, string floatLegSpreadName, string floatLegNoSpreadName)
+        {
+            LinearRateFunctions.BasisSwap_Make(baseName, floatLegNoSpreadName, floatLegSpreadName);
             return baseName;
         }
 
@@ -148,6 +187,9 @@ namespace ExcelApplication
             return baseName;
         }
 
+
+        // ------ INSTRUMENT FACTORY RELATED
+
         [ExcelFunction(Description = "Some description.", Name = "mt.InstrumentFactory.Make", IsVolatile = true)]
         public static string Factory_InstrumentFactory_Make(string baseName, DateTime asOf)
         {
@@ -163,11 +205,77 @@ namespace ExcelApplication
             return "Added " + swapStrings.Length + " swap-instruments to " + baseName;
         }
 
-        [ExcelFunction(Description = "Some description.", Name = "mt.InstrumentFactory.ValueInstrument", IsVolatile = true)]
-        public static double Factory_InstrumentFactory_ValueInstruments(string instrumentFactory, string model, string instrument)
+        [ExcelFunction(Description = "some description.", Name = "mt.InstrumentFactory.AddBasisSwaps", IsVolatile = true)]
+        public static string Factory_InstrumentFactory_AddBasisSwaps(string baseName, object[] swapStrings)
         {
-            return InstrumentFactoryFunctions.InstrumentFactory_ValueInstrument(instrumentFactory, model, instrument);
+            var swapStringsString = swapStrings.Cast<string>().ToArray();
+            InstrumentFactoryFunctions.InstrumentFactory_AddBasisSwaps(baseName, swapStringsString);
+            return "Added " + swapStrings.Length + " MmBasisSwap-instruments to " + baseName;
         }
+
+        [ExcelFunction(Description = "some description.", Name = "mt.InstrumentFactory.AddFras", IsVolatile = true)]
+        public static string Factory_InstrumentFactory_AddFras(string baseName, object[] fraStrings)
+        {
+            var fraStringsString = fraStrings.Cast<string>().ToArray();
+            InstrumentFactoryFunctions.InstrumentFactory_AddFras(baseName, fraStringsString);
+            return "Added " + fraStrings.Length + " fra-instruments to " + baseName;
+        }
+
+        [ExcelFunction(Description = "some description.", Name = "mt.InstrumentFactory.AddFutures", IsVolatile = true)]
+        public static string Factory_InstrumentFactory_AddFutures(string baseName, object[] futureStrings)
+        {
+            var futureStringsString = futureStrings.Cast<string>().ToArray();
+            InstrumentFactoryFunctions.InstrumentFactory_AddFutures(baseName, futureStringsString);
+            return "Added " + futureStrings.Length + " futures-instruments to " + baseName;
+        }
+
+        [ExcelFunction(Description = "some description.", Name = "mt.InstrumentFactory.AddFwdStartingSwaps", IsVolatile = true)]
+        public static string Factory_InstrumentFactory_AddFwdStartingSwaps(string baseName, object[] swapStrings)
+        {
+            var swapStringsString = swapStrings.Cast<string>().ToArray();
+            InstrumentFactoryFunctions.InstrumentFactory_AddFwdStartingSwaps(baseName, swapStringsString);
+            return "Added " + swapStrings.Length + " swap-instruments to " + baseName;
+        }
+
+        [ExcelFunction(Description = "Some description.", Name = "mt.InstrumentFactory.ValueSwap", IsVolatile = true)]
+        public static double Factory_InstrumentFactory_ValueSwap(string instrumentFactory, string model, string instrument)
+        {
+            return InstrumentFactoryFunctions.InstrumentFactory_ValueSwap(instrumentFactory, model, instrument);
+        }
+
+        [ExcelFunction(Description = "Some description.", Name = "mt.InstrumentFactory.ValueBasisSwap", IsVolatile = true)]
+        public static double Factory_InstrumentFactory_ValueBasisSwap(string instrumentFactory, string model, string instrument)
+        {
+            return InstrumentFactoryFunctions.InstrumentFactory_ValueBasisSwap(instrumentFactory, model, instrument);
+        }
+
+        [ExcelFunction(Description = "Some description.", Name = "mt.InstrumentFactory.ValueOisSwap", IsVolatile = true)]
+        public static double Factory_InstrumentFactory_ValueOisSwap(string instrumentFactory, string model, string instrument)
+        {
+            return InstrumentFactoryFunctions.InstrumentFactory_ValueOisSwap(instrumentFactory, model, instrument);
+        }
+
+        [ExcelFunction(Description = "Some description.", Name = "mt.InstrumentFactory.ValueFra", IsVolatile = true)]
+        public static double Factory_InstrumentFactory_ValueFra(string instrumentFactory, string model, string instrument)
+        {
+            return InstrumentFactoryFunctions.InstrumentFactory_ParFraRate(instrumentFactory, model, instrument);
+        }
+
+        [ExcelFunction(Description = "Some description.", Name = "mt.InstrumentFactory.ValueFuture", IsVolatile = true)]
+        public static double Factory_InstrumentFactory_ValueFuture(string instrumentFactory, string model, string instrument)
+        {
+            return InstrumentFactoryFunctions.InstrumentFactory_ParFutureRate(instrumentFactory, model, instrument);
+        }
+
+        [ExcelFunction(Description = "Some description.", Name = "mt.InstrumentFactory.ValueFutureWithConvexity", IsVolatile = true)]
+        public static double Factory_InstrumentFactory_ValueFutureWithConvexity(string instrumentFactory, string model, string instrument, double convexity)
+        {
+            Fra fra = ObjectMap.InstrumentFactories[instrumentFactory].Futures[instrument].FraSameSpec;
+            LinearRateModel theModel = ObjectMap.LinearRateModels[model];
+            return theModel.ParFraRate(fra) + convexity;
+        }
+
+
 
 
     }

@@ -7,30 +7,7 @@ using MasterThesis;
 
 namespace MasterThesis.ExcelInterface
 {
-    public static class ObjectMap
-    {
-        public static IDictionary<string, Curve> DiscCurves = new Dictionary<string, Curve>();
-        public static IDictionary<string, FwdCurves> FwdCurveCollections = new Dictionary<string, FwdCurves>();
-        public static IDictionary<string, Curve> FwdCurves = new Dictionary<string, Curve>();
-        public static IDictionary<string, LinearRateModel> LinearRateModels = new Dictionary<string, LinearRateModel>();
 
-        // Swap functionality
-        public static IDictionary<string, FixedLeg> FixedLegs = new Dictionary<string, FixedLeg>();
-        public static IDictionary<string, FloatLeg> FloatLegs = new Dictionary<string, FloatLeg>();
-        public static IDictionary<string, IrSwap> Swaps = new Dictionary<string, IrSwap>();
-
-        // InstrumentFactories
-        public static IDictionary<string, InstrumentFactory> InstrumentFactories = new Dictionary<string, InstrumentFactory>();
-
-
-
-        public static void CheckExists<T>(IDictionary<string, T> dictionary, string key, string errMessage)
-        {
-            if (dictionary.ContainsKey(key) == false)
-                throw new InvalidOperationException(errMessage);
-
-        }
-    }
 
     public static class ExcelUtilities
     {
@@ -63,21 +40,82 @@ namespace MasterThesis.ExcelInterface
         {
             ObjectMap.InstrumentFactories[baseName] = new InstrumentFactory(asOf);
         }
-
+        
+        // ADD functions
         public static void InstrumentFactory_AddSwaps(string baseName, string[] swapStrings)
         {
             ObjectMap.InstrumentFactories[baseName].AddSwaps(swapStrings);
         }
 
-        public static double InstrumentFactory_ValueInstrument(string instrumentFactory, string model, string instrument)
+        public static void InstrumentFactory_AddBasisSwaps(string baseName, string[] swapStrings)
+        {
+            ObjectMap.InstrumentFactories[baseName].AddBasisSwaps(swapStrings);
+        }
+
+        public static void InstrumentFactory_AddFras(string baseName, string[] fraStrings)
+        {
+            ObjectMap.InstrumentFactories[baseName].AddFras(fraStrings);
+        }
+
+        public static void InstrumentFactory_AddFutures(string baseName, string[] futureStrings)
+        {
+            ObjectMap.InstrumentFactories[baseName].AddFutures(futureStrings);
+        }
+
+        public static void InstrumentFactory_AddFwdStartingSwaps(string baseName, string[] swapStrings)
+        {
+            ObjectMap.InstrumentFactories[baseName].AddFwdStartingSwaps(swapStrings);
+        }
+
+        // NAME SHOULD BE CHANGED: CALCULATES PAR RATE
+        public static double InstrumentFactory_ValueSwap(string instrumentFactory, string model, string instrument)
         {
             IrSwap swap = ObjectMap.InstrumentFactories[instrumentFactory].IrSwaps[instrument];
             return ObjectMap.LinearRateModels[model].IrParSwapRate(swap);
+        }
+
+        // NAME SHOULD BE CHANGED: CALCULATES PAR SPREAD
+        public static double InstrumentFactory_ValueBasisSwap(string instrumentFactory, string model, string instrument)
+        {
+            BasisSwap swap = ObjectMap.InstrumentFactories[instrumentFactory].BasisSwaps[instrument];
+            return ObjectMap.LinearRateModels[model].ParBasisSpread(swap);
+        }
+
+        // NAME SHOULD BE CHANGED: CALCULATES OIS RATE
+        public static double InstrumentFactory_ValueOisSwap(string instrumentFactory, string model, string instrument)
+        {
+            OisSwap swap = ObjectMap.InstrumentFactories[instrumentFactory].OisSwaps[instrument];
+            return ObjectMap.LinearRateModels[model].OisRate(swap);
+        }
+
+        // NAME SHOULD BE CHANGED: CALCULATES PAR FRA RATE
+        public static double InstrumentFactory_ParFraRate(string instrumentFactory, string model, string instrument)
+        {
+            Fra fra = ObjectMap.InstrumentFactories[instrumentFactory].Fras[instrument];
+            return ObjectMap.LinearRateModels[model].ParFraRate(fra);
+        }
+
+        public static double InstrumentFactory_ParFutureRate(string instrumentFactory, string model, string instrument)
+        {
+            Future future = ObjectMap.InstrumentFactories[instrumentFactory].Futures[instrument];
+            return ObjectMap.LinearRateModels[model].ParFutureRate(future);
         }
     }
 
     public static class LinearRateFunctions
     {
+        // ------- General Curve functionality
+        public static double DiscCurve_GetValue(string baseName, DateTime date, InterpMethod interpolation)
+        {
+            return ObjectMap.DiscCurves[baseName].Interp(date, interpolation);
+        }
+
+        public static double FwdCurve_GetValue(string baseName, DateTime date, InterpMethod interpolation)
+        {
+            return ObjectMap.FwdCurves[baseName].Interp(date, interpolation);
+        }
+
+
         // ------- DISC CURVE FUNCTIONS
 
         public static void DiscCurve_Make(string baseName, List<DateTime> dates, List<double> values, CurveTenor curveType)
@@ -113,7 +151,6 @@ namespace MasterThesis.ExcelInterface
             }
             catch (Exception e)
             {
-                throw;
                 return e.ToString();
             }
 
@@ -133,18 +170,18 @@ namespace MasterThesis.ExcelInterface
         }
 
         // ------- LINEAR RATE MODEL FUNTIONS
-        public static void LinearRateModel_Make(string baseName, string fwdCurveCollectionName, string discCurveName)
+        public static void LinearRateModel_Make(string baseName, string fwdCurveCollectionName, string discCurveName, InterpMethod interpolation)
         {
             FwdCurves fwdCurves = ObjectMap.FwdCurveCollections[fwdCurveCollectionName];
             Curve discCurve = ObjectMap.DiscCurves[discCurveName];
-            LinearRateModel model = new LinearRateModel(discCurve, fwdCurves);
+            LinearRateModel model = new LinearRateModel(discCurve, fwdCurves, interpolation);
             ObjectMap.LinearRateModels[baseName] = model;
         }
 
         public static double LinearRateModel_SwapValue(string baseName, string swapName)
         {
             LinearRateModel model = ObjectMap.LinearRateModels[baseName];
-            IrSwap swap = ObjectMap.Swaps[swapName];
+            IrSwap swap = ObjectMap.IrSwaps[swapName];
             return model.IrSwapPv(swap);
         }
 
@@ -165,8 +202,22 @@ namespace MasterThesis.ExcelInterface
         public static double LinearRateModel_SwapParRate(string baseName, string swapName)
         {
             LinearRateModel model = ObjectMap.LinearRateModels[baseName];
-            IrSwap swap = ObjectMap.Swaps[swapName];
+            IrSwap swap = ObjectMap.IrSwaps[swapName];
             return model.IrParSwapRate(swap);
+        }
+
+        public static double LinearRateModel_BasisSwapValue(string baseName, string swapName)
+        {
+            LinearRateModel model = ObjectMap.LinearRateModels[baseName];
+            BasisSwap swap = ObjectMap.BasisSwaps[swapName];
+            return model.BasisSwapPv(swap);
+        }
+
+        public static double LinearRateModel_BasisParSpread(string modelName, string basisSwapName)
+        {
+            LinearRateModel model = ObjectMap.LinearRateModels[modelName];
+            BasisSwap swap = ObjectMap.BasisSwaps[basisSwapName];
+            return model.ParBasisSpread(swap);
         }
 
 
@@ -191,7 +242,17 @@ namespace MasterThesis.ExcelInterface
             FloatLeg floatLeg = ObjectMap.FloatLegs[floatLegName];
             IrSwap swap = new MasterThesis.IrSwap(floatLeg, fixedLeg);
 
-            ObjectMap.Swaps[baseName] = swap;
+            ObjectMap.IrSwaps[baseName] = swap;
+        }
+
+        // -------- BASIS SWAP FUNTIONS
+        public static void BasisSwap_Make(string baseName, string floatLegNoSpreadName, string floatLegSpreadName)
+        {
+            FloatLeg floatLegNoSpread = ObjectMap.FloatLegs[floatLegNoSpreadName];
+            FloatLeg floatLegSpread = ObjectMap.FloatLegs[floatLegSpreadName];
+            BasisSwap swap = new MasterThesis.BasisSwap(floatLegNoSpread, floatLegSpread);
+
+            ObjectMap.BasisSwaps[baseName] = swap;
         }
 
 

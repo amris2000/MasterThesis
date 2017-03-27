@@ -11,12 +11,14 @@ namespace MasterThesis.ExcelInterface
         public string Identifier;
         public QuoteType Type;
         public double QuoteValue;
+        public DateTime CurvePoint;
 
-        public InstrumentQuote(string identifier, QuoteType type, double quoteValue)
+        public InstrumentQuote(string identifier, QuoteType type, DateTime curvePoint, double quoteValue)
         {
             this.Identifier = identifier;
             this.Type = type;
             this.QuoteValue = quoteValue;
+            this.CurvePoint = curvePoint;
         }
     }
 
@@ -55,16 +57,99 @@ namespace MasterThesis.ExcelInterface
 
         }
 
+        public void AddFwdStartingSwaps(string[] swapString)
+        {
+            for (int i = 0; i < swapString.Length; i++)
+                InterpretSwapString(swapString[i]);
+        }
+
+        public void AddFutures(string[] futuresString)
+        {
+            for (int i = 0; i < futuresString.Length; i++)
+                InterpretFuturesString(futuresString[i]);
+        }
+
         public void AddSwaps(string[] swapString)
         {
             for (int i = 0; i < swapString.Length; i++)
                 InterpretSwapString(swapString[i]);
         }
 
+        public void AddBasisSwaps(string[] swapString)
+        {
+            for (int i = 0; i < swapString.Length; i++)
+                InterpretSpreadString(swapString[i]);
+        }
+
         public void AddFras(string[] fraString)
         {
             for (int i = 0; i < fraString.Length; i++)
                 InterpretFraString(fraString[i]);
+        }
+
+        private void InterpretSpreadString(string spreadString)
+        {
+            string identifier, type, currency, swapNoSpreadIdent, swapSpreadIdent;
+
+            string[] infoArray = spreadString.Split(',').ToArray();
+
+            identifier = infoArray[0];
+            type = infoArray[1];
+            currency = infoArray[2];
+            swapNoSpreadIdent = infoArray[3];
+            swapSpreadIdent = infoArray[4];
+
+            try
+            {
+                IrSwap swapNoSpread = IrSwaps[swapNoSpreadIdent];
+                IrSwap swapSpread = IrSwaps[swapSpreadIdent];
+                BasisSwap swap = new BasisSwap(swapNoSpread, swapSpread);
+                BasisSwaps[identifier] = swap;
+            }
+            catch
+            {
+                // Ignore instrument
+            }
+
+        }
+
+        private void InterpretFuturesString(string futureString)
+        {
+            string identifier, type, currency, endTenor, settlementLag, floatPayFreq, floatFixingTenor, fwdTenor;
+            DayRule dayRule;
+            DayCount dayCount;
+            CurveTenor curveTenor;
+
+            string[] infoArray = futureString.Split(',').ToArray();
+
+            identifier = infoArray[0];
+            type = infoArray[1];
+            currency = infoArray[2];
+            endTenor = infoArray[3];
+            settlementLag = infoArray[4];
+            dayRule = StrToEnum.DayRuleConvert(infoArray[5]);
+            floatPayFreq = infoArray[8];
+            floatFixingTenor = infoArray[9];
+            fwdTenor = infoArray[15];
+            dayCount = StrToEnum.DayCountConvert(infoArray[11]);
+            double fixedRate = 0.01;
+
+            DateTime startDate, endDate;
+
+            try
+            {
+                startDate = Convert.ToDateTime(fwdTenor);
+                endDate = Calender.AddTenor(startDate, floatPayFreq, dayRule);
+
+                curveTenor = StrToEnum.CurveTenorFromSimpleTenor(floatPayFreq);
+                Fra fra = new MasterThesis.Fra(AsOf, startDate, endDate, curveTenor, dayCount, dayRule, fixedRate);
+                Futures[identifier] = new MasterThesis.Future(fra, null);
+            }
+            catch
+            {
+                // Ignore instrument
+            }
+
         }
 
         private void InterpretFraString(string fraString)
@@ -84,9 +169,9 @@ namespace MasterThesis.ExcelInterface
             dayRule = StrToEnum.DayRuleConvert(infoArray[5]);
             floatPayFreq = infoArray[8];
             floatFixingTenor = infoArray[9];
-            curveTenor = StrToEnum.CurveTenorFromSimpleTenor(floatPayFreq);
             fwdTenor = infoArray[15];
             dayCount = StrToEnum.DayCountConvert(infoArray[11]);
+            double fixedRate = 0.01;
 
             if (type == "DEPOSIT")
             {
@@ -95,6 +180,23 @@ namespace MasterThesis.ExcelInterface
             else
             {
                 // handle FRA
+                // Has to consider both FwdTenor and SettlementLag here..
+                curveTenor = StrToEnum.CurveTenorFromSimpleTenor(floatPayFreq);
+                Fra fra = new MasterThesis.Fra(AsOf, fwdTenor, endTenor, curveTenor, dayCount, dayRule, fixedRate);
+                Fras[identifier] = fra;
+            }
+        }
+
+        private bool StrIsConvertableToDate(string str)
+        {
+            try
+            {
+                DateTime myDate = Convert.ToDateTime(str);
+                return true;
+            }
+            catch
+            {
+                return false;
             }
         }
 
@@ -123,23 +225,40 @@ namespace MasterThesis.ExcelInterface
             fixedTenor = StrToEnum.CurveTenorFromSimpleTenor(fixedFreq);
 
             DateTime startDate, endDate;
-            startDate = Calender.AddTenor(AsOf, settlementLag, dayRule);
-            endDate = Calender.AddTenor(AsOf, endTenor, dayRule);
+
+            // Make sure to get fwd starting stuff right here...
+            if (StrIsConvertableToDate(startTenor))
+                startDate = Convert.ToDateTime(startTenor);
+            else
+                startDate = Calender.AddTenor(AsOf, settlementLag, dayRule);
+
+            if (StrIsConvertableToDate(endTenor))
+                endDate = Convert.ToDateTime(endTenor);
+            else
+                endDate = Calender.AddTenor(AsOf, endTenor, dayRule);
+
             double fixedRate = 0.01;
 
-            if (referenceIndex == "EONIA")
+            try
             {
-                // Handle OIS case
-                OisSwap oisSwap = new OisSwap(AsOf, startDate, endTenor, fixedRate, fixedDayCount, floatDayCount, dayRule, dayRule, 1);
-                OisSwaps[identifier] = oisSwap;
-            }
-            else
+                if (referenceIndex == "EONIA")
+                {
+                    // Handle OIS case
+                    // Error with endTenor here and string parsing 
+                    OisSwap oisSwap = new OisSwap(AsOf, startDate, endTenor, fixedRate, fixedDayCount, floatDayCount, dayRule, dayRule, 1);
+                    OisSwaps[identifier] = oisSwap;
+                }
+                else
+                {
+                    // Handle non-OIS case
+                    IrSwap swap = new IrSwap(AsOf, startDate, endDate, fixedRate, fixedTenor, floatTenor, fixedDayCount, floatDayCount, dayRule, dayRule, 1.0, 0.0);
+                    IrSwaps[identifier] = swap;
+                }
+            } 
+            catch
             {
-                // Handle non-OIS case
-                IrSwap swap = new IrSwap(AsOf, startDate, endDate, fixedRate, fixedTenor, floatTenor, fixedDayCount, floatDayCount, dayRule, dayRule, 1.0, 0.0);
-                IrSwaps[identifier] = swap;
+                // Ignore instrument.
             }
-
         }
 
     }

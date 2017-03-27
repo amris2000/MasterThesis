@@ -19,11 +19,6 @@ namespace Sandbox
                                                     new DateTime(2017, 4, 10),
                                                     new DateTime(2017, 5, 10)};
             DateTime MyDate = new DateTime(2017, 1, 15);
-
-            Console.WriteLine("Interpolation Test " + MyDate.ToString("dd/MM/yyyy") + ". Value: " + Maths.InterpolateCurve(MyDates, MyDate, MyValues, InterpMethod.Constant));
-            Console.WriteLine("Interpolation Test " + MyDate.ToString("dd/MM/yyyy") + ". Value: " + Maths.InterpolateCurve(MyDates, MyDate, MyValues, InterpMethod.Linear));
-            Console.WriteLine("Interpolation Test " + MyDate.ToString("dd/MM/yyyy") + ". Value: " + Maths.InterpolateCurve(MyDates, MyDate, MyValues, InterpMethod.Hermite));
-            Console.WriteLine("Interpolation Test " + MyDate.ToString("dd/MM/yyyy") + ". Value: " + Maths.InterpolateCurve(MyDates, MyDate, MyValues, InterpMethod.LogLinear));
         }
     }
 }

@@ -48,7 +48,7 @@
   <ItemGroup>
     <Compile Include="ExcelAddin.cs" />
     <Compile Include="FreeFunctions.cs" />
-    <Compile Include="LinearRateFunctions.cs" />
+    <Compile Include="ExcelFunctions.cs" />
     <Compile Include="TestFunctions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

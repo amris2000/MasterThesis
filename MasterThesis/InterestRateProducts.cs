@@ -134,7 +134,8 @@ namespace MasterThesis
 
     public class IrSwap : Swap
     {
-        public IrSwap(FloatLeg FloatLeg, FixedLeg FixedLeg) : base(FloatLeg, FixedLeg)
+        public IrSwap(FloatLeg FloatLeg, FixedLeg FixedLeg) 
+            : base(FloatLeg, FixedLeg)
         {
         }
 
@@ -147,11 +148,22 @@ namespace MasterThesis
         }
     }
 
-    public class MmBasisSwap : Swap
+    public class BasisSwap : Swap
     {
-        public MmBasisSwap(FloatLeg FloatLeg1, FloatLeg FloatLeg2) : base(FloatLeg1, FloatLeg2)
-        {
+        public FloatLeg FloatLegNoSpread;
+        public FloatLeg FloatLegSpread;
 
+        public BasisSwap(FloatLeg floatLegSpread, FloatLeg floatLegNoSpread) 
+            : base (floatLegNoSpread, floatLegSpread)
+        {
+            this.FloatLegNoSpread = floatLegNoSpread;
+            this.FloatLegSpread = floatLegSpread;
+        }
+
+        public BasisSwap(IrSwap swapSpread, IrSwap swapNoSpread)
+        {
+            this.FloatLegNoSpread = (FloatLeg) swapNoSpread.Leg1;
+            this.FloatLegSpread = (FloatLeg) swapSpread.Leg1;
         }
     }
 
@@ -181,18 +193,81 @@ namespace MasterThesis
     }
     public class Fra : Asset
     {
+        public DateTime StartDate, EndDate, AsOf;
+        public DayCount FloatDayCount;
+        public DayRule FloatDayRule;
+        public CurveTenor ReferenceIndex;
+        public double FixedRate;
+        
+        public Fra(DateTime asOf, DateTime startDate, DateTime endDate, CurveTenor referenceIndex, DayCount dayCount, DayRule dayRule, double fixedRate)
+        {
+            Initialize(asOf, startDate, endDate, referenceIndex, dayCount, dayRule, fixedRate);
+        }
+
+        private void Initialize(DateTime asOf, DateTime startDate, DateTime endDate, CurveTenor referenceIndex, DayCount dayCount, DayRule dayRule, double fixedRate)
+        {
+            this.StartDate = startDate;
+            this.EndDate = endDate;
+            this.FloatDayCount = dayCount;
+            this.FloatDayRule = dayRule;
+            this.FixedRate = fixedRate;
+            this.ReferenceIndex = referenceIndex;
+            this.AsOf = asOf;
+        }
+
+        public Fra(DateTime asOf, string startTenor, string endTenor, CurveTenor referenceIndex, DayCount dayCount, DayRule dayRule, double fixedRate)
+        {
+            DateTime startDate = Calender.AddTenor(asOf, startTenor, dayRule);
+            DateTime endDate = Calender.AddTenor(startDate, endTenor, dayRule);
+            Initialize(asOf, startDate, endDate, referenceIndex, dayCount, dayRule, fixedRate);
+        }
 
     }
     public class Future : Asset
     {
+        public double Convexity;
+        public Fra FraSameSpec;
 
-    }
-    public class BasisSwap : Asset
-    {
-        public IrSwap ModSide;
-        public IrSwap BaseSide;
+        public Future(DateTime asOf, DateTime startDate, DateTime endDate, CurveTenor referenceIndex, DayCount dayCount, DayRule dayRule, double fixedRate, double? convexity = null)
+        {
+            FraSameSpec = new Fra(asOf, startDate, endDate, referenceIndex, dayCount, dayRule, fixedRate);
+            if (convexity == null)
+                Convexity = CalcSimpleConvexity(asOf, startDate, endDate, dayCount);
+            else
+                Convexity = (double) convexity;
+        }
 
+        public Future(DateTime asOf, string startTenor, string endTenor, CurveTenor referenceIndex, DayCount dayCount, DayRule dayRule, double fixedRate, double? convexity = null)
+        {
+            DateTime startDate = Calender.AddTenor(asOf, startTenor, dayRule);
+            DateTime endDate = Calender.AddTenor(startDate, endTenor, dayRule);
+            FraSameSpec = new Fra(asOf, startDate, endDate, referenceIndex, dayCount, dayRule, fixedRate);
+            if (convexity == null)
+                Convexity = CalcSimpleConvexity(asOf, startDate, endDate, dayCount);
+            else
+                Convexity = (double)convexity;
+        }
+
+        public Future(Fra fra, double? convexity)
+        {
+            FraSameSpec = fra;
+            if (convexity == null)
+                Convexity = CalcSimpleConvexity(fra.AsOf, fra.StartDate, fra.EndDate, fra.FloatDayCount);
+            else
+                Convexity = (double)convexity;
+        }
+
+        private double CalcSimpleConvexity(DateTime asOf, DateTime startDate, DateTime endDate, DayCount dayCount)
+        {
+
+            // i.e. Convexity Adjustment = 0.5*vol^2*T*(T+delta), T's measured in year fractions.
+            // Source: Linderstrøm
+            double cvgAsOfToStart = Calender.Cvg(asOf, startDate, dayCount);
+            double cvgAsOfToEnd = Calender.Cvg(asOf, endDate, dayCount);
+            return 0.5 * 0.0012 * 0.0012 * cvgAsOfToEnd * cvgAsOfToEnd;
+        }
     }
+
     //public class FxFwd : Instrument
     //{
 
