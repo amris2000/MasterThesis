@@ -17,13 +17,14 @@ namespace MasterThesis
     public enum StubPlacement { Beginning, End, NullStub };
     public enum DayCount { ACT360, ACT365, ACT36525, THIRTY360 }
     public enum InterpMethod { Constant, Linear, LogLinear, Hermite, Catrom }
+    public enum QuoteType { ParSwapRate, ParBasisSpread, OisRate, FraRate, FuturesRate, Deposit };
 
     // OLD / UNUSED
     public enum MarketDataInstrument { IrSwapRate, OisRate, BaseSpread, Fra, Future, BasisSwap, Cash, Fixing }
     public enum SwapQuoteType { Vanilla, ShortSwap }
     public enum InstrumentComplexity { Linear, NonLinear }
     public enum Tenor { T1D, T1M, T3M, T6M, T1Y }
-    public enum QuoteType { SwapRate, BasisSpread, Fixing, FraRate, FutureRate, BaseSpread }
+    public enum QuoteTypeOld { SwapRate, BasisSpread, Fixing, FraRate, FutureRate, BaseSpread }
 
     public static class StrToEnum
     {

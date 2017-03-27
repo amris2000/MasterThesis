@@ -9,11 +9,11 @@ namespace MasterThesis.ExcelInterface
     public class InstrumentQuote
     {
         public string Identifier;
-        public QuoteType Type;
+        public QuoteTypeOld Type;
         public double QuoteValue;
         public DateTime CurvePoint;
 
-        public InstrumentQuote(string identifier, QuoteType type, DateTime curvePoint, double quoteValue)
+        public InstrumentQuote(string identifier, QuoteTypeOld type, DateTime curvePoint, double quoteValue)
         {
             this.Identifier = identifier;
             this.Type = type;
@@ -33,7 +33,10 @@ namespace MasterThesis.ExcelInterface
         public IDictionary<string, OisSwap> OisSwaps;
         public DateTime AsOf;
 
+        // Probably remove this: should not know anything about quotes
         public IDictionary<string, InstrumentQuote> Quotes;
+
+        public IDictionary<string, QuoteType> InstrumentTypeMap;
 
         public InstrumentFactory(DateTime asOf)
         {
@@ -43,6 +46,7 @@ namespace MasterThesis.ExcelInterface
             OisSwaps = new Dictionary<string, OisSwap>();
             BasisSwaps = new Dictionary<string, BasisSwap>();
             Quotes = new Dictionary<string, InstrumentQuote>();
+            InstrumentTypeMap = new Dictionary<string, QuoteType>();
             AsOf = asOf;
 
         }
@@ -105,6 +109,7 @@ namespace MasterThesis.ExcelInterface
                 IrSwap swapSpread = IrSwaps[swapSpreadIdent];
                 BasisSwap swap = new BasisSwap(swapNoSpread, swapSpread);
                 BasisSwaps[identifier] = swap;
+                InstrumentTypeMap[identifier] = QuoteType.ParBasisSpread;
             }
             catch
             {
@@ -144,6 +149,7 @@ namespace MasterThesis.ExcelInterface
                 curveTenor = StrToEnum.CurveTenorFromSimpleTenor(floatPayFreq);
                 Fra fra = new MasterThesis.Fra(AsOf, startDate, endDate, curveTenor, dayCount, dayRule, fixedRate);
                 Futures[identifier] = new MasterThesis.Future(fra, null);
+                InstrumentTypeMap[identifier] = QuoteType.FuturesRate;
             }
             catch
             {
@@ -176,6 +182,7 @@ namespace MasterThesis.ExcelInterface
             if (type == "DEPOSIT")
             {
                 // handle deposits
+                InstrumentTypeMap[identifier] = QuoteType.Deposit;
             }
             else
             {
@@ -184,6 +191,7 @@ namespace MasterThesis.ExcelInterface
                 curveTenor = StrToEnum.CurveTenorFromSimpleTenor(floatPayFreq);
                 Fra fra = new MasterThesis.Fra(AsOf, fwdTenor, endTenor, curveTenor, dayCount, dayRule, fixedRate);
                 Fras[identifier] = fra;
+                InstrumentTypeMap[identifier] = QuoteType.FraRate;
             }
         }
 
@@ -247,12 +255,14 @@ namespace MasterThesis.ExcelInterface
                     // Error with endTenor here and string parsing 
                     OisSwap oisSwap = new OisSwap(AsOf, startDate, endTenor, fixedRate, fixedDayCount, floatDayCount, dayRule, dayRule, 1);
                     OisSwaps[identifier] = oisSwap;
+                    InstrumentTypeMap[identifier] = QuoteType.OisRate;
                 }
                 else
                 {
                     // Handle non-OIS case
                     IrSwap swap = new IrSwap(AsOf, startDate, endDate, fixedRate, fixedTenor, floatTenor, fixedDayCount, floatDayCount, dayRule, dayRule, 1.0, 0.0);
                     IrSwaps[identifier] = swap;
+                    InstrumentTypeMap[identifier] = QuoteType.ParSwapRate;
                 }
             } 
             catch
