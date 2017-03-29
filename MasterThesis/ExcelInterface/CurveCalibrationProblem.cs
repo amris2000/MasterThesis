@@ -7,19 +7,39 @@ using System.Threading.Tasks;
 namespace MasterThesis.ExcelInterface
 {
 
-    public class CurveCalibration
+    public class InstrumentQuote
     {
-        private CurveCalibrationProblem _problem;
+        private string _identifier;
+        private QuoteType _type;
+        public double QuoteValue { get; }
+        public DateTime CurvePoint { get; }
 
-        public CurveCalibration(CurveCalibrationProblem problem)
+        public InstrumentQuote(string identifier, QuoteType type , DateTime curvePoint, double quoteValue)
         {
-            _problem = problem;
+            this._identifier = identifier;
+            this._type = type;
+            this.QuoteValue = quoteValue;
+            this.CurvePoint = curvePoint;
         }
 
-        public void ConstructOisDiscCurve() { }
-        public void ConstructLiborDiscCurve() { }
-        public void ConstructFwdCurves() { }
-
+        public double ValueInstrument(LinearRateModel model, InstrumentFactory factory)
+        {
+            switch(_type)
+            {
+                case QuoteType.ParSwapRate:
+                    return model.IrParSwapRate(factory.IrSwaps[_identifier]);
+                case QuoteType.ParBasisSpread:
+                    return model.ParBasisSpread(factory.BasisSwaps[_identifier]);
+                case QuoteType.OisRate:
+                    return model.OisRate(factory.OisSwaps[_identifier]);
+                case QuoteType.FraRate:
+                    return model.ParFraRate(factory.Fras[_identifier]);
+                case QuoteType.FuturesRate:
+                    return model.ParFutureRate(factory.Futures[_identifier]);
+                default:
+                    throw new InvalidOperationException("Instrument QuoteType not supported...");
+            }
+        }
     }
 
     // Class should hold the instruments, their quotes and preferably set
@@ -27,26 +47,142 @@ namespace MasterThesis.ExcelInterface
     // Could create list based on InstrumentQuotes curvePoint (as in old method)
     public class CurveCalibrationProblem
     {
-        private IDictionary<string, InstrumentQuote> _oisDiscInstruments;
-        private IDictionary<string, InstrumentQuote> _liborDiscInstruments;
-        private IDictionary<string, InstrumentQuote> _fwd1MInstruments;
-        private IDictionary<string, InstrumentQuote> _fwd3MInstruments;
-        private IDictionary<string, InstrumentQuote> _fwd6MInstruments;
-        private IDictionary<string, InstrumentQuote> _fwd1YInstruments;
+        public List<InstrumentQuote> InputInstruments { get; private set; }
+        public InstrumentFactory Factory { get; set; }
+        public List<DateTime> CurvePoints = new List<DateTime>();
 
-        private InstrumentFactory Factory;
-
-        public CurveCalibrationProblem(InstrumentFactory instrumentFactory)
+        public CurveCalibrationProblem(InstrumentFactory instrumentFactory, List<InstrumentQuote> instruments)
         {
             this.Factory = instrumentFactory;
+            instruments.Sort(new Comparison<InstrumentQuote>((x, y) => DateTime.Compare(x.CurvePoint, y.CurvePoint)));
+            InputInstruments = instruments;
+
+            for (int i = 0; i < InputInstruments.Count; i++)
+                CurvePoints.Add(InputInstruments[i].CurvePoint);
         }
 
-        public void SetOisDiscCurveInstruments() { }
-        public void SetLiborDiscInstruments() { }
-        public void SetFwd1MInstruments() { }
-        public void SetFwd3MInstruments() { }
-        public void SetFwd6MInstruments() { }
-        public void SetFwd1YInstruments() { }
+        public double GoalFunction(LinearRateModel model)
+        {
+            double quadraticSum = 0.0;
+
+            for (int i = 0; i < InputInstruments.Count; i++)
+                quadraticSum += Math.Pow(InputInstruments[i].ValueInstrument(model, Factory) - InputInstruments[i].QuoteValue, 2.0);
+
+            return quadraticSum;
+        }
+
+    }
+
+    public class FwdCurveConstructor
+    {
+        private CurveTenor[] _tenors;
+        private FwdCurves _fwdCurveCollection;
+        private Curve _discCurve;
+        IDictionary<CurveTenor, CurveCalibrationProblem> _problemMap;
+        private int[] CurvePoints;
+
+        public FwdCurveConstructor(Curve discCurve, CurveCalibrationProblem[] problems, CurveTenor[] tenors, int[] OrderOfCalibration)
+        {
+            SetEverything(discCurve, problems, tenors, OrderOfCalibration);
+
+        }
+
+        public FwdCurveConstructor(Curve discCurve, CurveCalibrationProblem problem, CurveTenor tenor)
+        {
+            _problemMap = new Dictionary<CurveTenor, CurveCalibrationProblem>();
+            SetEverything(discCurve, new CurveCalibrationProblem[] { problem }, new CurveTenor[] { tenor }, new int[] { 0 });
+        }
+
+        public void SetEverything(Curve discCurve, CurveCalibrationProblem[] problems, CurveTenor[] tenors, int[] OrderOfCalibration)
+        {
+            if (problems.Length != tenors.Length)
+                throw new InvalidOperationException("Number of problems and number of tenors have to match. ");
+
+            _discCurve = discCurve;
+            _tenors = tenors;
+
+            for (int i = 0; i < problems.Length; i++)
+                _problemMap[tenors[i]] = problems[i];
+        }
+
+        public bool InstrumentTenorCombinationsIsValid() { return true; }
+
+        public FwdCurves GetFwdCurves()
+        {
+            if (_fwdCurveCollection == null)
+                throw new NullReferenceException("FwdCurves has not been calibrated...");
+            else
+                return _fwdCurveCollection;
+        }
+
+        // Construct array that holds the number of points on each of the FwdCurves (based on number of instruments)
+        private void ConstructCurvePointsArray()
+        {
+            int[] output = new int[_problemMap.Count];
+            for (int i = 0; i < output.Length; i++)
+                output[i] = _problemMap[_tenors[i]].CurvePoints.Count;
+
+            CurvePoints = output;
+        }
+
+        // For solving curves simultanously
+        private void OptimizationFunction(double[] x, ref double func, object obj, int[] CurvePoints, CurveTenor[] tenors)
+        {
+            List<List<double>> doubles = new List<List<double>>();
+
+            int n = 0;
+            for (int i = 0; i < CurvePoints.Length; i++)
+            {
+                List<double> temp = new List<double>();
+                for (int j = 0; j < CurvePoints[i]; j++)
+                {
+                    temp.Add(x[n]);
+                    n++;
+                }
+                doubles.Add(temp);
+            }
+
+            FwdCurves tempFwdCurves = new FwdCurves();
+
+            for (int i = 0; i<CurvePoints.Length; i++)
+            {
+                Curve tempFwdCurve = new Curve(_problemMap[tenors[i]].CurvePoints, doubles[i]);
+                tempFwdCurves.AddCurve(tempFwdCurve, tenors[i]);
+            }
+
+            LinearRateModel tempModel = new LinearRateModel(_discCurve, tempFwdCurves);
+            func = GoalFunction(tenors, tempModel);
+        }
+
+        // This is used to solve for multiple curves simultanously
+        private double GoalFunction(CurveTenor[] tenors, LinearRateModel model)
+        {
+            double goalSum = 0.0;
+
+            for (int i = 0; i < tenors.Length; i++)
+                goalSum += _problemMap[tenors[i]].GoalFunction(model);
+
+            return goalSum;
+        }
+    }
+
+    public class DiscCurveConstructor
+    {
+        private Curve _discCurve;
+        private CurveCalibrationProblem _problem;
+
+        public DiscCurveConstructor(CurveCalibrationProblem discProblem)
+        {
+            _problem = discProblem;
+        }
+
+        public Curve GetCurve()
+        {
+            if (_discCurve == null)
+                throw new NullReferenceException("DiscCurve has not been calibrated...");
+            else
+                return _discCurve;
+        }
 
     }
 }

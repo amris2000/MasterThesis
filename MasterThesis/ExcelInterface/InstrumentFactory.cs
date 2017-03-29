@@ -6,21 +6,7 @@ using System.Threading.Tasks;
 
 namespace MasterThesis.ExcelInterface
 {
-    public class InstrumentQuote
-    {
-        public string Identifier;
-        public QuoteTypeOld Type;
-        public double QuoteValue;
-        public DateTime CurvePoint;
 
-        public InstrumentQuote(string identifier, QuoteTypeOld type, DateTime curvePoint, double quoteValue)
-        {
-            this.Identifier = identifier;
-            this.Type = type;
-            this.QuoteValue = quoteValue;
-            this.CurvePoint = curvePoint;
-        }
-    }
 
     // TO DO: ADD AUTOMATIC FETCHING OF QUOTE TYPE BASED ON SOMETHING
     // Not really sure InstrumentFactory should know anything about quotes. Think abut it.
