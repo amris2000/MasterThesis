@@ -187,6 +187,26 @@ namespace ExcelApplication
             return baseName;
         }
 
+        // ------ CALIBRATION RELATED
+
+        [ExcelFunction(Description = "Some description.", Name = "mt.CurveCalibrationProblem.Make")]
+        public static string Calibration_CurveCalibrationProblem_Make(string baseName, string instrumentFactoryName, object[] identifiers, object[] quotes)
+        {
+            CalibrationFunctions.CurveCalibrationProblem_Make(baseName, instrumentFactoryName, identifiers.Cast<string>().ToArray(), quotes.Cast<double>().ToArray());
+            return baseName;
+        }
+
+        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.DiscCurve.MakeFromCalibrationProblem")]
+        public static string Calibration_DiscCurve_MakeFromCalibrationProblem(string baseName, string problem, double precision, double startingValue, int maxIterations, double diffStep, string interpolation)
+        {
+            if (ExcelDnaUtil.IsInFunctionWizard())
+                return "No calulation in wizard.";
+
+            InterpMethod interpMethod = StrToEnum.InterpolationConvert(interpolation);
+
+            CalibrationFunctions.DiscCurve_MakeFromCalibrationProblem(baseName, problem, precision, startingValue, maxIterations, diffStep, interpMethod);
+            return baseName;
+        }
 
         // ------ INSTRUMENT FACTORY RELATED
 
@@ -237,42 +257,48 @@ namespace ExcelApplication
             return "Added " + swapStrings.Length + " swap-instruments to " + baseName;
         }
 
-        [ExcelFunction(Description = "Some description.", Name = "mt.InstrumentFactory.ValueSwap", IsVolatile = true)]
-        public static double Factory_InstrumentFactory_ValueSwap(string instrumentFactory, string model, string instrument)
-        {
-            return InstrumentFactoryFunctions.InstrumentFactory_ValueSwap(instrumentFactory, model, instrument);
-        }
+        //[ExcelFunction(Description = "Some description.", Name = "mt.InstrumentFactory.ValueSwap", IsVolatile = true)]
+        //public static double Factory_InstrumentFactory_ValueSwap(string instrumentFactory, string model, string instrument)
+        //{
+        //    return InstrumentFactoryFunctions.InstrumentFactory_ValueSwap(instrumentFactory, model, instrument);
+        //}
 
-        [ExcelFunction(Description = "Some description.", Name = "mt.InstrumentFactory.ValueBasisSwap", IsVolatile = true)]
-        public static double Factory_InstrumentFactory_ValueBasisSwap(string instrumentFactory, string model, string instrument)
-        {
-            return InstrumentFactoryFunctions.InstrumentFactory_ValueBasisSwap(instrumentFactory, model, instrument);
-        }
+        //[ExcelFunction(Description = "Some description.", Name = "mt.InstrumentFactory.ValueBasisSwap", IsVolatile = true)]
+        //public static double Factory_InstrumentFactory_ValueBasisSwap(string instrumentFactory, string model, string instrument)
+        //{
+        //    return InstrumentFactoryFunctions.InstrumentFactory_ValueBasisSwap(instrumentFactory, model, instrument);
+        //}
 
-        [ExcelFunction(Description = "Some description.", Name = "mt.InstrumentFactory.ValueOisSwap", IsVolatile = true)]
-        public static double Factory_InstrumentFactory_ValueOisSwap(string instrumentFactory, string model, string instrument)
-        {
-            return InstrumentFactoryFunctions.InstrumentFactory_ValueOisSwap(instrumentFactory, model, instrument);
-        }
+        //[ExcelFunction(Description = "Some description.", Name = "mt.InstrumentFactory.ValueOisSwap", IsVolatile = true)]
+        //public static double Factory_InstrumentFactory_ValueOisSwap(string instrumentFactory, string model, string instrument)
+        //{
+        //    return InstrumentFactoryFunctions.InstrumentFactory_ValueOisSwap(instrumentFactory, model, instrument);
+        //}
 
-        [ExcelFunction(Description = "Some description.", Name = "mt.InstrumentFactory.ValueFra", IsVolatile = true)]
-        public static double Factory_InstrumentFactory_ValueFra(string instrumentFactory, string model, string instrument)
-        {
-            return InstrumentFactoryFunctions.InstrumentFactory_ParFraRate(instrumentFactory, model, instrument);
-        }
+        //[ExcelFunction(Description = "Some description.", Name = "mt.InstrumentFactory.ValueFra", IsVolatile = true)]
+        //public static double Factory_InstrumentFactory_ValueFra(string instrumentFactory, string model, string instrument)
+        //{
+        //    return InstrumentFactoryFunctions.InstrumentFactory_ParFraRate(instrumentFactory, model, instrument);
+        //}
 
-        [ExcelFunction(Description = "Some description.", Name = "mt.InstrumentFactory.ValueFuture", IsVolatile = true)]
-        public static double Factory_InstrumentFactory_ValueFuture(string instrumentFactory, string model, string instrument)
-        {
-            return InstrumentFactoryFunctions.InstrumentFactory_ParFutureRate(instrumentFactory, model, instrument);
-        }
+        //[ExcelFunction(Description = "Some description.", Name = "mt.InstrumentFactory.ValueFuture", IsVolatile = true)]
+        //public static double Factory_InstrumentFactory_ValueFuture(string instrumentFactory, string model, string instrument)
+        //{
+        //    return InstrumentFactoryFunctions.InstrumentFactory_ParFutureRate(instrumentFactory, model, instrument);
+        //}
 
-        [ExcelFunction(Description = "Some description.", Name = "mt.InstrumentFactory.ValueFutureWithConvexity", IsVolatile = true)]
-        public static double Factory_InstrumentFactory_ValueFutureWithConvexity(string instrumentFactory, string model, string instrument, double convexity)
+        //[ExcelFunction(Description = "Some description.", Name = "mt.InstrumentFactory.ValueFutureWithConvexity", IsVolatile = true)]
+        //public static double Factory_InstrumentFactory_ValueFutureWithConvexity(string instrumentFactory, string model, string instrument, double convexity)
+        //{
+        //    Fra fra = ObjectMap.InstrumentFactories[instrumentFactory].Futures[instrument].FraSameSpec;
+        //    LinearRateModel theModel = ObjectMap.LinearRateModels[model];
+        //    return theModel.ParFraRate(fra) + convexity;
+        //}
+
+        [ExcelFunction(Description = "some description.", Name = "mt.InstrumentFactory.ValueInstrument", IsVolatile = true)]
+        public static double Factory_InstrumentFactory_ValueInstrument(string instrument, string factory, string model)
         {
-            Fra fra = ObjectMap.InstrumentFactories[instrumentFactory].Futures[instrument].FraSameSpec;
-            LinearRateModel theModel = ObjectMap.LinearRateModels[model];
-            return theModel.ParFraRate(fra) + convexity;
+            return InstrumentFactoryFunctions.ValueInstrument(instrument, factory, model);
         }
 
 

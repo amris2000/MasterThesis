@@ -18,12 +18,12 @@ namespace MasterThesis
     public enum DayCount { ACT360, ACT365, ACT36525, THIRTY360 }
     public enum InterpMethod { Constant, Linear, LogLinear, Hermite, Catrom }
     public enum QuoteType { ParSwapRate, ParBasisSpread, OisRate, FraRate, FuturesRate, Deposit };
+    public enum Tenor { D, B, W, M, Y };
 
     // OLD / UNUSED
     public enum MarketDataInstrument { IrSwapRate, OisRate, BaseSpread, Fra, Future, BasisSwap, Cash, Fixing }
     public enum SwapQuoteType { Vanilla, ShortSwap }
     public enum InstrumentComplexity { Linear, NonLinear }
-    public enum Tenor { T1D, T1M, T3M, T6M, T1Y }
     public enum QuoteTypeOld { SwapRate, BasisSpread, Fixing, FraRate, FutureRate, BaseSpread }
 
     public static class StrToEnum
@@ -80,6 +80,7 @@ namespace MasterThesis
             {
                 case "1D":
                     return CurveTenor.Fwd1D;
+                
                 case "1M":
                     return CurveTenor.Fwd1M;
                 case "3M":
@@ -180,6 +181,27 @@ namespace MasterThesis
                     throw new ArgumentException("CANNOT FIND MARKETDATAINSTRUMENT FOR INPUT STRING.");
             }
         }
+
+        public static Tenor TenorConvert(string tenor)
+        {
+            tenor = tenor.ToUpper();
+
+            switch(tenor)
+            {
+                case "D":
+                    return Tenor.D;
+                case "B":
+                    return Tenor.B;
+                case "W":
+                    return Tenor.W;
+                case "M":
+                    return Tenor.M;
+                case "Y":
+                    return Tenor.Y;
+                default:
+                    throw new InvalidOperationException("Tenor " + tenor + " is not a valid tenor."); 
+            }
+        }
     }
 
     public static class EnumToStr
@@ -234,6 +256,25 @@ namespace MasterThesis
                     return "30/360";
                 default:
                     return "ERROR";
+            }
+        }
+
+        public static string TenorConvert(Tenor tenor)
+        {
+            switch(tenor)
+            {
+                case Tenor.D:
+                    return "D";
+                case Tenor.B:
+                    return "B";
+                case Tenor.W:
+                    return "W";
+                case Tenor.M:
+                    return "M";
+                case Tenor.Y:
+                    return "Y";
+                default:
+                    throw new InvalidOperationException("Tenor is not valid");
             }
         }
     }
@@ -323,9 +364,9 @@ namespace MasterThesis
             MyCurves.AddCurve(new Curve(Fwd3m, Fwd3mVal), CurveTenor.Fwd3M);
             MyCurves.AddCurve(new Curve(Fwd6m, Fwd6mVal), CurveTenor.Fwd6M);
             MyCurves.AddCurve(new Curve(Fwd1y, Fwd1yVal), CurveTenor.Fwd1Y);
-            Store.FwdCurveCollections["MYCURVES"] = MyCurves;
-            Store.Curves[CurveTenor.DiscLibor] = new MasterThesis.Curve(DiscLibor, DiscLiborVal, CurveTenor.DiscLibor);
-            Store.Curves[CurveTenor.DiscOis] = new MasterThesis.Curve(DiscOis, DiscOisVal, CurveTenor.DiscOis);
+            //Store.FwdCurveCollections["MYCURVES"] = MyCurves;
+            //Store.Curves[CurveTenor.DiscLibor] = new MasterThesis.Curve(DiscLibor, DiscLiborVal, CurveTenor.DiscLibor);
+            //Store.Curves[CurveTenor.DiscOis] = new MasterThesis.Curve(DiscOis, DiscOisVal, CurveTenor.DiscOis);
         }
 
         public static void CreateCurveOld()

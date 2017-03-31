@@ -13,14 +13,14 @@ namespace ExcelApplication
         public static DateTime Helpers_AddTenorAdjust(DateTime date, string Tenor, string dayRule)
         {
             DayRule dayRuleEnum = StrToEnum.DayRuleConvert(dayRule);
-            return Calender.AddTenor(date, Tenor, dayRuleEnum);
+            return Functions.AddTenorAdjust(date, Tenor, dayRuleEnum);
         }
 
         [ExcelFunction(Description = "Some description", Name = "mt.Helpers.AdjustDate")]
         public static DateTime Helpers_AdjustDate(DateTime startDate, string dayRule)
         {
             DayRule dayRuleEnum = StrToEnum.DayRuleConvert(dayRule);
-            return Calender.AdjustDate(startDate, dayRuleEnum);
+            return Functions.AdjustDate(startDate, dayRuleEnum);
         }
 
     }

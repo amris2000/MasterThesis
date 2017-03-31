@@ -13,10 +13,10 @@ namespace MasterThesis
         public FwdCurves FwdCurveCollection;
         public InterpMethod Interpolation = InterpMethod.Linear;
 
-        public LinearRateModel(Curve MyDiscCurve, FwdCurves fwdCurveCollection, InterpMethod interpolation = InterpMethod.Linear)
+        public LinearRateModel(Curve discCurve, FwdCurves fwdCurveCollection, InterpMethod interpolation = InterpMethod.Linear)
         {
             Interpolation = interpolation;
-            DiscCurve = MyDiscCurve;
+            DiscCurve = discCurve;
             FwdCurveCollection = fwdCurveCollection;
         }
 
@@ -48,94 +48,6 @@ namespace MasterThesis
         {
             return ParFraRate(future.FraSameSpec) + future.Convexity;
         }
-
-
-        #region OIS SWAPS
-        public double OisAnnuity(OisSchedule Schedule, InterpMethod method)
-        {
-            double Out = 0.0;
-            DateTime PayDate;
-            for (int i = 0; i<Schedule.AdjEndDates.Count; i++)
-            {
-
-                PayDate = Schedule.AdjEndDates[i];
-                Out += Schedule.Coverages[i] * DiscCurve.DiscFactor(Schedule.AsOf, Schedule.EndDate, method);
-            }
-            return Out;
-        }
-        public double OisCompoundedRate(DateTime asOf, DateTime startDate, DateTime endDate, DayRule dayRule, DayCount dayCount, InterpMethod method)
-        {
-            double CompoundedRate = 1;
-            double CompoundedRate2 = 1;
-            DateTime RollDate = startDate;
-            while (RollDate.Date<endDate.Date)
-            {
-                DateTime NextBusinessDay = Calender.AddTenor(RollDate, "1B", DayRule.F);
-                //double Rate = DiscCurve.ZeroRate(asOf, startDate, RollDate, dayRule, dayCount, method);
-                double Rate = DiscCurve.ZeroRate(NextBusinessDay, InterpMethod.Linear);
-                double fwdOisRate = DiscCurve.FwdRate(asOf, RollDate, NextBusinessDay, DayRule.F, dayCount, method);
-
-                double disc1 = DiscCurve.DiscFactor(asOf, RollDate, method);
-                double disc2 = DiscCurve.DiscFactor(asOf, NextBusinessDay, method);
-
-                double Days = NextBusinessDay.Subtract(RollDate).TotalDays;
-                double shortCvg = Calender.Cvg(RollDate, NextBusinessDay, dayCount);
-                RollDate = NextBusinessDay;
-                CompoundedRate *= (1 + fwdOisRate * shortCvg);
-                CompoundedRate2 *= disc1 / disc2;
-            }
-            double coverage = Calender.Cvg(startDate, endDate, dayCount);
-            return (CompoundedRate2 - 1) / coverage;
-        }
-        public double OisRate(OisSwap swap)
-        {
-            double FloatContribution = 0.0;
-            double Annuity = OisAnnuity(swap.FixedSchedule, InterpMethod.Linear);
-
-            DateTime AsOf = swap.FloatSchedule.AsOf;
-
-            for (int i = 0; i < swap.FloatSchedule.AdjEndDates.Count; i++)
-            {
-                DateTime Start = swap.FloatSchedule.AdjStartDates[i];
-                DateTime End = swap.FloatSchedule.AdjEndDates[i];
-                double CompoundedRate = OisCompoundedRate(AsOf, Start, End, swap.FloatSchedule.DayRule, swap.FloatSchedule.DayCount, Interpolation);
-                double DiscountFactor = DiscCurve.DiscFactor(AsOf, End, Interpolation);
-                double coverage = Calender.Cvg(Start, End, swap.FloatSchedule.DayCount);
-                FloatContribution += DiscountFactor * CompoundedRate * coverage;
-            }
-            return FloatContribution / Annuity;
-        }
-
-        public double OisRateSimple(OisSwap swap)
-        {
-            double Annuity = OisAnnuity(swap.FixedSchedule, Interpolation);
-            DateTime AsOf = swap.AsOf;
-            DateTime Start = swap.StartDate;
-            DateTime End = swap.EndDate;
-            double disc1 = DiscCurve.DiscFactor(AsOf, Start, Interpolation);
-            double disc2 = DiscCurve.DiscFactor(AsOf, End, Interpolation);
-            return (disc1 - disc2) / Annuity;
-        }
-
-        public double OisRateSimple2(OisSwap swap)
-        {
-            double Annuity = OisAnnuity(swap.FixedSchedule, Interpolation);
-            DateTime asOf = swap.AsOf;
-            double FloatContribution = 0.0;
-            
-            for (int i = 0; i < swap.FloatSchedule.AdjEndDates.Count; i++)
-            {
-                DateTime Start = swap.FloatSchedule.AdjStartDates[i];
-                DateTime End = swap.FloatSchedule.AdjEndDates[i];
-                double cvg = Calender.Cvg(Start, End, swap.FloatSchedule.DayCount);
-                double disc1 = DiscCurve.DiscFactor(asOf, Start, Interpolation);
-                double disc2 = DiscCurve.DiscFactor(asOf, End, Interpolation);
-                FloatContribution += (disc1 - disc2) / cvg;
-            }
-
-            return FloatContribution / Annuity;
-        }
-        #endregion
 
         #region SWAPS
         public double ValueFloatLeg(FloatLeg floatLeg)
@@ -235,38 +147,16 @@ namespace MasterThesis
             return FloatValue;
         }
 
+        public double OisRateSimple(OisSwap swap)
+        {
+            return DiscCurve.OisRateSimple(swap, Interpolation);
+        }
 
+        public double OisRate(OisSwap swap)
+        {
+            return DiscCurve.OisRate(swap, Interpolation);
+        }
 
-        //public double Value(Asset MyInstrument)
-        //{
-        //    double TheValue = 0.0;
-        //    InstrumentType Type = MyInstrument.Type;
-        //    //InstrumentComplexity Complexity = MyInstrument.Complexity;
-
-        //    // To do, verify that it's a linear product
-
-        //    switch (Type)
-        //    {
-        //        case InstrumentType.Swap:
-        //            {
-        //                SwapSimple MySwap = (SwapSimple) MyInstrument;
-        //                double FloatValue = SwapFloatPv(MySwap);
-        //                double FixedValue = SwapFixedPv(MySwap);
-        //                TheValue = MySwap.Notional*(FloatValue - FixedValue);
-        //            }
-        //            break;
-        //        case InstrumentType.Fra:
-        //            {
-        //                TheValue = 1.0;
-        //            }
-        //            break;
-        //        default:
-        //            TheValue = 0.0;
-        //            break;
-        //    }
-
-        //    return TheValue;
-        //}
     }
 
     public class LinearRateModelSimple : LinearRateModel

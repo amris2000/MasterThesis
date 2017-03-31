@@ -18,6 +18,11 @@ namespace MasterThesis
         //}
     }
 
+    public interface ICalibrationInstrument
+    {
+        DateTime GetCurvePoint();
+    }
+
     public abstract class SwapLeg
     {
         public SwapSchedule Schedule;
@@ -72,7 +77,7 @@ namespace MasterThesis
         {
             this.AsOf = AsOf;
             this.StartDate = StartDate;
-            this.EndDate = Calender.AddTenor(StartDate, Tenor, DayRule.N);
+            this.EndDate = Functions.AddTenorAdjust(StartDate, Tenor, DayRule.N);
             Schedule = new OisSchedule(AsOf, StartDate, DayCount, DayRule, Tenor);
             this.Notional = notional;
         }
@@ -84,8 +89,8 @@ namespace MasterThesis
     }
 
     // MAKE OISSWAP A SWAP!
-    // CONSIDER IF WE REALLY NEED AN "OIS SCHEDULE"
-    public class OisSwap : Asset
+    // CONSIDER IF WE REALLY NEED AN "OIS SCHEDULE". Really just schedule with a stub
+    public class OisSwap : ICalibrationInstrument
     {
         public OisSchedule FloatSchedule, FixedSchedule;
         public DateTime AsOf, StartDate, EndDate;
@@ -98,15 +103,33 @@ namespace MasterThesis
         {
             this.AsOf = AsOf;
             this.StartDate = StartDate;
-            this.EndDate = Calender.AddTenor(StartDate, tenor, dayRuleFloat);
+            this.EndDate = Functions.AddTenorAdjust(StartDate, tenor, dayRuleFloat);
             this.FloatSchedule = new OisSchedule(AsOf, StartDate, dayCountFloat, dayRuleFloat, tenor);
             this.FixedSchedule = new OisSchedule(AsOf, StartDate, dayCountFixed, dayRuleFixed, tenor);
             this.Notional = notional;
             this.FixedRate = notional;
         }
+
+        public OisSwap(DateTime asOf, string startTenor, string endTenor, string settlementLag, DayCount dayCountFixed, DayCount dayCountFloat, DayRule dayRule, double notional, double fixedRate)
+        {
+            DateTime startDate = Functions.AddTenorAdjust(asOf, settlementLag, dayRule);
+            DateTime endDate = Functions.AddTenorAdjust(startDate, endTenor, dayRule);
+            this.AsOf = asOf;
+            this.StartDate = startDate;
+            this.EndDate = endDate;
+            this.FloatSchedule = new OisSchedule(asOf, startTenor, endTenor, settlementLag, dayCountFloat, dayRule);
+            this.FixedSchedule = new OisSchedule(asOf, startTenor, endTenor, settlementLag, dayCountFixed, dayRule);
+            this.Notional = notional;
+            this.FixedRate = fixedRate;
+        }
+
+        public DateTime GetCurvePoint()
+        {
+            return EndDate;
+        }
     }
 
-    public abstract class Swap : Asset
+    public abstract class Swap : ICalibrationInstrument
     {
         public SwapLeg Leg1;
         public SwapLeg Leg2;
@@ -130,6 +153,8 @@ namespace MasterThesis
         {
 
         }
+
+        public abstract DateTime GetCurvePoint();
     }
 
     public class IrSwap : Swap
@@ -145,6 +170,11 @@ namespace MasterThesis
         {
             Leg1 = new FloatLeg(AsOf, StartDate, EndDate, FloatFreq, FloatDayCount, FloatDayRule, Notional, Spread);
             Leg2 = new FixedLeg(AsOf, StartDate, EndDate, FixedRate, FixedFreq, FixedDayCount, FixedDayRule, Notional);
+        }
+
+        public override DateTime GetCurvePoint()
+        {
+            return Leg1.EndDate;
         }
     }
 
@@ -164,6 +194,11 @@ namespace MasterThesis
         {
             this.FloatLegNoSpread = (FloatLeg) swapNoSpread.Leg1;
             this.FloatLegSpread = (FloatLeg) swapSpread.Leg1;
+        }
+
+        public override DateTime GetCurvePoint()
+        {
+            return FloatLegSpread.EndDate;
         }
     }
 
@@ -191,7 +226,7 @@ namespace MasterThesis
             this.FloatFreq = FloatFreq;
         }
     }
-    public class Fra : Asset
+    public class Fra : ICalibrationInstrument
     {
         public DateTime StartDate, EndDate, AsOf;
         public DayCount FloatDayCount;
@@ -217,13 +252,18 @@ namespace MasterThesis
 
         public Fra(DateTime asOf, string startTenor, string endTenor, CurveTenor referenceIndex, DayCount dayCount, DayRule dayRule, double fixedRate)
         {
-            DateTime startDate = Calender.AddTenor(asOf, startTenor, dayRule);
-            DateTime endDate = Calender.AddTenor(startDate, endTenor, dayRule);
+            DateTime startDate = Functions.AddTenorAdjust(asOf, startTenor, dayRule);
+            DateTime endDate = Functions.AddTenorAdjust(startDate, endTenor, dayRule);
             Initialize(asOf, startDate, endDate, referenceIndex, dayCount, dayRule, fixedRate);
         }
 
+        public DateTime GetCurvePoint()
+        {
+            return EndDate;
+        }
+
     }
-    public class Future : Asset
+    public class Future : ICalibrationInstrument
     {
         public double Convexity;
         public Fra FraSameSpec;
@@ -239,8 +279,8 @@ namespace MasterThesis
 
         public Future(DateTime asOf, string startTenor, string endTenor, CurveTenor referenceIndex, DayCount dayCount, DayRule dayRule, double fixedRate, double? convexity = null)
         {
-            DateTime startDate = Calender.AddTenor(asOf, startTenor, dayRule);
-            DateTime endDate = Calender.AddTenor(startDate, endTenor, dayRule);
+            DateTime startDate = Functions.AddTenorAdjust(asOf, startTenor, dayRule);
+            DateTime endDate = Functions.AddTenorAdjust(startDate, endTenor, dayRule);
             FraSameSpec = new Fra(asOf, startDate, endDate, referenceIndex, dayCount, dayRule, fixedRate);
             if (convexity == null)
                 Convexity = CalcSimpleConvexity(asOf, startDate, endDate, dayCount);
@@ -262,15 +302,15 @@ namespace MasterThesis
 
             // i.e. Convexity Adjustment = 0.5*vol^2*T*(T+delta), T's measured in year fractions.
             // Source: Linderstrøm
-            double cvgAsOfToStart = Calender.Cvg(asOf, startDate, dayCount);
-            double cvgAsOfToEnd = Calender.Cvg(asOf, endDate, dayCount);
+            double cvgAsOfToStart = Functions.Cvg(asOf, startDate, dayCount);
+            double cvgAsOfToEnd = Functions.Cvg(asOf, endDate, dayCount);
             return 0.5 * 0.0012 * 0.0012 * cvgAsOfToEnd * cvgAsOfToEnd;
         }
+
+        public DateTime GetCurvePoint()
+        {
+            return FraSameSpec.EndDate;
+        }
     }
-
-    //public class FxFwd : Instrument
-    //{
-
-    //}
 
 }

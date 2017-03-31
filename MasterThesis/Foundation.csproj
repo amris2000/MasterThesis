@@ -55,6 +55,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ExcelInterface\ObjectMap.cs" />
+    <Compile Include="Functions.cs" />
     <Compile Include="Math\AAD.cs" />
     <Compile Include="Math\AADTestFunctions.cs" />
     <Compile Include="Models\NonLinearRate.cs" />
@@ -68,7 +69,7 @@
     <Compile Include="Models\LinearRate.cs" />
     <Compile Include="Extensions\DateTimeExtensions.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
-    <Compile Include="InterestRateProducts.cs" />
+    <Compile Include="LinearProducts.cs" />
     <Compile Include="Old\MarketData.cs" />
     <Compile Include="Math\Maths.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -78,6 +79,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\packages\alglib2.dll.3.10.4\Alglib2.csproj">
+      <Project>{0ffd3504-ae68-4aff-8e44-5d0906b8fe70}</Project>
+      <Name>Alglib2</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

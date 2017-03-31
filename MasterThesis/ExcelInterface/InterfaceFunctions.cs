@@ -20,25 +20,61 @@ namespace MasterThesis.ExcelInterface
             {
                 if (i == 0)
                 {
-                    output[i, 0] = header;
-                    output[i, 1] = curve.Frequency.ToString();
+                    output[i, 0] = "";
+                    output[i, 1] = header;
                 }
                 else
                 {
                     output[i, 0] = curve.Dates[i];
-                    output[i, 1] = curve.Values[i];
+                    output[i, 1] = curve.values[i];
                 }
             }
             return output;
         }
-
     }
+
+    public static class CalibrationFunctions
+    {
+        public static List<InstrumentQuote> CreateInstrumentList(string instrumentFactoryName, string[] identifiers, double[] quotes)
+        {
+            List<InstrumentQuote> instrumentQuotes = new List<InstrumentQuote>();
+
+            for (int i = 0; i < identifiers.Length; i++)
+            {
+                DateTime curvePoint = ObjectMap.InstrumentFactories[instrumentFactoryName].CurvePointMap[identifiers[i]];
+                QuoteType type = ObjectMap.InstrumentFactories[instrumentFactoryName].InstrumentTypeMap[identifiers[i]];
+                instrumentQuotes.Add(new InstrumentQuote(identifiers[i], type, curvePoint, quotes[i]));
+            }
+
+            return instrumentQuotes;
+        }
+
+        public static void CurveCalibrationProblem_Make(string baseName, string instrumentFactoryName, string[] identifiers, double[] quotes)
+        {
+            InstrumentFactory factory = ObjectMap.InstrumentFactories[instrumentFactoryName];
+            List<InstrumentQuote> instrumentQuotes = CreateInstrumentList(instrumentFactoryName, identifiers, quotes);
+            ObjectMap.CurveCalibrationProblems[baseName] = new CurveCalibrationProblem(factory, instrumentQuotes);
+        }
+
+        public static void DiscCurve_MakeFromCalibrationProblem(string baseName, string curveCalibrationProblem, double precision, double startingValue, int maxIterations, double diffStep, InterpMethod interpolation)
+        {
+            DiscCurveConstructor constructor = new DiscCurveConstructor(ObjectMap.CurveCalibrationProblems[curveCalibrationProblem], interpolation);
+            constructor.SetCurve(precision, startingValue, maxIterations, diffStep);
+            ObjectMap.DiscCurves[baseName] = constructor.GetCurve();
+        }
+    }
+
 
     public static class InstrumentFactoryFunctions
     {
         public static void InstrumentFactory_Make(string baseName, DateTime asOf)
         {
             ObjectMap.InstrumentFactories[baseName] = new InstrumentFactory(asOf);
+        }
+
+        public static double ValueInstrument(string instrument, string instrumentFactory, string linearRateModel)
+        {
+            return ObjectMap.InstrumentFactories[instrumentFactory].ValueInstrumentFromFactory(ObjectMap.LinearRateModels[linearRateModel], instrument);
         }
         
         // ADD functions
@@ -85,7 +121,7 @@ namespace MasterThesis.ExcelInterface
         public static double InstrumentFactory_ValueOisSwap(string instrumentFactory, string model, string instrument)
         {
             OisSwap swap = ObjectMap.InstrumentFactories[instrumentFactory].OisSwaps[instrument];
-            return ObjectMap.LinearRateModels[model].OisRate(swap);
+            return ObjectMap.LinearRateModels[model].OisRateSimple(swap);
         }
 
         // NAME SHOULD BE CHANGED: CALCULATES PAR FRA RATE

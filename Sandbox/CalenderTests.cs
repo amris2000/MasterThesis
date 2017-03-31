@@ -15,12 +15,12 @@ namespace Sandbox
             Console.WriteLine("--------- Day roll test");
             DateTime MyDate = new DateTime(2017, 1, 27);
             DateTime MyDate2 = new DateTime(2025, 3, 27);
-            Console.WriteLine("MyDate: " + Calender.AddTenor(MyDate, "5b", DayRule.F));
-            Console.WriteLine("MyDate: " + Calender.AddTenor(MyDate, "5b", DayRule.MF));
-            Console.WriteLine("MyDate: " + Calender.AddTenor(MyDate, "5b", DayRule.P));
+            Console.WriteLine("MyDate: " + Functions.AddTenorAdjust(MyDate, "5b", DayRule.F));
+            Console.WriteLine("MyDate: " + Functions.AddTenorAdjust(MyDate, "5b", DayRule.MF));
+            Console.WriteLine("MyDate: " + Functions.AddTenorAdjust(MyDate, "5b", DayRule.P));
             Console.WriteLine("--------- Coverage test");
-            Console.WriteLine("ACT/360: " + Calender.Cvg(MyDate, MyDate2, DayCount.ACT360));
-            Console.WriteLine("30/360: " + Calender.Cvg(MyDate, MyDate2, DayCount.THIRTY360));
+            Console.WriteLine("ACT/360: " + Functions.Cvg(MyDate, MyDate2, DayCount.ACT360));
+            Console.WriteLine("30/360: " + Functions.Cvg(MyDate, MyDate2, DayCount.THIRTY360));
 
             SwapSchedule MySchedule = new SwapSchedule(DateTime.Now, MyDate, MyDate2, DayCount.ACT360, DayRule.MF, CurveTenor.Fwd6M);
             MySchedule.Print();
@@ -31,7 +31,12 @@ namespace Sandbox
             SwapSchedule MySchedule2 = new SwapSchedule(DateTime.Now, MyDate, MyDate2, DayCount.THIRTY360, DayRule.MF, CurveTenor.Fwd1Y);
             MySchedule2.Print();
 
-            Calender.PrintDateList(Calender.IMMSchedule(DateTime.Now, new DateTime(2040, 1, 1)), "IMM Dates");
+            Functions.PrintDateList(Functions.IMMSchedule(DateTime.Now, new DateTime(2040, 1, 1)), "IMM Dates");
+        }
+
+        public static void OisCalender()
+        {
+
         }
 
         public static void DayCompoundingTest()
@@ -49,7 +54,7 @@ namespace Sandbox
             while (Temp < End)
             {
                 double Rate = 0.1;
-                DateTime NewDate = Calender.AddTenor(Temp, "1B", DayRule);
+                DateTime NewDate = Functions.AddTenorAdjust(Temp, "1B", DayRule);
                 double Days = NewDate.Subtract(Temp).TotalDays;
 
                 Console.WriteLine("Day: " + Temp.DayOfWeek + " to " + NewDate.DayOfWeek + ". Days: " + Days);
@@ -58,7 +63,7 @@ namespace Sandbox
                 Console.Write("  .. Compound: " + Compound + " . ");
             }
 
-            Compound = (Compound - 1) / (Calender.Cvg(Start, End, DayCount));
+            Compound = (Compound - 1) / (Functions.Cvg(Start, End, DayCount));
             Console.WriteLine("Compound: " + Compound);
 
 
@@ -66,7 +71,7 @@ namespace Sandbox
             OisSchedule Schedule1 = new OisSchedule(AsOf, Start, DayCount.ACT360, DayRule.MF, "5B");
             Schedule1.Print();
 
-            DateTime End2 = Calender.AddTenor(Start, "68M");
+            DateTime End2 = Functions.AddTenorAdjust(Start, "68M");
             SwapSchedule SwapSchedule = new SwapSchedule(AsOf, Start, End2, DayCount.ACT360, DayRule.MF, CurveTenor.Fwd6M, StubPlacement.Beginning);
             SwapSchedule.Print();
             SwapSchedule SwapSchedule2 = new SwapSchedule(AsOf, Start, End2, DayCount.ACT360, DayRule.MF, CurveTenor.Fwd6M, StubPlacement.End);

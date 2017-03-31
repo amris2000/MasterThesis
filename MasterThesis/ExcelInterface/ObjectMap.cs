@@ -22,6 +22,9 @@ namespace MasterThesis.ExcelInterface
         // InstrumentFactories
         public static IDictionary<string, InstrumentFactory> InstrumentFactories = new Dictionary<string, InstrumentFactory>();
 
+        // Calibration
+        public static IDictionary<string, CurveCalibrationProblem> CurveCalibrationProblems = new Dictionary<string, CurveCalibrationProblem>();
+
         public static void CheckExists<T>(IDictionary<string, T> dictionary, string key, string errMessage)
         {
             if (dictionary.ContainsKey(key) == false)

@@ -24,21 +24,7 @@ namespace MasterThesis.ExcelInterface
 
         public double ValueInstrument(LinearRateModel model, InstrumentFactory factory)
         {
-            switch(_type)
-            {
-                case QuoteType.ParSwapRate:
-                    return model.IrParSwapRate(factory.IrSwaps[_identifier]);
-                case QuoteType.ParBasisSpread:
-                    return model.ParBasisSpread(factory.BasisSwaps[_identifier]);
-                case QuoteType.OisRate:
-                    return model.OisRate(factory.OisSwaps[_identifier]);
-                case QuoteType.FraRate:
-                    return model.ParFraRate(factory.Fras[_identifier]);
-                case QuoteType.FuturesRate:
-                    return model.ParFutureRate(factory.Futures[_identifier]);
-                default:
-                    throw new InvalidOperationException("Instrument QuoteType not supported...");
-            }
+            return factory.ValueInstrumentFromFactory(model, _identifier);
         }
     }
 
@@ -170,11 +156,44 @@ namespace MasterThesis.ExcelInterface
     {
         private Curve _discCurve;
         private CurveCalibrationProblem _problem;
+        private InterpMethod _interpolation;
 
-        public DiscCurveConstructor(CurveCalibrationProblem discProblem)
+        public DiscCurveConstructor(CurveCalibrationProblem discProblem, InterpMethod interpolation)
         {
+            _interpolation = interpolation;
             _problem = discProblem;
         }
+
+        private void OptimizationFunction(double[] x, ref double func, object obj)
+        {
+            Curve tempDiscCurve = new Curve(_problem.CurvePoints, x.ToList());
+
+            FwdCurves tempFwdCurves = new FwdCurves();
+            LinearRateModel tempModel = new LinearRateModel(tempDiscCurve, new FwdCurves(), _interpolation);
+            func = _problem.GoalFunction(tempModel);
+        }
+
+        public void SetCurve(double precision, double startingValue, int maxIterations, double diffStep)
+        {
+            double[] x = new double[_problem.CurvePoints.Count];
+            for (int i = 0; i < x.Length; i++)
+                x[i] = startingValue;
+
+            double epsg = precision;
+            double epsf = 0.0;
+            double epsx = 0.0;
+
+            alglib.minlbfgsstate state;
+            alglib.minlbfgsreport rep;
+
+            alglib.minlbfgscreatef(1, x, diffStep, out state);
+            alglib.minlbfgssetcond(state, epsg, epsf, epsx, maxIterations);
+            alglib.minlbfgsoptimize(state, OptimizationFunction, null, null);
+            alglib.minlbfgsresults(state, out x, out rep);
+
+            _discCurve = new Curve(_problem.CurvePoints, x.ToList());
+        }
+
 
         public Curve GetCurve()
         {

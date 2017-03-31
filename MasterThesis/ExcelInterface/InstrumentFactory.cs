@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 namespace MasterThesis.ExcelInterface
 {
 
-
     // TO DO: ADD AUTOMATIC FETCHING OF QUOTE TYPE BASED ON SOMETHING
     // Not really sure InstrumentFactory should know anything about quotes. Think abut it.
     public class InstrumentFactory
@@ -19,10 +18,8 @@ namespace MasterThesis.ExcelInterface
         public IDictionary<string, OisSwap> OisSwaps;
         public DateTime AsOf;
 
-        // Probably remove this: should not know anything about quotes
-        public IDictionary<string, InstrumentQuote> Quotes;
-
         public IDictionary<string, QuoteType> InstrumentTypeMap;
+        public IDictionary<string, DateTime> CurvePointMap;
 
         public InstrumentFactory(DateTime asOf)
         {
@@ -31,10 +28,31 @@ namespace MasterThesis.ExcelInterface
             IrSwaps = new Dictionary<string, IrSwap>();
             OisSwaps = new Dictionary<string, OisSwap>();
             BasisSwaps = new Dictionary<string, BasisSwap>();
-            Quotes = new Dictionary<string, InstrumentQuote>();
             InstrumentTypeMap = new Dictionary<string, QuoteType>();
+            CurvePointMap = new Dictionary<string, DateTime>();
             AsOf = asOf;
 
+        }
+
+        public double ValueInstrumentFromFactory(LinearRateModel model, string instrument)
+        {
+            QuoteType type = InstrumentTypeMap[instrument];
+
+            switch (type)
+            {
+                case QuoteType.ParSwapRate:
+                    return model.IrParSwapRate(IrSwaps[instrument]);
+                case QuoteType.ParBasisSpread:
+                    return model.ParBasisSpread(BasisSwaps[instrument]);
+                case QuoteType.OisRate:
+                    return model.OisRateSimple(OisSwaps[instrument]);
+                case QuoteType.FraRate:
+                    return model.ParFraRate(Fras[instrument]);
+                case QuoteType.FuturesRate:
+                    return model.ParFutureRate(Futures[instrument]);
+                default:
+                    throw new InvalidOperationException("Instrument QuoteType not supported...");
+            }
         }
 
         public void AddQuotes(string[] identifiers, double[] quotes)
@@ -95,6 +113,7 @@ namespace MasterThesis.ExcelInterface
                 IrSwap swapSpread = IrSwaps[swapSpreadIdent];
                 BasisSwap swap = new BasisSwap(swapNoSpread, swapSpread);
                 BasisSwaps[identifier] = swap;
+                CurvePointMap[identifier] = swap.GetCurvePoint();
                 InstrumentTypeMap[identifier] = QuoteType.ParBasisSpread;
             }
             catch
@@ -130,11 +149,12 @@ namespace MasterThesis.ExcelInterface
             try
             {
                 startDate = Convert.ToDateTime(fwdTenor);
-                endDate = Calender.AddTenor(startDate, floatPayFreq, dayRule);
+                endDate = Functions.AddTenorAdjust(startDate, floatPayFreq, dayRule);
 
                 curveTenor = StrToEnum.CurveTenorFromSimpleTenor(floatPayFreq);
                 Fra fra = new MasterThesis.Fra(AsOf, startDate, endDate, curveTenor, dayCount, dayRule, fixedRate);
                 Futures[identifier] = new MasterThesis.Future(fra, null);
+                CurvePointMap[identifier] = fra.GetCurvePoint();
                 InstrumentTypeMap[identifier] = QuoteType.FuturesRate;
             }
             catch
@@ -168,7 +188,10 @@ namespace MasterThesis.ExcelInterface
             if (type == "DEPOSIT")
             {
                 // handle deposits
-                InstrumentTypeMap[identifier] = QuoteType.Deposit;
+                //curveTenor = StrToEnum.CurveTenorFromSimpleTenor(floatPayFreq);
+                //Fra fra = new MasterThesis.Fra(AsOf, fwdTenor, endTenor, curveTenor, dayCount, dayRule, fixedRate);
+                //Fras[identifier] = fra;
+                //InstrumentTypeMap[identifier] = QuoteType.Deposit;
             }
             else
             {
@@ -177,6 +200,7 @@ namespace MasterThesis.ExcelInterface
                 curveTenor = StrToEnum.CurveTenorFromSimpleTenor(floatPayFreq);
                 Fra fra = new MasterThesis.Fra(AsOf, fwdTenor, endTenor, curveTenor, dayCount, dayRule, fixedRate);
                 Fras[identifier] = fra;
+                CurvePointMap[identifier] = fra.GetCurvePoint();
                 InstrumentTypeMap[identifier] = QuoteType.FraRate;
             }
         }
@@ -224,14 +248,15 @@ namespace MasterThesis.ExcelInterface
             if (StrIsConvertableToDate(startTenor))
                 startDate = Convert.ToDateTime(startTenor);
             else
-                startDate = Calender.AddTenor(AsOf, settlementLag, dayRule);
+                startDate = Functions.AddTenorAdjust(AsOf, settlementLag, dayRule);
 
             if (StrIsConvertableToDate(endTenor))
                 endDate = Convert.ToDateTime(endTenor);
             else
-                endDate = Calender.AddTenor(AsOf, endTenor, dayRule);
+                endDate = Functions.AddTenorAdjust(AsOf, endTenor, dayRule);
 
             double fixedRate = 0.01;
+            double notional = 1.0;
 
             try
             {
@@ -239,8 +264,9 @@ namespace MasterThesis.ExcelInterface
                 {
                     // Handle OIS case
                     // Error with endTenor here and string parsing 
-                    OisSwap oisSwap = new OisSwap(AsOf, startDate, endTenor, fixedRate, fixedDayCount, floatDayCount, dayRule, dayRule, 1);
+                    OisSwap oisSwap = new OisSwap(AsOf, startTenor, endTenor, settlementLag, fixedDayCount, floatDayCount, dayRule, notional, fixedRate);
                     OisSwaps[identifier] = oisSwap;
+                    CurvePointMap[identifier] = oisSwap.GetCurvePoint();
                     InstrumentTypeMap[identifier] = QuoteType.OisRate;
                 }
                 else
@@ -248,6 +274,7 @@ namespace MasterThesis.ExcelInterface
                     // Handle non-OIS case
                     IrSwap swap = new IrSwap(AsOf, startDate, endDate, fixedRate, fixedTenor, floatTenor, fixedDayCount, floatDayCount, dayRule, dayRule, 1.0, 0.0);
                     IrSwaps[identifier] = swap;
+                    CurvePointMap[identifier] = swap.GetCurvePoint();
                     InstrumentTypeMap[identifier] = QuoteType.ParSwapRate;
                 }
             } 
