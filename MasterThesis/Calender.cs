@@ -162,7 +162,6 @@ namespace MasterThesis
                     }
                 }
             }
-
         }
 
         public OisSchedule(DateTime asOf, DateTime startDate, DayCount dayCount, DayRule dayRule, string Tenor)
@@ -382,43 +381,6 @@ namespace MasterThesis
             {
                 Coverages.Add(Functions.Cvg(AdjStartDates[i], AdjEndDates[i], DayCount));
             }
-
-
-            // Date roll
-            //List<DateTime> DatesTemp = new List<DateTime>();
-
-            //int i = 0;
-            //DatesTemp.Add(endDate.Date);
-            //while (Calender.AdjustDate(DatesTemp[i], dayRule).Date > AdjStart.Date)
-            //{
-            //    string TempTenor = Convert.ToString(-1 * (i+1) * TenorNumber) + TenorType;
-            //    DatesTemp.Add(DateTimeExtensions.Max(Calender.AddTenor(DatesTemp[0], TempTenor), AdjStart).Date);
-            //    i = i + 1;
-            //}
-
-            //// Not currently in use
-            //int k = DatesTemp.Count;
-
-            //UnAdjEndDates = new DateTime[k-1];
-            //UnAdjStartDates = new DateTime[k-1];
-            //StartDates = new DateTime[k-1];
-            //EndDates = new DateTime[k-1];
-            //Coverages = new double[k-1];
-            //i = k-1;
-            //Periods = (uint) i;
-            //for (int j = 0; j<i; j++)
-            //{
-            //    if (j == 0)
-            //        UnAdjStartDates[j] = startDate.Date;
-            //    else
-            //        UnAdjStartDates[j] = DatesTemp[i - (j)].Date;
-
-            //    UnAdjEndDates[j] = DatesTemp[i - j-1].Date;
-            //    StartDates[j] = Calender.AdjustDate(UnAdjStartDates[j], dayRule).Date;
-            //    EndDates[j] = Calender.AdjustDate(UnAdjEndDates[j], dayRule).Date;
-            //    Coverages[j] = Calender.Cvg(StartDates[j], EndDates[j], dayCount);
-            //}
-
         }
 
         // Constructer with tenors instead of dates.

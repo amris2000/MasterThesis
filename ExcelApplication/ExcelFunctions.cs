@@ -23,33 +23,30 @@ namespace ExcelApplication
         }
 
         [ExcelFunction(Description = "My First function in Excel", Name = "mt.LinearRate.DiscCurve.Make", IsVolatile = true)]
-        public static string LinearRate_DiscCurve_Make(string baseName, object[] dates, object[] values, string curveType)
+        public static string LinearRate_DiscCurve_Make(string baseName, object[] dates, object[] values)
         {
 
             var dValues = values.Cast<double>();
             var dDates = dates.Cast<double>();
             DateTime[] actualDates = ConvertDoublesToDateTimes(dDates.ToArray());
 
-
-            CurveTenor curveTypeEnum = StrToEnum.CurveTenorConvert(curveType);
             List<DateTime> datesList = actualDates.ToList();
             List<double> doubleList = dValues.ToList();
-            LinearRateFunctions.DiscCurve_Make(baseName, datesList, doubleList, curveTypeEnum);
+            LinearRateFunctions.DiscCurve_Make(baseName, datesList, doubleList);
             return baseName;
         }
 
         [ExcelFunction(Description = "My First function in Excel", Name = "mt.LinearRate.FwdCurve.Make", IsVolatile = true)]
-        public static string LinearRate_FwdCurve_Make(string baseName, object[] dates, object[] values, string curveType)
+        public static string LinearRate_FwdCurve_Make(string baseName, object[] dates, object[] values)
         {
 
             var dValues = values.Cast<double>();
             var dDates = dates.Cast<double>();
             DateTime[] actualDates = ConvertDoublesToDateTimes(dDates.ToArray());
 
-            CurveTenor curveTypeEnum = StrToEnum.CurveTenorConvert(curveType);
             List<DateTime> datesList = actualDates.ToList();
             List<double> doubleList = dValues.ToList();
-            LinearRateFunctions.FwdCurve_Make(baseName, datesList, doubleList, curveTypeEnum);
+            LinearRateFunctions.FwdCurve_Make(baseName, datesList, doubleList);
             return baseName;
         }
 
@@ -74,6 +71,15 @@ namespace ExcelApplication
         {
             return LinearRateFunctions.DiscCurve_Get(curveName);
         }
+
+        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.FwdCurve.StoreFromCollection")]
+        public static string LinearRate_FwdCurve_StoreFromCollection(string baseName, string collectionName, string tenor)
+        {
+            CurveTenor tenorActual = StrToEnum.CurveTenorConvert(tenor);
+            LinearRateFunctions.FwdCurve_StoreFromCollection(baseName, collectionName, tenorActual);
+            return baseName;
+        }
+
 
         [ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.FwdCurve.GetFromCollection", IsVolatile = true)]
         public static object[,] LinearRate_DiscCurve_Get(string collectionName, string tenor)
@@ -196,16 +202,48 @@ namespace ExcelApplication
             return baseName;
         }
 
+        [ExcelFunction(Description = "Make CalibrationSpec", Name = "mt.Calibration.CalibrationSettings.Make")]
+        public static string Calibration_CalibrationSettings_Make(string baseName, double precision, double scaling, double diffStep, string interpolation, int maxIterations, double startingValues, int bfgs_m)
+        {
+            InterpMethod interp = StrToEnum.InterpolationConvert(interpolation);
+            CalibrationFunctions.CalibrationSpec_Make(baseName, precision, scaling, diffStep, interp, maxIterations, startingValues, bfgs_m);
+            return baseName;
+        }
+
         [ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.DiscCurve.MakeFromCalibrationProblem")]
-        public static string Calibration_DiscCurve_MakeFromCalibrationProblem(string baseName, string problem, double precision, double startingValue, int maxIterations, double diffStep, string interpolation)
+        public static string Calibration_DiscCurve_MakeFromCalibrationProblem(string baseName, string problem, string calibSpec)
         {
             if (ExcelDnaUtil.IsInFunctionWizard())
                 return "No calulation in wizard.";
 
-            InterpMethod interpMethod = StrToEnum.InterpolationConvert(interpolation);
-
-            CalibrationFunctions.DiscCurve_MakeFromCalibrationProblem(baseName, problem, precision, startingValue, maxIterations, diffStep, interpMethod);
+            CalibrationFunctions.DiscCurve_MakeFromCalibrationProblem(baseName, problem, calibSpec);
             return baseName;
+        }
+
+        [ExcelFunction(Description = "some description.", Name = "mt.FwdCurveCalibrationProblem.Make")]
+        public static string Calibration_FwdCurveCalibrationProblem_Make(string baseName, string discCurveName, object[] problemNames, object[] tenors, string calibSpec)
+        {
+
+            string[] problemNamesString = problemNames.Cast<string>().ToArray();
+            string[] tenorsString = tenors.Cast<string>().ToArray();
+            CurveTenor[] tenorsActual = new CurveTenor[tenorsString.Length];
+
+            for (int i = 0; i<tenorsString.Length; i++)
+                tenorsActual[i] = StrToEnum.CurveTenorConvert(tenorsString[i]);
+
+            CalibrationFunctions.FwdCurveCalibrationProblem_Make(baseName, discCurveName, problemNamesString, tenorsActual, calibSpec);
+            return baseName;
+        }
+
+        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.FwdCurveCollection.MakeFromCalibrationProblem")]
+        public static string Calibration_FwdCurveCollection_MakeFromCalibrationProblem(string baseName, string fwdCurveConstructor)
+        { 
+            if (ExcelDnaUtil.IsInFunctionWizard())
+                return "No calulation in wizard.";
+
+            CalibrationFunctions.FwdCurveCollection_MakeFromCalibrationProblem(baseName, fwdCurveConstructor);
+            return baseName;
+
         }
 
         // ------ INSTRUMENT FACTORY RELATED

@@ -52,37 +52,37 @@ namespace MasterThesis
         #region SWAPS
         public double ValueFloatLeg(FloatLeg floatLeg)
         {
-            double FloatValue = 0.0;
+            double floatValue = 0.0;
             double spread = floatLeg.Spread;
 
             for (int i = 0; i < floatLeg.Schedule.AdjStartDates.Count; i++)
             {
-                DateTime Begin = floatLeg.Schedule.AdjStartDates[i];
-                DateTime End = floatLeg.Schedule.AdjEndDates[i];
-                double Cvg = floatLeg.Schedule.Coverages[i];
-                double FwdRate = FwdCurveCollection.GetCurve(floatLeg.Tenor).FwdRate(floatLeg.AsOf, Begin, End, floatLeg.Schedule.DayRule, floatLeg.Schedule.DayCount, Interpolation);
-                double DiscFactor = DiscCurve.DiscFactor(floatLeg.AsOf, End, Interpolation);
-                FloatValue += (FwdRate + spread) * Cvg * DiscFactor;
+                DateTime startDate = floatLeg.Schedule.AdjStartDates[i];
+                DateTime endDate = floatLeg.Schedule.AdjEndDates[i];
+                double cvg = floatLeg.Schedule.Coverages[i];
+                double fwdRate = FwdCurveCollection.GetCurve(floatLeg.Tenor).FwdRate(floatLeg.AsOf, startDate, endDate, floatLeg.Schedule.DayRule, floatLeg.Schedule.DayCount, Interpolation);
+                double discFactor = DiscCurve.DiscFactor(floatLeg.AsOf, endDate, Interpolation);
+                floatValue += (fwdRate + spread) * cvg * discFactor;
             }
 
-            return FloatValue * floatLeg.Notional;
+            return floatValue * floatLeg.Notional;
         }
 
         public double ValueFloatLegNoSpread(FloatLeg floatLeg)
         {
-            double FloatValue = 0.0;
+            double floatValue = 0.0;
             double spread = 0.0;
 
             for (int i = 0; i < floatLeg.Schedule.AdjStartDates.Count; i++)
             {
-                DateTime Begin = floatLeg.Schedule.AdjStartDates[i];
-                DateTime End = floatLeg.Schedule.AdjEndDates[i];
-                double Cvg = floatLeg.Schedule.Coverages[i];
-                double FwdRate = FwdCurveCollection.GetCurve(floatLeg.Tenor).FwdRate(floatLeg.AsOf, Begin, End, floatLeg.Schedule.DayRule, floatLeg.Schedule.DayCount, Interpolation);
-                double DiscFactor = DiscCurve.DiscFactor(floatLeg.AsOf, End, Interpolation);
-                FloatValue += (FwdRate + spread) * Cvg * DiscFactor;
+                DateTime startDate = floatLeg.Schedule.AdjStartDates[i];
+                DateTime endDate = floatLeg.Schedule.AdjEndDates[i];
+                double cvg = floatLeg.Schedule.Coverages[i];
+                double fwdRate = FwdCurveCollection.GetCurve(floatLeg.Tenor).FwdRate(floatLeg.AsOf, startDate, endDate, floatLeg.Schedule.DayRule, floatLeg.Schedule.DayCount, Interpolation);
+                double discFactor = DiscCurve.DiscFactor(floatLeg.AsOf, endDate, Interpolation);
+                floatValue += (fwdRate + spread) * cvg * discFactor;
             }
-            return FloatValue * floatLeg.Notional;
+            return floatValue * floatLeg.Notional;
         }
 
         public double ValueFixedLeg(FixedLeg FixedLeg)
@@ -116,12 +116,14 @@ namespace MasterThesis
             return (PvNoSpread - PvSpread) / AnnuityNoSpread;
         }
 
+        // Not used
         public double SwapFixedPv(SwapSimple MySwap)
         {
             int FixedPeriods = MySwap.FixedSchedule.AdjStartDates.Count;
             double FixedAnnuity = Annuity(MySwap.AsOf, MySwap.StartDate, MySwap.EndDate, MySwap.FixedFreq, MySwap.FixedSchedule.DayCount, MySwap.FixedSchedule.DayRule, Interpolation);
             return MySwap.FixedRate * FixedAnnuity;
         }
+
         public double SwapRate(SwapSimple MySwap)
         {
             double FloatPv = SwapFloatPv(MySwap);
@@ -136,12 +138,12 @@ namespace MasterThesis
 
             for (int i = 0; i < FloatPeriods; i++)
             {
-                DateTime Begin = MySwap.FloatSchedule.AdjStartDates[i];
-                DateTime End = MySwap.FloatSchedule.AdjEndDates[i];
-                double Cvg = MySwap.FloatSchedule.Coverages[i];
-                double FwdRate = FwdCurveCollection.GetCurve(MySwap.FloatFreq).FwdRate(MySwap.AsOf, Begin, End, MySwap.FloatSchedule.DayRule, MySwap.FloatSchedule.DayCount, Interpolation);
-                double DiscFactor = DiscCurve.DiscFactor(MySwap.AsOf, End, Interpolation);
-                FloatValue += FwdRate * Cvg * DiscFactor;
+                DateTime startDate = MySwap.FloatSchedule.AdjStartDates[i];
+                DateTime endDate = MySwap.FloatSchedule.AdjEndDates[i];
+                double cvg = MySwap.FloatSchedule.Coverages[i];
+                double fwdRate = FwdCurveCollection.GetCurve(MySwap.FloatFreq).FwdRate(MySwap.AsOf, startDate, endDate, MySwap.FloatSchedule.DayRule, MySwap.FloatSchedule.DayCount, Interpolation);
+                double discFactor = DiscCurve.DiscFactor(MySwap.AsOf, endDate, Interpolation);
+                FloatValue += fwdRate * cvg * discFactor;
             }
 
             return FloatValue;
@@ -159,6 +161,7 @@ namespace MasterThesis
 
     }
 
+    // Not used
     public class LinearRateModelSimple : LinearRateModel
     {
         public LinearRateModelSimple(Curve discCurve) : base (discCurve, new FwdCurves(discCurve)) { }

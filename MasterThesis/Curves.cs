@@ -14,13 +14,13 @@ namespace MasterThesis
         public int Dimension;
         public CurveTenor Frequency { get; set; }
 
-        public Curve(List<DateTime> dates, List<double> values, CurveTenor curveType = CurveTenor.Simple)
-        {
-            this.Dates = dates;
-            this.values = values;
-            this.Frequency = curveType;
-            this.Dimension = values.Count;
-        }
+        //public Curve(List<DateTime> dates, List<double> values)
+        //{
+        //    this.Dates = dates;
+        //    this.values = values;
+        //    this.Frequency = curveType;
+        //    this.Dimension = values.Count;
+        //}
         public Curve(List<DateTime> Dates, List<double> Values)
         {
             this.Dates = Dates;
@@ -148,30 +148,23 @@ namespace MasterThesis
 
     }
 
-    // Not used at the moment
-    public abstract class FwdCurve : Curve
-    {
-        public FwdCurve(List<DateTime> Dates, List<double> Values, CurveTenor Frequency) : base(Dates, Values, Frequency)
-        {
-        }
-    }
     public class FwdCurves
     {
-        private List<Curve> FwdCurvesCollection = new List<Curve>();
-        private List<CurveTenor> TenorCollection = new List<CurveTenor>();
+        private IDictionary<CurveTenor, Curve> FwdCurveCollection;
+
         public FwdCurves()
         {
-
+            FwdCurveCollection = new Dictionary<CurveTenor, Curve>();
         }
-        public void AddCurve(Curve MyCurve, CurveTenor curveType)
+        public void AddCurve(Curve curve, CurveTenor curveType)
         {
-            FwdCurvesCollection.Add(MyCurve);
-            TenorCollection.Add(curveType);
+            FwdCurveCollection[curveType] = curve;
         }
         public void AddCurve(List<DateTime> dates, List<double> values, CurveTenor tenor)
         {
-            Curve NewCurve = new MasterThesis.Curve(dates, values, tenor);
-            FwdCurvesCollection.Add(NewCurve);
+
+            Curve newCurve = new MasterThesis.Curve(dates, values);
+            FwdCurveCollection[tenor] = newCurve;
         }
 
         public FwdCurves(Curve discCurve)
@@ -181,7 +174,7 @@ namespace MasterThesis
 
         public Curve GetCurve(CurveTenor curveType)
         {
-            return FwdCurvesCollection[TenorCollection.FindIndex(x => x == curveType)];
+            return FwdCurveCollection[curveType];
         }
 
         public void OneCurveToRuleThemAll(Curve curve)

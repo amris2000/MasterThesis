@@ -32,15 +32,16 @@ namespace MasterThesis
         public DayRule DayRule;
         public DayCount DayCount;
 
-        protected SwapLeg(DateTime AsOf, DateTime StartDate, DateTime EndDate, CurveTenor Tenor, DayCount DayCount, DayRule DayRule, double Notional)
+        protected SwapLeg(DateTime asOf, DateTime startDate, DateTime endDate, CurveTenor referenceTenor, DayCount dayCount, DayRule dayRule, double notional)
         {
-            Schedule = new MasterThesis.SwapSchedule(AsOf, StartDate, EndDate, DayCount, DayRule, Tenor);
-            this.Tenor = Tenor;
-            this.DayRule = DayRule;
-            this.DayCount = DayCount;
-            this.Notional = Notional;
-            this.AsOf = AsOf;
-            this.StartDate = this.EndDate;
+            Schedule = new MasterThesis.SwapSchedule(asOf, startDate, endDate, dayCount, dayRule, referenceTenor);
+            this.Tenor = referenceTenor;
+            this.DayRule = dayRule;
+            this.DayCount = dayCount;
+            this.Notional = notional;
+            this.AsOf = asOf;
+            this.StartDate = startDate;
+            this.EndDate = endDate;
         }
 
     }
@@ -125,6 +126,9 @@ namespace MasterThesis
 
         public DateTime GetCurvePoint()
         {
+            if (EndDate == null)
+                throw new NullReferenceException("EndDate has not been set.");
+
             return EndDate;
         }
     }
@@ -164,12 +168,12 @@ namespace MasterThesis
         {
         }
 
-        public IrSwap(DateTime AsOf, DateTime StartDate, DateTime EndDate, double FixedRate,
-                        CurveTenor FixedFreq, CurveTenor FloatFreq, DayCount FixedDayCount, DayCount FloatDayCount,
-                        DayRule FixedDayRule, DayRule FloatDayRule, double Notional, double Spread = 0.0)
+        public IrSwap(DateTime asOf, DateTime startDate, DateTime endDate, double fixedRate,
+                        CurveTenor fixedFreq, CurveTenor floatFreq, DayCount fixedDayCount, DayCount floatDayCount,
+                        DayRule fixedDayRule, DayRule floatDayRule, double notional, double spread = 0.0)
         {
-            Leg1 = new FloatLeg(AsOf, StartDate, EndDate, FloatFreq, FloatDayCount, FloatDayRule, Notional, Spread);
-            Leg2 = new FixedLeg(AsOf, StartDate, EndDate, FixedRate, FixedFreq, FixedDayCount, FixedDayRule, Notional);
+            Leg1 = new FloatLeg(asOf, startDate, endDate, floatFreq, floatDayCount, floatDayRule, notional, spread);
+            Leg2 = new FixedLeg(asOf, startDate, endDate, fixedRate, fixedFreq, fixedDayCount, fixedDayRule, notional);
         }
 
         public override DateTime GetCurvePoint()
@@ -198,6 +202,9 @@ namespace MasterThesis
 
         public override DateTime GetCurvePoint()
         {
+            if (FloatLegSpread.EndDate == null)
+                throw new NullReferenceException("EndDate has not been set.");
+
             return FloatLegSpread.EndDate;
         }
     }
@@ -259,6 +266,9 @@ namespace MasterThesis
 
         public DateTime GetCurvePoint()
         {
+            if (EndDate == null)
+                throw new NullReferenceException("EndDate has not been set.");
+
             return EndDate;
         }
 
@@ -309,6 +319,9 @@ namespace MasterThesis
 
         public DateTime GetCurvePoint()
         {
+            if (FraSameSpec.EndDate == null)
+                throw new NullReferenceException("EndDate has not been set.");
+
             return FraSameSpec.EndDate;
         }
     }

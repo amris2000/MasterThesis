@@ -35,6 +35,13 @@ namespace MasterThesis.ExcelInterface
 
     public static class CalibrationFunctions
     {
+        public static void CalibrationSpec_Make(string baseName, double precision, double scaling, double diffStep, InterpMethod interpolation, int maxIterations, double startingValues, int bfgs_m)
+        {
+            CalibrationSpec spec = new ExcelInterface.CalibrationSpec(precision, scaling, diffStep, interpolation, maxIterations, startingValues, bfgs_m);
+            ObjectMap.CalibrationSettings[baseName] = spec;
+        }
+
+
         public static List<InstrumentQuote> CreateInstrumentList(string instrumentFactoryName, string[] identifiers, double[] quotes)
         {
             List<InstrumentQuote> instrumentQuotes = new List<InstrumentQuote>();
@@ -56,10 +63,27 @@ namespace MasterThesis.ExcelInterface
             ObjectMap.CurveCalibrationProblems[baseName] = new CurveCalibrationProblem(factory, instrumentQuotes);
         }
 
-        public static void DiscCurve_MakeFromCalibrationProblem(string baseName, string curveCalibrationProblem, double precision, double startingValue, int maxIterations, double diffStep, InterpMethod interpolation)
+        public static void FwdCurveCalibrationProblem_Make(string baseName, string discCurveName, string[] problemNames, CurveTenor[] tenors, string settingsName)
         {
-            DiscCurveConstructor constructor = new DiscCurveConstructor(ObjectMap.CurveCalibrationProblems[curveCalibrationProblem], interpolation);
-            constructor.SetCurve(precision, startingValue, maxIterations, diffStep);
+            CurveCalibrationProblem[] problems = new CurveCalibrationProblem[problemNames.Length];
+
+            for (int i = 0; i<problems.Length; i++)
+                problems[i] = ObjectMap.CurveCalibrationProblems[problemNames[i]];
+
+            ObjectMap.FwdCurveConstructors[baseName] = new FwdCurveConstructor(ObjectMap.DiscCurves[discCurveName], problems, tenors, ObjectMap.CalibrationSettings[settingsName]);
+        }
+
+        public static void FwdCurveCollection_MakeFromCalibrationProblem(string baseName, string calibrationProblem)
+        {
+            FwdCurveConstructor constructor = ObjectMap.FwdCurveConstructors[calibrationProblem];
+            constructor.CalibrateCurves();
+            ObjectMap.FwdCurveCollections[baseName] = constructor.GetFwdCurves();
+        }
+
+        public static void DiscCurve_MakeFromCalibrationProblem(string baseName, string curveCalibrationProblem, string settingsName)
+        {
+            DiscCurveConstructor constructor = new DiscCurveConstructor(ObjectMap.CurveCalibrationProblems[curveCalibrationProblem], ObjectMap.CalibrationSettings[settingsName]);
+            constructor.CalibrateCurve();
             ObjectMap.DiscCurves[baseName] = constructor.GetCurve();
         }
     }
@@ -154,15 +178,10 @@ namespace MasterThesis.ExcelInterface
 
         // ------- DISC CURVE FUNCTIONS
 
-        public static void DiscCurve_Make(string baseName, List<DateTime> dates, List<double> values, CurveTenor curveType)
+        public static void DiscCurve_Make(string baseName, List<DateTime> dates, List<double> values)
         {
-            if (curveType == CurveTenor.DiscLibor || curveType == CurveTenor.DiscOis)
-            {
-                Curve output = new MasterThesis.Curve(dates, values, curveType);
+                Curve output = new MasterThesis.Curve(dates, values);
                 ObjectMap.DiscCurves[baseName] = output;
-            }
-            else
-                throw new InvalidOperationException("MakeDiscCurve: has to be OIS or LIBOR curve");
         }
 
         public static object[,] DiscCurve_Get(string name)
@@ -192,9 +211,9 @@ namespace MasterThesis.ExcelInterface
 
         }
 
-        public static void FwdCurve_Make(string baseName, List<DateTime> dates, List<double> values, CurveTenor tenor)
+        public static void FwdCurve_Make(string baseName, List<DateTime> dates, List<double> values)
         {
-            Curve fwdCurve = new MasterThesis.Curve(dates, values, tenor);
+            Curve fwdCurve = new MasterThesis.Curve(dates, values);
             ObjectMap.FwdCurves[baseName] = fwdCurve;
         }
 
@@ -203,6 +222,11 @@ namespace MasterThesis.ExcelInterface
             ObjectMap.CheckExists(ObjectMap.FwdCurveCollections, collectionName, "Fwd curve collection does not exist");
             Curve fwdCurve = ObjectMap.FwdCurveCollections[collectionName].GetCurve(tenor);
             return ExcelUtilities.BuildObjectArrayFromCurve(fwdCurve, collectionName);
+        }
+
+        public static void FwdCurve_StoreFromCollection(string baseName, string collectionName, CurveTenor tenor)
+        {
+            ObjectMap.FwdCurves[baseName] = ObjectMap.FwdCurveCollections[collectionName].GetCurve(tenor);
         }
 
         // ------- LINEAR RATE MODEL FUNTIONS

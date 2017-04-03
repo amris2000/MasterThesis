@@ -24,6 +24,8 @@ namespace MasterThesis.ExcelInterface
 
         // Calibration
         public static IDictionary<string, CurveCalibrationProblem> CurveCalibrationProblems = new Dictionary<string, CurveCalibrationProblem>();
+        public static IDictionary<string, FwdCurveConstructor> FwdCurveConstructors = new Dictionary<string, FwdCurveConstructor>();
+        public static IDictionary<string, CalibrationSpec> CalibrationSettings = new Dictionary<string, CalibrationSpec>();
 
         public static void CheckExists<T>(IDictionary<string, T> dictionary, string key, string errMessage)
         {

@@ -31,7 +31,6 @@ namespace MasterThesis.ExcelInterface
             InstrumentTypeMap = new Dictionary<string, QuoteType>();
             CurvePointMap = new Dictionary<string, DateTime>();
             AsOf = asOf;
-
         }
 
         public double ValueInstrumentFromFactory(LinearRateModel model, string instrument)
@@ -113,6 +112,7 @@ namespace MasterThesis.ExcelInterface
                 IrSwap swapSpread = IrSwaps[swapSpreadIdent];
                 BasisSwap swap = new BasisSwap(swapNoSpread, swapSpread);
                 BasisSwaps[identifier] = swap;
+                DateTime curvePoint = swap.GetCurvePoint();
                 CurvePointMap[identifier] = swap.GetCurvePoint();
                 InstrumentTypeMap[identifier] = QuoteType.ParBasisSpread;
             }
@@ -253,7 +253,7 @@ namespace MasterThesis.ExcelInterface
             if (StrIsConvertableToDate(endTenor))
                 endDate = Convert.ToDateTime(endTenor);
             else
-                endDate = Functions.AddTenorAdjust(AsOf, endTenor, dayRule);
+                endDate = Functions.AddTenorAdjust(startDate, endTenor, dayRule);
 
             double fixedRate = 0.01;
             double notional = 1.0;
