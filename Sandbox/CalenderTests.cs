@@ -66,11 +66,6 @@ namespace Sandbox
             Compound = (Compound - 1) / (Functions.Cvg(Start, End, DayCount));
             Console.WriteLine("Compound: " + Compound);
 
-
-
-            OisSchedule Schedule1 = new OisSchedule(AsOf, Start, DayCount.ACT360, DayRule.MF, "5B");
-            Schedule1.Print();
-
             DateTime End2 = Functions.AddTenorAdjust(Start, "68M");
             SwapSchedule SwapSchedule = new SwapSchedule(AsOf, Start, End2, DayCount.ACT360, DayRule.MF, CurveTenor.Fwd6M, StubPlacement.Beginning);
             SwapSchedule.Print();

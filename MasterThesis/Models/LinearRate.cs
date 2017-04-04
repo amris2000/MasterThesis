@@ -34,7 +34,7 @@ namespace MasterThesis
         }
         public double Annuity(SwapSchedule Schedule, InterpMethod Method)
         {
-            return Annuity(Schedule.AsOf, Schedule.StartDate, Schedule.EndDate, Schedule.Freq, Schedule.DayCount, Schedule.DayRule, Method);
+            return Annuity(Schedule.AsOf, Schedule.StartDate, Schedule.EndDate, Schedule.Frequency, Schedule.DayCount, Schedule.DayRule, Method);
         }
 
         public double ParFraRate(Fra fra)

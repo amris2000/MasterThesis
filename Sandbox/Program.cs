@@ -28,9 +28,10 @@ namespace Sandbox
             //PricingTests.TestOisSwap();
             //PricingTests.OisSwapPricingTest();
 
-            Console.WriteLine(MiscTests.StringIsDate("15-Sep-26"));
+            //Console.WriteLine(MiscTests.StringIsDate("15-Sep-26"));
 
-
+            AADTests.ResultSetTest();
+            AADFunc.BlackScholes();
 
             
 

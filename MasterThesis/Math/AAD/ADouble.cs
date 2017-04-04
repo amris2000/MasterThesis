@@ -8,194 +8,6 @@ using System.Threading.Tasks;
 namespace MasterThesis
 {
 
-    public static class Constants
-    {
-        public static uint TAPE_SIZE = 10000;
-        public enum AADType
-        {
-            Undef = -1,
-            Const = 0,
-            Asg = 1,
-            Add = 2,
-            Sub = 3,
-            Mul = 4,
-            Div = 5,
-            Exp = 6,
-            Log = 7,
-            Pow = 8,
-            ConsAdd = 13,
-            ConsSub = 14,
-            ConsDiv = 12,
-            ConsMul = 11
-        };
-
-        public static string GetTypeName(int n)
-        {
-            switch (n)
-            {
-                case -1:
-                    return "UNDEF";
-                case 0:
-                    return "CONST";
-                case 1:
-                    return "ASSGN";
-                case 2:
-                    return "ADD";
-                case 3:
-                    return "SUBTR";
-                case 4:
-                    return "MULTP";
-                case 5:
-                    return "DIVIS";
-                case 6:
-                    return "EXPON";
-                case 7:
-                    return "LOGRM";
-                case 8:
-                    return "POWER";
-                case 11:
-                    return "CNMUL";
-                case 13:
-                    return "CNADD";
-                case 14:
-                    return "CNSUB";
-                case 12:
-                    return "CNDIV";
-                default:
-                    return "UNDEF";
-            }
-        }
-    }
-
-    public static class AADTape
-    {
-        public static int TapeCounter = 0;
-        public static int[] Arg1 = new int[Constants.TAPE_SIZE];
-        public static int[] Arg2 = new int[Constants.TAPE_SIZE];
-        public static int[] Oc = new int[Constants.TAPE_SIZE];
-        public static double[] Value = new double[Constants.TAPE_SIZE];
-        public static double[] Adjoint = new double[Constants.TAPE_SIZE];
-        public static double[] Consts = new double[Constants.TAPE_SIZE];
-
-        public static void ResetTape()
-        {
-            for (int i = TapeCounter - 1; i >= 0; i--)
-            {
-                Adjoint[i] = 0;
-            }
-            TapeCounter = 0;
-        }
-
-        public static void IncrTape()
-        {
-            TapeCounter = TapeCounter + 1;
-        }
-
-        public static void AddEntry(int OcV, int Arg1V, int Arg2V, double A, double V, double? K = null)
-        {
-            Arg1[TapeCounter] = Arg1V;
-            Arg2[TapeCounter] = Arg2V;
-            Oc[TapeCounter] = OcV;
-            Value[TapeCounter] = V;
-            if (K.HasValue)
-                Consts[TapeCounter] = (double) K;
-            IncrTape();
-        }
-
-        public static void InterpretTape()
-        {
-            // Once the function has been calculated
-            // and the tape recorded, run this function
-            // to propagate the adjoints backwards.
-            // the switch implements how the adjoint is treated
-            // for each of the operators
-
-            Adjoint[TapeCounter - 1] = 1;
-            for (int i = TapeCounter - 1; i >= 1; i--)
-            {
-                switch (Oc[i])
-                {
-                    case 1: // Assign
-                        Adjoint[Arg1[i]] += Adjoint[i];
-                        break;
-
-                    // -- ELEMENTARY OPERATIONS
-                    case 2: // Add
-                        Adjoint[Arg1[i]] += Adjoint[i];
-                        Adjoint[Arg2[i]] += Adjoint[i];
-                        break;
-                    case 3: // Subtract
-                        Adjoint[Arg1[i]] += Adjoint[i];
-                        Adjoint[Arg2[i]] -= Adjoint[i];
-                        break;
-                    case 4: // Multiply
-                        Adjoint[Arg1[i]] += Value[Arg2[i]] * Adjoint[i];
-                        Adjoint[Arg2[i]] += Value[Arg1[i]] * Adjoint[i];
-                        break;
-
-                    case 5: // Division (Check that this is in fact correct...)
-                        Adjoint[Arg1[i]] += Adjoint[i] / Value[Arg2[i]]; 
-                        Adjoint[Arg2[i]] -= Adjoint[i] * Value[Arg1[i]]/ (Math.Pow(Value[Arg2[i]], 2));
-                        break;
-
-                    // -- UNARY OPERATORS
-                    case 6: // Exponentiate
-                        Adjoint[Arg1[i]] += Adjoint[i] * Value[i]; // Value[i] = Exp(x). Could also say Math.Exp(Value[Arg1[i]])
-                        break;
-                    case 7: // Natural Logarithm
-                        Adjoint[Arg1[i]] += Adjoint[i] / Value[Arg1[i]];
-                        break;
-                    case 8: 
-                        Adjoint[Arg1[i]] += Adjoint[i] * Consts[i] * Math.Pow(Value[Arg1[i]], Consts[i] - 1);
-                        break;
-
-                    // -- CONSTANT OPERATORS
-                    case 11: // Const multiply
-                        Adjoint[Arg1[i]] += Adjoint[i]*Consts[i];
-                        break;
-                    case 12: // Const Divide
-                        Adjoint[Arg1[i]] -= Adjoint[i] * Consts[i] / (Math.Pow(Value[Arg1[i]], 2));
-                        break;
-                    case 13: // Const add - Should perhabs do nothing here ... For efficiency (or not.. seems to give 0)
-                        Adjoint[Arg1[i]] += Adjoint[i];
-                        break;
-                    case 14: // Const sub
-                        Adjoint[Arg1[i]] -= Adjoint[i];
-                        break;
-
-                    default:
-                        break;
-                }
-            }
-        }
-
-        public static void PrintTape()
-        {
-            Console.WriteLine("");
-            Console.WriteLine("----------- Printing AAD tape");
-            List<string[]> Out = new List<string[]>();
-
-            Out.Add(new string[] { "    ", "#", "OPER", "ARG1", "ARG2", "VAL", "ADJ", "CONS" });
-            for (int i = 0; i < TapeCounter; i++)
-            {
-
-                Out.Add(new string[] {
-                    "     ",
-                    i.ToString(),
-                    Constants.GetTypeName(AADTape.Oc[i]),
-                    AADTape.Arg1[i].ToString(),
-                    AADTape.Arg2[i].ToString(),
-                    Math.Round(AADTape.Value[i], 3).ToString(),
-                    Math.Round(AADTape.Adjoint[i], 3).ToString(),
-                    Math.Round(AADTape.Consts[i],3).ToString()
-                    });
-            }
-
-            var Output = PrintUtility.PrintListNicely(Out, 5);
-            Console.WriteLine(Output);
-        }
-    }
-
 #pragma warning disable CS0660 // Type defines operator == or operator != but does not override Object.Equals(object o)
 #pragma warning disable CS0661 // Type defines operator == or operator != but does not override Object.GetHashCode()
     public class ADouble
@@ -210,7 +22,7 @@ namespace MasterThesis
         {
             AADType = (int)Constants.AADType.Undef;
             Value = 0;
-            //Count = AADTape.TapeCounter;
+            Count = AADTape._tapeCounter;
             //AADTape.AddEntry((int)AADType, Count, 0, 0, Value);
         }
 
@@ -218,7 +30,7 @@ namespace MasterThesis
         {
             AADType = (int)Constants.AADType.Const;
             Value = MyDouble;
-            Count = AADTape.TapeCounter;
+            Count = AADTape._tapeCounter;
             AADTape.AddEntry((int)AADType, Count, 0, 0, Value);
         }
 
@@ -228,9 +40,17 @@ namespace MasterThesis
             // as classes are by reference. This effectively does it.
 
             ADouble Temp = new MasterThesis.ADouble(Value);
-            AADTape.AddEntry((int)Constants.AADType.Asg, AADTape.TapeCounter, 0, 0, Value);
+            AADTape.AddEntry((int)Constants.AADType.Asg, AADTape._tapeCounter, 0, 0, Value);
             return Temp;
         }
+
+        public void Assign()
+        {
+            Count = AADTape._tapeCounter;
+            AADTape.AddEntry((int)Constants.AADType.Const, AADTape._tapeCounter, 0, 0, Value);
+        }
+
+
 
         public static bool operator ==(ADouble x, ADouble y)
         {
@@ -262,7 +82,7 @@ namespace MasterThesis
         {
             ADouble Temp = new ADouble();
             Temp.Value = x1.Value * x2.Value;
-            Temp.Count = AADTape.TapeCounter;
+            Temp.Count = AADTape._tapeCounter;
             AADTape.AddEntry((int)Constants.AADType.Mul, x1.Count, x2.Count, 0, Temp.Value);
             return Temp;
         }
@@ -271,7 +91,7 @@ namespace MasterThesis
         {
             ADouble temp = new MasterThesis.ADouble();
             temp.Value = x.Value * K;
-            temp.Count = AADTape.TapeCounter;
+            temp.Count = AADTape._tapeCounter;
             AADTape.AddEntry((int)Constants.AADType.ConsMul, x.Count, 0, 0, temp.Value, K);
             return temp;
         }
@@ -280,7 +100,7 @@ namespace MasterThesis
         {
             ADouble temp = new MasterThesis.ADouble();
             temp.Value = x.Value * K;
-            temp.Count = AADTape.TapeCounter;
+            temp.Count = AADTape._tapeCounter;
             AADTape.AddEntry((int)Constants.AADType.ConsMul, x.Count, 0, 0, temp.Value, K);
             return temp;
         }
@@ -292,7 +112,7 @@ namespace MasterThesis
         {
             ADouble Temp = new ADouble();
             Temp.Value = x1.Value + x2.Value;
-            Temp.Count = AADTape.TapeCounter;
+            Temp.Count = AADTape._tapeCounter;
             AADTape.AddEntry((int)Constants.AADType.Add, x1.Count, x2.Count, 0, Temp.Value);
             return Temp;
         }
@@ -301,7 +121,7 @@ namespace MasterThesis
         {
             ADouble Temp = new ADouble();
             Temp.Value = x.Value + K;
-            Temp.Count = AADTape.TapeCounter;
+            Temp.Count = AADTape._tapeCounter;
             AADTape.AddEntry((int)Constants.AADType.ConsAdd, x.Count, 0, 0, Temp.Value, K);
             return Temp;
         }
@@ -310,7 +130,7 @@ namespace MasterThesis
         {
             ADouble Temp = new ADouble();
             Temp.Value = x.Value + K;
-            Temp.Count = AADTape.TapeCounter;
+            Temp.Count = AADTape._tapeCounter;
             AADTape.AddEntry((int)Constants.AADType.ConsAdd, x.Count, 0, 0, Temp.Value, K);
             return Temp;
         }
@@ -323,7 +143,7 @@ namespace MasterThesis
         {
             ADouble Temp = new ADouble();
             Temp.Value = x1.Value - x2.Value;
-            Temp.Count = AADTape.TapeCounter;
+            Temp.Count = AADTape._tapeCounter;
             AADTape.AddEntry((int)Constants.AADType.Sub, x1.Count, x2.Count, 0, Temp.Value);
             return Temp;
         }
@@ -332,7 +152,7 @@ namespace MasterThesis
         {
             ADouble Temp = new ADouble();
             Temp.Value = x.Value - K;
-            Temp.Count = AADTape.TapeCounter;
+            Temp.Count = AADTape._tapeCounter;
             AADTape.AddEntry((int)Constants.AADType.ConsSub, x.Count, 0, 0, Temp.Value, K);
             return Temp;
         }
@@ -341,7 +161,7 @@ namespace MasterThesis
         {
             ADouble Temp = new ADouble();
             Temp.Value = K - x.Value;
-            Temp.Count = AADTape.TapeCounter;
+            Temp.Count = AADTape._tapeCounter;
             AADTape.AddEntry((int)Constants.AADType.ConsSub, x.Count, 0, 0, Temp.Value, K);
             return Temp;
         }
@@ -353,7 +173,7 @@ namespace MasterThesis
         {
             ADouble Temp = new ADouble();
             Temp.Value = x1.Value / x2.Value;
-            Temp.Count = AADTape.TapeCounter;
+            Temp.Count = AADTape._tapeCounter;
             //AADTape.AddEntry((int)Constants.AADType.Pow, x1.Count, 0, 0, Temp.Value, -1);
             AADTape.AddEntry((int)Constants.AADType.Div, x1.Count, x2.Count, 0, Temp.Value);
             return Temp;
@@ -363,7 +183,7 @@ namespace MasterThesis
         {
             ADouble Temp = new MasterThesis.ADouble();
             Temp.Value = K / x.Value;
-            Temp.Count = AADTape.TapeCounter;
+            Temp.Count = AADTape._tapeCounter;
             AADTape.AddEntry((int)Constants.AADType.ConsDiv, x.Count, 0, 0, Temp.Value, K);
             return Temp;
         }
@@ -373,7 +193,7 @@ namespace MasterThesis
         {
             ADouble Temp = new MasterThesis.ADouble();
             Temp.Value = x.Value / K;
-            Temp.Count = AADTape.TapeCounter;
+            Temp.Count = AADTape._tapeCounter;
             AADTape.AddEntry((int)Constants.AADType.ConsMul, x.Count, 0, 0, Temp.Value, 1/K);
             return Temp;
         }
@@ -392,7 +212,7 @@ namespace MasterThesis
         {
             ADouble Temp = new ADouble();
             Temp.Value = Math.Exp(x1.Value);
-            Temp.Count = AADTape.TapeCounter;
+            Temp.Count = AADTape._tapeCounter;
             AADTape.AddEntry((int)Constants.AADType.Exp, x1.Count, 0, 0, Temp.Value);
             return Temp;
         }
@@ -401,7 +221,7 @@ namespace MasterThesis
         {
             ADouble Temp = new ADouble();
             Temp.Value = Math.Log(x1.Value);
-            Temp.Count = AADTape.TapeCounter;
+            Temp.Count = AADTape._tapeCounter;
             AADTape.AddEntry((int)Constants.AADType.Log, x1.Count, 0, 0, Temp.Value);
             return Temp;
         }
@@ -410,7 +230,7 @@ namespace MasterThesis
         {
             ADouble Temp = new ADouble();
             Temp.Value = Math.Pow(x1.Value, K);
-            Temp.Count = AADTape.TapeCounter;
+            Temp.Count = AADTape._tapeCounter;
             AADTape.AddEntry((int)Constants.AADType.Pow, x1.Count, 0, 0, Temp.Value, K);
             return Temp;
         }

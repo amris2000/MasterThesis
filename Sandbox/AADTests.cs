@@ -25,5 +25,33 @@ namespace Sandbox
             AADFunc.BlackScholes(new ADouble(0.20), new ADouble(100.0), new ADouble(0.05), new ADouble(0.0), new ADouble(1.0), new ADouble(90.0));
             AADFunc.FuncDiv3(new ADouble(10), new ADouble(-2.5), 5.0);
         }
+
+        public static void ResultSetTest()
+        {
+            ADouble vol = 0.2;
+            ADouble spot = 100.0;
+            ADouble rate = 0.05;
+            ADouble time = 0.0;
+            ADouble mat = 1.0;
+            ADouble strike = 90.0;
+
+            ADouble[] parameters = new ADouble[] { vol, spot, rate, time, mat, strike };
+            //List<Ref<ADouble>> parameters = new List<Ref<ADouble>>();
+            //parameters.Add(new Ref<ADouble> { Value = vol });
+            //parameters.Add(new Ref<ADouble> { Value = spot });
+            //parameters.Add(new Ref<ADouble> { Value = rate });
+            //parameters.Add(new Ref<ADouble> { Value = time });
+            //parameters.Add(new Ref<ADouble> { Value = mat });
+            //parameters.Add(new Ref<ADouble> { Value = strike });
+
+            string[] identifiers = new string[] { "Vol", "Spot", "Rate", "Time0", "Mat", "Strike" };
+
+            AADTape.Initialize(parameters, identifiers);
+            AADFunc.BlackScholesNoReset(vol,spot,rate,time,mat,strike);
+            AADTape.InterpretTape();
+            AADTape.PrintResultSet();
+            AADTape.PrintTape();
+            AADTape.ResetTape();
+        }
     }
 }

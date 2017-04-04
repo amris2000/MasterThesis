@@ -126,6 +126,7 @@ namespace MasterThesis.ExcelInterface
             _discCurve = discCurve;
             _tenors = tenors;
             _settings = settings;
+            _fwdCurveCollection = new FwdCurves();
 
             for (int i = 0; i < problems.Length; i++)
                 _problemMap[tenors[i]] = problems[i];
@@ -177,8 +178,6 @@ namespace MasterThesis.ExcelInterface
                 }
                 doubles.Add(temp);
             }
-
-            _fwdCurveCollection = new FwdCurves();
 
             for (int i = 0; i<_curvePoints.Length; i++)
             {

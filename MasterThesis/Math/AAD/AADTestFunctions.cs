@@ -8,6 +8,13 @@ namespace MasterThesis
 {
     public static class AADFunc
     {
+
+        public static void BlackScholes()
+        {
+            AADTape.Initialize();
+            BlackScholes(new ADouble(0.20), new ADouble(100.0), new ADouble(0.05), new ADouble(0.0), new ADouble(1.0), new ADouble(90.0));
+        }
+
         public static void BlackScholes(ADouble Vol, ADouble Spot, ADouble Rate, ADouble Time, ADouble Mat, ADouble Strike)
         {
             ADouble Help1 = Vol * ADouble.Sqrt(Mat - Time);
@@ -20,6 +27,14 @@ namespace MasterThesis
             AADTape.InterpretTape();
             AADTape.PrintTape();
             AADTape.ResetTape();
+        }
+
+        public static void BlackScholesNoReset(ADouble vol, ADouble spot, ADouble rate, ADouble time, ADouble mat, ADouble strike)
+        {
+            ADouble Help1 = vol * ADouble.Sqrt(mat - time);
+            ADouble d1 = 1 / Help1 * (ADouble.Log(spot / strike) + (rate + 0.5 * ADouble.Pow(vol, 2)) * (mat - time));
+            ADouble d2 = d1 - vol * ADouble.Sqrt(mat - time);
+            ADouble Out = Maths.NormalCdf(d1) * spot - strike * ADouble.Exp(-rate * (mat - time)) * Maths.NormalCdf(d2);
         }
 
 

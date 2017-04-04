@@ -8,34 +8,28 @@ using MasterThesis;
 
 namespace MasterThesis
 {
-    public static class AllowedValues
+    public abstract class Schedule
     {
-        private static string[] DayRules = new string[] { "MF", "F", "P" };
-        private static string[] TenorSuffix = new string[] { "D", "B", "W", "M", "Y" };
-        private static string[] CountBasis = new string[] { "ACT/360", "ACT/365", "ACT/365.25", "30/360" };
-        private static string[] Frequencies = new string[] { "1D", "1M", "3M", "6M", "1Y" };
-    }
+        public List<DateTime> UnAdjStartDates { get; protected set; }
+        public List<DateTime> UnAdjEndDates { get; protected set; }
+        public List<DateTime> AdjStartDates { get; protected set; }
+        public List<DateTime> AdjEndDates { get; protected set; }
+        public List<double> Coverages { get; protected set; }
 
-    public class OisSchedule
-    {
-        public List<DateTime> UnAdjStartDates = new List<DateTime>();
-        public List<DateTime> UnAdjEndDates = new List<DateTime>();
-        public List<DateTime> AdjStartDates = new List<DateTime>();
-        public List<DateTime> AdjEndDates = new List<DateTime>();
-        public List<double> Coverages = new List<double>();
-        public DateTime AsOf;
-        public DateTime StartDate, EndDate;
-        public DayCount DayCount;
-        public DayRule DayRule;
-        public string EndTenor;
-        public uint Periods;
+        public DateTime AsOf { get; protected set; }
+        public DateTime StartDate { get; protected set; }
+        public DateTime EndDate { get; protected set; }
+        public DayCount DayCount { get; protected set; }
+        public DayRule DayRule { get; protected set; }
+        public uint Periods { get; protected set; }
 
+        // Move these to some other general class
         public static double ConvertTenorToYearFraction(string tenor)
         {
             double multiplier = 0.0;
             int number = Convert.ToInt16(tenor.Replace(tenor.Right(1), ""));
 
-            switch(tenor.Right(1).ToUpper())
+            switch (tenor.Right(1).ToUpper())
             {
                 case "M":
                     multiplier = 31;
@@ -46,7 +40,8 @@ namespace MasterThesis
                 case "W":
                     multiplier = 7;
                     break;
-                case "B": case "D":
+                case "B":
+                case "D":
                     multiplier = 1;
                     break;
                 default:
@@ -54,7 +49,6 @@ namespace MasterThesis
             }
             return number * multiplier / 365;
         }
-
         public static bool CompareTenors(string tenorIsLarger, string comparisonTenor)
         {
             if (ConvertTenorToYearFraction(tenorIsLarger) > ConvertTenorToYearFraction(comparisonTenor))
@@ -62,44 +56,98 @@ namespace MasterThesis
             else
                 return false;
         }
-
         public static int GetNumberFromTenor(string tenor)
         {
             return Convert.ToInt16(tenor.Replace(tenor.Right(1), ""));
         }
-
         public static Tenor GetLetterFromTenor(string tenor)
         {
             return StrToEnum.TenorConvert(tenor.Right(1));
         }
 
-        public OisSchedule(DateTime asOf, string startTenor, string endTenor, string settlementLag, DayCount dayCount, DayRule dayRule)
+        public Schedule(DateTime asOf, DateTime startDate, DateTime endDate, DayCount dayCount, DayRule dayRule)
         {
+            SetValues(asOf, startDate, endDate, dayCount, dayRule);
+        }
+
+        public Schedule(DateTime asOf, string startTenor, string endTenor, DayCount dayCount, DayRule dayRule)
+        {
+            DateTime startDate = Functions.AddTenor(asOf, startTenor, dayRule);
+            DateTime endDate = Functions.AddTenor(startDate, endTenor, dayRule);
+
+            SetValues(asOf, startDate, endDate, dayCount, dayRule);
+        }
+
+        public void SetValues(DateTime asOf, DateTime startDate, DateTime endDate, DayCount dayCount, DayRule dayRule)
+        {
+            UnAdjEndDates = new List<DateTime>();
+            UnAdjStartDates = new List<DateTime>();
+            AdjStartDates = new List<DateTime>();
+            AdjEndDates = new List<DateTime>();
+            Coverages = new List<double>();
+
             AsOf = asOf;
-            DateTime startDate = Functions.AddTenorAdjust(asOf, settlementLag, dayRule);
-            DateTime endDate = Functions.AddTenorAdjust(startDate, endTenor, dayRule);
             StartDate = startDate;
             EndDate = endDate;
+            DayCount = dayCount;
+            DayRule = dayRule;
+        }
+
+        public void Print()
+        {
+            Console.WriteLine("");
+            Console.WriteLine("--------- Printing OIS Schedule ---------");
+            Console.WriteLine("AsOf.......: " + AsOf);
+            Console.WriteLine("DayCount...: " + DayCount);
+            Console.WriteLine("DayRule....: " + DayRule);
+            Console.WriteLine("StartDate..: " + StartDate.ToString("dd/MM/yyyy"));
+            Console.WriteLine("EndDate....: " + EndDate.ToString("dd/MM/yyyy"));
+
+            Console.WriteLine("");
+
+            var Lines = new List<string[]>();
+            Lines.Add(new[] { "UnAdjStart", "UnAdjEnd", "Start", "End", "Cvg" });
+            for (int j = 0; j < UnAdjStartDates.Count; j++)
+            {
+                Lines.Add(new[] { UnAdjStartDates[j].ToString("dd/MM/yyyy"),
+                                UnAdjEndDates[j].ToString("dd/MM/yyyy"),
+                                AdjStartDates[j].ToString("dd/MM/yyyy"),
+                                AdjEndDates[j].ToString("dd/MM/yyyy"),
+                                Math.Round(Coverages[j], 2).ToString() });
+            }
+            var Output = PrintUtility.PrintListNicely(Lines, 3);
+            Console.WriteLine(Output);
+
+            Console.WriteLine("------------- Schedule end -------------");
+        }
+    }
+
+    // Ideally, this should be a derived class on SwapSchedule, since an
+    // OIS schedule (in this context) is either a short period, or 1Y schedule with 
+    // a stub in the end. Nice to have
+    public class OisSchedule : Schedule
+    {
+        public OisSchedule(DateTime asOf, string startTenor, string endTenor, string settlementLag, DayCount dayCount, DayRule dayRule)
+            : base(asOf, startTenor, endTenor, dayCount, dayRule)
+        {
             Tenor startTenorEnum = GetLetterFromTenor(startTenor);
             Tenor endTenorEnum = GetLetterFromTenor(endTenor);
 
-            UnAdjStartDates.Add(startDate);
-            AdjStartDates.Add(startDate);
-
+            UnAdjStartDates.Add(StartDate);
+            AdjStartDates.Add(StartDate);
 
             // Just to make sure we compare with both "1Y" and "12M" (because i'm lazy in correcting for DayCount)
             if (CompareTenors(endTenor, "1Y") == false && CompareTenors(endTenor, "12M") == false)
             {
                 // Simple OIS swap
-                double cvg = Functions.Cvg(startDate, endDate, dayCount);
-                AdjEndDates.Add(endDate);
-                AdjStartDates.Add(startDate);
+                double cvg = Functions.Cvg(StartDate, EndDate, dayCount);
+                AdjEndDates.Add(EndDate);
+                AdjStartDates.Add(StartDate);
                 Coverages.Add(cvg);
                 return;
             }
             else
             {
-                bool onlyWholePeriods = false;
                 int months = 0;
 
                 // 1Y periods + stub
@@ -109,7 +157,6 @@ namespace MasterThesis
                 {
                     periods = GetNumberFromTenor(endTenor);
                     years = periods;
-                    onlyWholePeriods = true;
                 }
                 else if (endTenorEnum == Tenor.M)
                 {
@@ -119,19 +166,17 @@ namespace MasterThesis
                     {
                         months = 0;
                         periods = years;
-                        onlyWholePeriods = true;
                     }
                     else
                     {
                         months = GetNumberFromTenor(endTenor) - 12 * years;
                         periods = years + 1;
-                        onlyWholePeriods = false;
                     }
                 }
                 else
                     throw new InvalidOperationException("OIS Schedule only works for Y,M endTenors");
 
-                UnAdjEndDates.Add(Functions.AddTenorAdjust(startDate, "1Y"));
+                UnAdjEndDates.Add(Functions.AddTenorAdjust(StartDate, "1Y"));
                 AdjEndDates.Add(Functions.AdjustDate(UnAdjEndDates[0], DayRule.N));
                 Coverages.Add(Functions.Cvg(AdjStartDates[0], AdjEndDates[0], DayCount));
 
@@ -163,139 +208,19 @@ namespace MasterThesis
                 }
             }
         }
-
-        public OisSchedule(DateTime asOf, DateTime startDate, DayCount dayCount, DayRule dayRule, string Tenor)
-        {
-            double TenorNumber = Functions.ParseTenor(Tenor).Item1;
-            string TenorLetter = Functions.ParseTenor(Tenor).Item2;
-
-            this.AsOf = asOf;
-            this.StartDate = startDate;
-            this.EndDate = Functions.AddTenorAdjust(StartDate, Tenor);
-
-            DateTime AdjStart = Functions.AdjustDate(startDate, dayRule);
-            DateTime AdjEnd = Functions.AdjustDate(EndDate, DayRule);
-
-            int Years = 0;
-            int Periods = 0;
-            string DivTenor = "0B";
-
-            if (TenorLetter.ToUpper() == "M")
-            {
-                Years = (int)Math.Truncate(TenorNumber) / 12;
-                if (TenorNumber % 12 == 0)
-                    Periods = Years;
-                else
-                {
-                    Periods = Years + 1;
-                    DivTenor = (TenorNumber % 12).ToString() + "M";
-                }
-            }
-            else if (TenorLetter.ToUpper() == "Y")
-            {
-                Years = (int)Math.Truncate(TenorNumber);
-                Periods = Years;
-            }
-            else if (TenorLetter.ToUpper() == "W" || TenorLetter.ToUpper() == "B")
-                Periods = 1;
-            else
-                throw new ArgumentException("This only works for M and Y tenors..");
-
-            UnAdjStartDates.Add(StartDate);
-            AdjStartDates.Add(AdjStart);
-
-
-            if (Periods == 1)
-            {
-                UnAdjEndDates.Add(EndDate);
-                AdjEndDates.Add(AdjEnd);
-                Coverages.Add(Functions.Cvg(AdjStart, AdjEnd, DayCount));
-                return;
-            }
-            else
-            {
-                UnAdjEndDates.Add(Functions.AddTenorAdjust(StartDate, "1Y"));
-                AdjEndDates.Add(Functions.AdjustDate(UnAdjEndDates[0], DayRule.N));
-                Coverages.Add(Functions.Cvg(AdjStartDates[0], AdjEndDates[0], DayCount));
-            }
-
-            for (int j = 1; j < Periods; j++)
-            {
-                if (Periods > Years && Periods == j + 1) // In case we have tenor like "18M" and have to create a stub periods
-                {
-                    UnAdjStartDates.Add(Functions.AddTenorAdjust(UnAdjStartDates[j - 1], "1Y", dayRule));
-                    AdjStartDates.Add(Functions.AdjustDate(UnAdjStartDates[j], dayRule));
-                    UnAdjEndDates.Add(Functions.AddTenorAdjust(UnAdjEndDates[j - 1], DivTenor, dayRule));
-                    AdjEndDates.Add(Functions.AdjustDate(UnAdjEndDates[j], dayRule));
-                    Coverages.Add(Functions.Cvg(AdjStartDates[j], AdjEndDates[j], DayCount));
-                }
-                else
-                {
-                    UnAdjStartDates.Add(Functions.AddTenorAdjust(UnAdjStartDates[j - 1], "1Y", dayRule));
-                    AdjStartDates.Add(Functions.AdjustDate(UnAdjStartDates[j], dayRule));
-                    UnAdjEndDates.Add(Functions.AddTenorAdjust(UnAdjEndDates[j - 1], "1Y", dayRule));
-                    AdjEndDates.Add(Functions.AdjustDate(UnAdjEndDates[j], dayRule));
-                    Coverages.Add(Functions.Cvg(AdjStartDates[j], AdjEndDates[j], DayCount));
-                }
-            }
-        }
-        public void Print()
-        {
-            Console.WriteLine("");
-            Console.WriteLine("--------- Printing OIS Schedule ---------");
-            Console.WriteLine("AsOf.......: " + AsOf);
-            Console.WriteLine("DayCount...: " + DayCount);
-            Console.WriteLine("DayRule....: " + DayRule);
-            Console.WriteLine("Frequency..: " + EndTenor);
-            Console.WriteLine("StartDate..: " + StartDate.ToString("dd/MM/yyyy"));
-            Console.WriteLine("EndDate....: " + EndDate.ToString("dd/MM/yyyy"));
-
-            Console.WriteLine("");
-
-            var Lines = new List<string[]>();
-            Lines.Add(new[] { "UnAdjStart", "UnAdjEnd", "Start", "End", "Cvg" });
-            for (int j = 0; j < UnAdjStartDates.Count; j++)
-            {
-                Lines.Add(new[] { UnAdjStartDates[j].ToString("dd/MM/yyyy"),
-                                UnAdjEndDates[j].ToString("dd/MM/yyyy"),
-                                AdjStartDates[j].ToString("dd/MM/yyyy"),
-                                AdjEndDates[j].ToString("dd/MM/yyyy"),
-                                Math.Round(Coverages[j], 2).ToString() });
-            }
-            var Output = PrintUtility.PrintListNicely(Lines, 3);
-            Console.WriteLine(Output);
-
-            Console.WriteLine("------------- Schedule end -------------");
-
-        }
-
     }
 
-    public class SwapSchedule
+    public class SwapSchedule : Schedule
     {
-        // To do: convert to list (or perhabs not)
-        public List<DateTime> UnAdjStartDates = new List<DateTime>();
-        public List<DateTime> UnAdjEndDates = new List<DateTime>();
-        public List<DateTime> AdjStartDates = new List<DateTime>();
-        public List<DateTime> AdjEndDates = new List<DateTime>();
-        public List<double> Coverages = new List<double>();
-        public DateTime AsOf;
-        public DateTime StartDate, EndDate;
-        public DayCount DayCount;
-        public DayRule DayRule;
-        public CurveTenor Freq;
-        public uint Periods;
+        public CurveTenor Frequency { get; }
+        public StubPlacement Stub;
 
-        public SwapSchedule(DateTime asOf, DateTime startDate, DateTime endDate, DayCount dayCount, DayRule dayRule, CurveTenor tenor, StubPlacement stub = StubPlacement.NullStub)
+        public SwapSchedule(DateTime asOf, DateTime startDate, DateTime endDate, DayCount dayCount, DayRule dayRule, CurveTenor frequency, StubPlacement stub = StubPlacement.NullStub)
+            : base(asOf, startDate, endDate, dayCount, dayRule)
         {
-            this.AsOf = asOf;
-            this.DayCount = dayCount;
-            this.DayRule = dayRule;
-            this.Freq = tenor;
-            this.StartDate = startDate;
-            this.EndDate = endDate;
-
-            GenerateSchedule(asOf, startDate, endDate, dayCount, dayRule, tenor, stub);
+            this.Frequency = frequency;
+            this.Stub = stub;
+            GenerateSchedule(asOf, startDate, endDate, dayCount, dayRule, frequency, stub);
         }
 
         private void GenerateSchedule(DateTime asOf, DateTime startDate, DateTime endDate, DayCount dayCount, DayRule dayRule, CurveTenor tenor, StubPlacement stub = StubPlacement.NullStub)
@@ -377,6 +302,7 @@ namespace MasterThesis
             AdjStartDates.Sort(new Comparison<DateTime>((x, y) => x.CompareTo(y)));
             AdjEndDates.Sort(new Comparison<DateTime>((x, y) => x.CompareTo(y)));
 
+
             for (int i = 0; i<AdjStartDates.Count; i++)
             {
                 Coverages.Add(Functions.Cvg(AdjStartDates[i], AdjEndDates[i], DayCount));
@@ -384,47 +310,11 @@ namespace MasterThesis
         }
 
         // Constructer with tenors instead of dates.
-        public SwapSchedule(DateTime AsOf, string StartTenor, string EndTenor, DayCount DayCountBasis, DayRule DayRule, CurveTenor Freq)
+        public SwapSchedule(DateTime asOf, string startTenor, string endTenor, DayCount dayCount, DayRule dayRule, CurveTenor frequency)
+            : base(asOf, startTenor, endTenor, dayCount, dayRule)
         {
-            this.AsOf = AsOf;
-            DayCount = DayCountBasis;
-            this.DayRule = DayRule;
-            this.Freq = Freq;
-            DateTime UnAdjStartDate = Functions.AddTenorAdjust(AsOf, StartTenor);
-            DateTime AdjStartDate = Functions.AdjustDate(AsOf, DayRule);
-            DateTime UnAdjEndDate = Functions.AddTenorAdjust(AdjStartDate, EndTenor);
-
-            GenerateSchedule(AsOf, UnAdjStartDate, UnAdjEndDate, DayCountBasis, DayRule, Freq);
+            this.Frequency = frequency;
+            GenerateSchedule(asOf, StartDate, EndDate, dayCount, dayRule, frequency);
         }
-        
-        public void Print()
-        {
-            Console.WriteLine("");
-            Console.WriteLine("--------- Printing Schedule of ---------");
-            Console.WriteLine("AsOf.......: " + AsOf);
-            Console.WriteLine("DayCount...: " + DayCount);
-            Console.WriteLine("DayRule....: " + DayRule);
-            Console.WriteLine("Frequency..: " + Freq);
-            Console.WriteLine("StartDate..: " + StartDate.ToString("dd/MM/yyyy"));
-            Console.WriteLine("EndDate....: " + EndDate.ToString("dd/MM/yyyy"));
-
-            Console.WriteLine("");
-
-            var Lines = new List<string[]>();
-            Lines.Add(new[] { "UnAdjStart", "UnAdjEnd", "Start", "End", "Cvg" });
-            for (int j = 0; j<UnAdjStartDates.Count; j++)
-            {
-                Lines.Add(new[] { UnAdjStartDates[j].ToString("dd/MM/yyyy"),
-                                UnAdjEndDates[j].ToString("dd/MM/yyyy"),
-                                AdjStartDates[j].ToString("dd/MM/yyyy"),
-                                AdjEndDates[j].ToString("dd/MM/yyyy"),
-                                Math.Round(Coverages[j], 2).ToString() });
-            }
-            var Output = PrintUtility.PrintListNicely(Lines, 3);
-            Console.WriteLine(Output);
-
-            Console.WriteLine("------------- Schedule end -------------");
-        }
-
     }
 }
