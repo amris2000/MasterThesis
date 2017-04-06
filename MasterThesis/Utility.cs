@@ -28,6 +28,26 @@ namespace MasterThesis
 
     public static class StrToEnum
     {
+
+        public static Tenor ConvertTenorLetter(string tenorLetter)
+        {
+            switch(tenorLetter.ToUpper())
+            {
+                case "D":
+                    return Tenor.D;
+                case "B":
+                    return Tenor.B;
+                case "W":
+                    return Tenor.W;
+                case "M":
+                    return Tenor.M;
+                case "Y":
+                    return Tenor.Y;
+                default:
+                    throw new InvalidOperationException("Tenorletter " + tenorLetter + " is not valid.");
+            }
+        }
+
         public static InterpMethod InterpolationConvert(string interp)
         {
             interp = interp.ToUpper();

@@ -10,7 +10,7 @@ namespace MasterThesis
     public class Curve
     {
         public List<DateTime> Dates;
-        public List<double> values;
+        public List<double> Values;
         public int Dimension;
         public CurveTenor Frequency { get; set; }
 
@@ -24,14 +24,14 @@ namespace MasterThesis
         public Curve(List<DateTime> Dates, List<double> Values)
         {
             this.Dates = Dates;
-            this.values = Values;
+            this.Values = Values;
             this.Frequency = CurveTenor.Simple;
             this.Dimension = Values.Count;
         }
 
         public double Interp(DateTime date, InterpMethod interpolation)
         {
-            return Maths.InterpolateCurve(Dates, date, values, interpolation);
+            return Maths.InterpolateCurve(Dates, date, Values, interpolation);
         }
         public double ZeroRate(DateTime maturityDate, InterpMethod interpolation)
         {
@@ -39,13 +39,13 @@ namespace MasterThesis
         }
         public double DiscFactor(DateTime asOf, DateTime date, InterpMethod Method)
         {
-            return Math.Exp(-ZeroRate(date, Method) * Functions.Cvg(asOf, date, DayCount.ACT360));
+            return Math.Exp(-ZeroRate(date, Method) * DateHandling.Cvg(asOf, date, DayCount.ACT360));
         }
         public double FwdRate(DateTime asOf, DateTime startDate, DateTime endDate, DayRule dayRule, DayCount dayCount, InterpMethod interpolation)
         {
             double ps = DiscFactor(asOf, startDate, interpolation);
             double pe = DiscFactor(asOf, endDate, interpolation);
-            double cvg = Functions.Cvg(startDate, endDate, dayCount);
+            double cvg = DateHandling.Cvg(startDate, endDate, dayCount);
 
             return (ps / pe - 1) / cvg;
         }
@@ -53,7 +53,7 @@ namespace MasterThesis
         {
             for (int i = 0; i < Dates.Count; i++)
             {
-                Console.WriteLine(Dates[i].Date + " " + Math.Round(values[i], 5));
+                Console.WriteLine(Dates[i].Date + " " + Math.Round(Values[i], 5));
             }
         }
 
@@ -89,7 +89,7 @@ namespace MasterThesis
             DateTime RollDate = startDate;
             while (RollDate.Date < endDate.Date)
             {
-                DateTime NextBusinessDay = Functions.AddTenorAdjust(RollDate, "1B", DayRule.F);
+                DateTime NextBusinessDay = DateHandling.AddTenorAdjust(RollDate, "1B", DayRule.F);
                 //double Rate = DiscCurve.ZeroRate(asOf, startDate, RollDate, dayRule, dayCount, method);
                 double Rate = ZeroRate(NextBusinessDay, interpolation);
                 double fwdOisRate = FwdRate(asOf, RollDate, NextBusinessDay, DayRule.F, dayCount, interpolation);
@@ -98,12 +98,12 @@ namespace MasterThesis
                 double disc2 = DiscFactor(asOf, NextBusinessDay, interpolation);
 
                 double Days = NextBusinessDay.Subtract(RollDate).TotalDays;
-                double shortCvg = Functions.Cvg(RollDate, NextBusinessDay, dayCount);
+                double shortCvg = DateHandling.Cvg(RollDate, NextBusinessDay, dayCount);
                 RollDate = NextBusinessDay;
                 CompoundedRate *= (1 + fwdOisRate * shortCvg);
                 CompoundedRate2 *= disc1 / disc2;
             }
-            double coverage = Functions.Cvg(startDate, endDate, dayCount);
+            double coverage = DateHandling.Cvg(startDate, endDate, dayCount);
             return (CompoundedRate2 - 1) / coverage;
         }
         public double OisRate(OisSwap swap, InterpMethod interpolation)
@@ -119,7 +119,7 @@ namespace MasterThesis
                 DateTime End = swap.FloatSchedule.AdjEndDates[i];
                 double CompoundedRate = OisCompoundedRate(asOf, Start, End, swap.FloatSchedule.DayRule, swap.FloatSchedule.DayCount, interpolation);
                 double DiscountFactor = DiscFactor(asOf, End, interpolation);
-                double coverage = Functions.Cvg(Start, End, swap.FloatSchedule.DayCount);
+                double coverage = DateHandling.Cvg(Start, End, swap.FloatSchedule.DayCount);
                 FloatContribution += DiscountFactor * CompoundedRate * coverage;
             }
             return FloatContribution / Annuity;

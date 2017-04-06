@@ -72,8 +72,8 @@ namespace MasterThesis
 
         public Schedule(DateTime asOf, string startTenor, string endTenor, DayCount dayCount, DayRule dayRule)
         {
-            DateTime startDate = Functions.AddTenor(asOf, startTenor, dayRule);
-            DateTime endDate = Functions.AddTenor(startDate, endTenor, dayRule);
+            DateTime startDate = DateHandling.AddTenor(asOf, startTenor, dayRule);
+            DateTime endDate = DateHandling.AddTenor(startDate, endTenor, dayRule);
 
             SetValues(asOf, startDate, endDate, dayCount, dayRule);
         }
@@ -140,7 +140,7 @@ namespace MasterThesis
             if (CompareTenors(endTenor, "1Y") == false && CompareTenors(endTenor, "12M") == false)
             {
                 // Simple OIS swap
-                double cvg = Functions.Cvg(StartDate, EndDate, dayCount);
+                double cvg = DateHandling.Cvg(StartDate, EndDate, dayCount);
                 AdjEndDates.Add(EndDate);
                 AdjStartDates.Add(StartDate);
                 Coverages.Add(cvg);
@@ -176,9 +176,9 @@ namespace MasterThesis
                 else
                     throw new InvalidOperationException("OIS Schedule only works for Y,M endTenors");
 
-                UnAdjEndDates.Add(Functions.AddTenorAdjust(StartDate, "1Y"));
-                AdjEndDates.Add(Functions.AdjustDate(UnAdjEndDates[0], DayRule.N));
-                Coverages.Add(Functions.Cvg(AdjStartDates[0], AdjEndDates[0], DayCount));
+                UnAdjEndDates.Add(DateHandling.AddTenorAdjust(StartDate, "1Y"));
+                AdjEndDates.Add(DateHandling.AdjustDate(UnAdjEndDates[0], DayRule.N));
+                Coverages.Add(DateHandling.Cvg(AdjStartDates[0], AdjEndDates[0], DayCount));
 
                 // Generate Schedule
                 // We start from 1 since first days are filled out
@@ -188,21 +188,21 @@ namespace MasterThesis
                     if (periods > years && periods == j + 1) // In case we have tenor like "18M" and have to create a stub periods
                     {
                         string excessTenor = months.ToString() + "M";
-                        UnAdjStartDates.Add(Functions.AddTenorAdjust(UnAdjStartDates[j - 1], "1Y", dayRule));
-                        AdjStartDates.Add(Functions.AdjustDate(UnAdjStartDates[j], dayRule));
-                        UnAdjEndDates.Add(Functions.AddTenorAdjust(UnAdjEndDates[j - 1], excessTenor, dayRule));
-                        AdjEndDates.Add(Functions.AdjustDate(UnAdjEndDates[j], dayRule));
-                        Coverages.Add(Functions.Cvg(AdjStartDates[j], AdjEndDates[j], DayCount));
+                        UnAdjStartDates.Add(DateHandling.AddTenorAdjust(UnAdjStartDates[j - 1], "1Y", dayRule));
+                        AdjStartDates.Add(DateHandling.AdjustDate(UnAdjStartDates[j], dayRule));
+                        UnAdjEndDates.Add(DateHandling.AddTenorAdjust(UnAdjEndDates[j - 1], excessTenor, dayRule));
+                        AdjEndDates.Add(DateHandling.AdjustDate(UnAdjEndDates[j], dayRule));
+                        Coverages.Add(DateHandling.Cvg(AdjStartDates[j], AdjEndDates[j], DayCount));
                     }
                     else
                     {
                         if (j<periods)
                         {
-                            UnAdjStartDates.Add(Functions.AddTenorAdjust(UnAdjStartDates[j - 1], "1Y", dayRule));
-                            AdjStartDates.Add(Functions.AdjustDate(UnAdjStartDates[j], dayRule));
-                            UnAdjEndDates.Add(Functions.AddTenorAdjust(UnAdjEndDates[j - 1], "1Y", dayRule));
-                            AdjEndDates.Add(Functions.AdjustDate(UnAdjEndDates[j], dayRule));
-                            Coverages.Add(Functions.Cvg(AdjStartDates[j], AdjEndDates[j], DayCount));
+                            UnAdjStartDates.Add(DateHandling.AddTenorAdjust(UnAdjStartDates[j - 1], "1Y", dayRule));
+                            AdjStartDates.Add(DateHandling.AdjustDate(UnAdjStartDates[j], dayRule));
+                            UnAdjEndDates.Add(DateHandling.AddTenorAdjust(UnAdjEndDates[j - 1], "1Y", dayRule));
+                            AdjEndDates.Add(DateHandling.AdjustDate(UnAdjEndDates[j], dayRule));
+                            Coverages.Add(DateHandling.Cvg(AdjStartDates[j], AdjEndDates[j], DayCount));
                         }
                     }
                 }
@@ -227,16 +227,16 @@ namespace MasterThesis
         {
             // This only works for short stubs atm, although NullStub will generate a long stub
 
-            DateTime AdjStart = Functions.AdjustDate(startDate, dayRule);
-            DateTime AdjEnd = Functions.AdjustDate(endDate, dayRule);
+            DateTime AdjStart = DateHandling.AdjustDate(startDate, dayRule);
+            DateTime AdjEnd = DateHandling.AdjustDate(endDate, dayRule);
 
-            string FreqStr = EnumToStr.CurveTenor(tenor);
-            string TenorLetter = Functions.ParseTenor(FreqStr).Item2;
-            double TenorNumber = Functions.ParseTenor(FreqStr).Item1;
+            string tenorString = EnumToStr.CurveTenor(tenor);
+            string TenorLetter = DateHandling.GetTenorLetterFromTenor(tenorString);
+            double TenorNumber = DateHandling.GetTenorNumberFromTenor(tenorString);
 
             // Create estimate of how long the schedule should be
-            double YearsUpper = Functions.Cvg(AdjStart, AdjEnd, dayCount);
-            double YearLower = Functions.Cvg(AsOf, AdjStart, dayCount);
+            double YearsUpper = DateHandling.Cvg(AdjStart, AdjEnd, dayCount);
+            double YearLower = DateHandling.Cvg(AsOf, AdjStart, dayCount);
 
             int WholePeriods = 0;
 #pragma warning disable CS0219 // Variable is assigned but its value is never used
@@ -249,11 +249,11 @@ namespace MasterThesis
             AdjStartDates.Add(AdjStart);
             AdjEndDates.Add(AdjEnd);
 
-            if (TenorLetter.ToUpper() == "M")
+            if (StrToEnum.ConvertTenorLetter(TenorLetter) == Tenor.M)
             {
                 WholePeriods = (int) Math.Truncate(YearsUpper) * 12 / (int) Math.Round(TenorNumber);
             }
-            else if (TenorLetter.ToUpper() == "Y")
+            else if (StrToEnum.ConvertTenorLetter(TenorLetter) == Tenor.Y)
             {
                 WholePeriods = (int) Math.Truncate(YearsUpper);
             }
@@ -267,10 +267,10 @@ namespace MasterThesis
                 WholePeriods += 1 * 12 / (int) Math.Round(TenorNumber);
                 for (int i = 1; i<WholePeriods; i++)
                 {
-                    UnAdjEndDates.Add(Functions.AddTenorAdjust(UnAdjEndDates[i-1], "-" + FreqStr));
-                    AdjEndDates.Add(Functions.AdjustDate(UnAdjEndDates[i],DayRule));
+                    UnAdjEndDates.Add(DateHandling.AddTenorAdjust(UnAdjEndDates[i-1], "-" + tenorString));
+                    AdjEndDates.Add(DateHandling.AdjustDate(UnAdjEndDates[i],DayRule));
                     UnAdjStartDates.Add(UnAdjEndDates[i]);
-                    AdjStartDates.Add(Functions.AdjustDate(UnAdjStartDates[i], DayRule));
+                    AdjStartDates.Add(DateHandling.AdjustDate(UnAdjStartDates[i], DayRule));
                 }
 
             }
@@ -279,20 +279,20 @@ namespace MasterThesis
                 WholePeriods += 1 * 12 / (int)Math.Round(TenorNumber);
                 for (int i = 1; i < WholePeriods; i++)
                 {
-                    UnAdjStartDates.Add(Functions.AddTenorAdjust(UnAdjStartDates[i - 1], FreqStr));
-                    AdjStartDates.Add(Functions.AdjustDate(UnAdjStartDates[i], DayRule));
+                    UnAdjStartDates.Add(DateHandling.AddTenorAdjust(UnAdjStartDates[i - 1], tenorString));
+                    AdjStartDates.Add(DateHandling.AdjustDate(UnAdjStartDates[i], DayRule));
                     UnAdjEndDates.Add(UnAdjStartDates[i]);
-                    AdjEndDates.Add(Functions.AdjustDate(UnAdjEndDates[i], DayRule));
+                    AdjEndDates.Add(DateHandling.AdjustDate(UnAdjEndDates[i], DayRule));
                 }
             }
             else if (stub == StubPlacement.NullStub)
             {
                 for (int i = 1; i<WholePeriods; i++)
                 {
-                    UnAdjEndDates.Add(Functions.AddTenorAdjust(UnAdjEndDates[i - 1], "-" + FreqStr));
-                    AdjEndDates.Add(Functions.AdjustDate(UnAdjEndDates[i], DayRule));
+                    UnAdjEndDates.Add(DateHandling.AddTenorAdjust(UnAdjEndDates[i - 1], "-" + tenorString));
+                    AdjEndDates.Add(DateHandling.AdjustDate(UnAdjEndDates[i], DayRule));
                     UnAdjStartDates.Add(UnAdjEndDates[i]);
-                    AdjStartDates.Add(Functions.AdjustDate(UnAdjStartDates[i], DayRule));
+                    AdjStartDates.Add(DateHandling.AdjustDate(UnAdjStartDates[i], DayRule));
                 }
 
             }
@@ -305,7 +305,7 @@ namespace MasterThesis
 
             for (int i = 0; i<AdjStartDates.Count; i++)
             {
-                Coverages.Add(Functions.Cvg(AdjStartDates[i], AdjEndDates[i], DayCount));
+                Coverages.Add(DateHandling.Cvg(AdjStartDates[i], AdjEndDates[i], DayCount));
             }
         }
 

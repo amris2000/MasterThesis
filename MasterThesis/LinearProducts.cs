@@ -113,8 +113,8 @@ namespace MasterThesis
 
         public OisSwap(DateTime asOf, string startTenor, string endTenor, string settlementLag, DayCount dayCountFixed, DayCount dayCountFloat, DayRule dayRule, double notional, double fixedRate)
         {
-            DateTime startDate = Functions.AddTenorAdjust(asOf, settlementLag, dayRule);
-            DateTime endDate = Functions.AddTenorAdjust(startDate, endTenor, dayRule);
+            DateTime startDate = DateHandling.AddTenorAdjust(asOf, settlementLag, dayRule);
+            DateTime endDate = DateHandling.AddTenorAdjust(startDate, endTenor, dayRule);
             this.AsOf = asOf;
             this.StartDate = startDate;
             this.EndDate = endDate;
@@ -259,8 +259,8 @@ namespace MasterThesis
 
         public Fra(DateTime asOf, string startTenor, string endTenor, CurveTenor referenceIndex, DayCount dayCount, DayRule dayRule, double fixedRate)
         {
-            DateTime startDate = Functions.AddTenorAdjust(asOf, startTenor, dayRule);
-            DateTime endDate = Functions.AddTenorAdjust(startDate, endTenor, dayRule);
+            DateTime startDate = DateHandling.AddTenorAdjust(asOf, startTenor, dayRule);
+            DateTime endDate = DateHandling.AddTenorAdjust(startDate, endTenor, dayRule);
             Initialize(asOf, startDate, endDate, referenceIndex, dayCount, dayRule, fixedRate);
         }
 
@@ -289,8 +289,8 @@ namespace MasterThesis
 
         public Future(DateTime asOf, string startTenor, string endTenor, CurveTenor referenceIndex, DayCount dayCount, DayRule dayRule, double fixedRate, double? convexity = null)
         {
-            DateTime startDate = Functions.AddTenorAdjust(asOf, startTenor, dayRule);
-            DateTime endDate = Functions.AddTenorAdjust(startDate, endTenor, dayRule);
+            DateTime startDate = DateHandling.AddTenorAdjust(asOf, startTenor, dayRule);
+            DateTime endDate = DateHandling.AddTenorAdjust(startDate, endTenor, dayRule);
             FraSameSpec = new Fra(asOf, startDate, endDate, referenceIndex, dayCount, dayRule, fixedRate);
             if (convexity == null)
                 Convexity = CalcSimpleConvexity(asOf, startDate, endDate, dayCount);
@@ -312,8 +312,8 @@ namespace MasterThesis
 
             // i.e. Convexity Adjustment = 0.5*vol^2*T*(T+delta), T's measured in year fractions.
             // Source: Linderstrøm
-            double cvgAsOfToStart = Functions.Cvg(asOf, startDate, dayCount);
-            double cvgAsOfToEnd = Functions.Cvg(asOf, endDate, dayCount);
+            double cvgAsOfToStart = DateHandling.Cvg(asOf, startDate, dayCount);
+            double cvgAsOfToEnd = DateHandling.Cvg(asOf, endDate, dayCount);
             return 0.5 * 0.0012 * 0.0012 * cvgAsOfToEnd * cvgAsOfToEnd;
         }
 

@@ -8,16 +8,19 @@ using System.Threading.Tasks;
 namespace MasterThesis
 {
 
-#pragma warning disable CS0660 // Type defines operator == or operator != but does not override Object.Equals(object o)
-#pragma warning disable CS0661 // Type defines operator == or operator != but does not override Object.GetHashCode()
-    public class ADouble
-#pragma warning restore CS0661 // Type defines operator == or operator != but does not override Object.GetHashCode()
-#pragma warning restore CS0660 // Type defines operator == or operator != but does not override Object.Equals(object o)
+    public class ADouble : IComparable, IComparable<Double>, IEquatable<Double>
     {
+        // To-do: 
+        //  problem when doing arithmetic with ints, i.e. x*1 instead of x*1.0
+        //  What happens when we say x = y, where x,y is ADoubles? Need tapeEntry?
+        //  or is this handled since ADouble is a reference type?
+
         public int AADType;
         public double Value;
         public int Count;
 
+        // Not sure when this is used, but it is used (as can be seen by the tape).
+        // Seems like some hidden variables are being created. Need more investigation
         public ADouble()
         {
             AADType = (int)Constants.AADType.Undef;
@@ -26,32 +29,69 @@ namespace MasterThesis
             //AADTape.AddEntry((int)AADType, Count, 0, 0, Value);
         }
 
-        public ADouble(double MyDouble)
+        public ADouble(double doubleValue)
         {
             AADType = (int)Constants.AADType.Const;
-            Value = MyDouble;
+            Value = doubleValue;
             Count = AADTape._tapeCounter;
             AADTape.AddEntry((int)AADType, Count, 0, 0, Value);
         }
 
+        // This allows us to say "ADouble x = double"
         public static implicit operator ADouble(double Value)
         {
-            // In C# the assignment operator cannot be overloaded
-            // as classes are by reference. This effectively does it.
-
-            ADouble Temp = new MasterThesis.ADouble(Value);
+            ADouble temp = new MasterThesis.ADouble(Value);
             AADTape.AddEntry((int)Constants.AADType.Asg, AADTape._tapeCounter, 0, 0, Value);
-            return Temp;
+            return temp;
         }
 
+        // Allows us to say i.e. "double x = aDouble"
+        public static implicit operator double(ADouble aDouble)
+        {
+            // Should a tapeEntry be added here?
+            return aDouble.Value;
+        }
+
+        // Assign ADouble to the tape. This is used when instantiating the tape.
         public void Assign()
         {
             Count = AADTape._tapeCounter;
             AADTape.AddEntry((int)Constants.AADType.Const, AADTape._tapeCounter, 0, 0, Value);
         }
 
+        // ------- INTERFACE IMPLEMENTATIONS
 
+        // for IComparable (sorting)
+        public int CompareTo(Object obj)
+        {
+            ADouble otherAdouble = obj as ADouble;
 
+            if (this.Value > otherAdouble.Value)
+                return -1;
+            if (this.Value == otherAdouble.Value)
+                return 0;
+
+            return 1;
+        }
+
+        // for IComparable (sorting with doubles)
+        public int CompareTo(double x)
+        {
+            if (this.Value > x)
+                return -1;
+            if (this.Value == x)
+                return 0;
+
+            return 1;
+        }
+
+        // for equatable with doubles.
+        public bool Equals(double x)
+        {
+            return (x == Value);
+        }
+
+        // Equalization operators
         public static bool operator ==(ADouble x, ADouble y)
         {
 
@@ -62,6 +102,22 @@ namespace MasterThesis
                 return false;
 
             return x.Value == y.Value && (int)x.AADType == (int)y.AADType;
+        }
+
+        public static bool operator ==(ADouble x, double y)
+        {
+            if (((object)x == null || ((object)y == null)))
+                return false;
+
+            return x.Value == y;
+        }
+
+        public static bool operator !=(ADouble x, double y)
+        {
+            if (((object)x == null || ((object)y == null)))
+                return false;
+
+            return x.Value != y;
         }
 
         public static Boolean operator !=(ADouble x, ADouble y)
@@ -75,16 +131,14 @@ namespace MasterThesis
             return x.Value != y.Value && (int)x.AADType != (int)y.AADType;
         }
 
-        //
-        // Multiplicative operator overloading
-        //
+        // ------- MULTIPLICATIVE OPERATOR OVERLOADING
         public static ADouble operator *(ADouble x1, ADouble x2)
         {
-            ADouble Temp = new ADouble();
-            Temp.Value = x1.Value * x2.Value;
-            Temp.Count = AADTape._tapeCounter;
-            AADTape.AddEntry((int)Constants.AADType.Mul, x1.Count, x2.Count, 0, Temp.Value);
-            return Temp;
+            ADouble temp = new ADouble();
+            temp.Value = x1.Value * x2.Value;
+            temp.Count = AADTape._tapeCounter;
+            AADTape.AddEntry((int)Constants.AADType.Mul, x1.Count, x2.Count, 0, temp.Value);
+            return temp;
         }
 
         public static ADouble operator *(double K, ADouble x)
@@ -105,106 +159,99 @@ namespace MasterThesis
             return temp;
         }
 
-        //
-        // Addition operator overloading
-        //
+        // ------- ADDITIVE OPERATOR OVERLOADING
         public static ADouble operator +(ADouble x1, ADouble x2)
         {
-            ADouble Temp = new ADouble();
-            Temp.Value = x1.Value + x2.Value;
-            Temp.Count = AADTape._tapeCounter;
-            AADTape.AddEntry((int)Constants.AADType.Add, x1.Count, x2.Count, 0, Temp.Value);
-            return Temp;
+            ADouble temp = new ADouble();
+            temp.Value = x1.Value + x2.Value;
+            temp.Count = AADTape._tapeCounter;
+            AADTape.AddEntry((int)Constants.AADType.Add, x1.Count, x2.Count, 0, temp.Value);
+            return temp;
         }
 
         public static ADouble operator +(ADouble x, double K)
         {
-            ADouble Temp = new ADouble();
-            Temp.Value = x.Value + K;
-            Temp.Count = AADTape._tapeCounter;
-            AADTape.AddEntry((int)Constants.AADType.ConsAdd, x.Count, 0, 0, Temp.Value, K);
-            return Temp;
+            ADouble temp = new ADouble();
+            temp.Value = x.Value + K;
+            temp.Count = AADTape._tapeCounter;
+            AADTape.AddEntry((int)Constants.AADType.ConsAdd, x.Count, 0, 0, temp.Value, K);
+            return temp;
         }
 
         public static ADouble operator +(double K, ADouble x)
         {
-            ADouble Temp = new ADouble();
-            Temp.Value = x.Value + K;
-            Temp.Count = AADTape._tapeCounter;
-            AADTape.AddEntry((int)Constants.AADType.ConsAdd, x.Count, 0, 0, Temp.Value, K);
-            return Temp;
+            ADouble temp = new ADouble();
+            temp.Value = x.Value + K;
+            temp.Count = AADTape._tapeCounter;
+            AADTape.AddEntry((int)Constants.AADType.ConsAdd, x.Count, 0, 0, temp.Value, K);
+            return temp;
         }
 
 
-        //
-        // Subtraction operator overloading
-        //
+        // ------- SUBTRACTIVE OPERATOR OVERLOADING
         public static ADouble operator -(ADouble x1, ADouble x2)
         {
-            ADouble Temp = new ADouble();
-            Temp.Value = x1.Value - x2.Value;
-            Temp.Count = AADTape._tapeCounter;
-            AADTape.AddEntry((int)Constants.AADType.Sub, x1.Count, x2.Count, 0, Temp.Value);
-            return Temp;
+            ADouble temp = new ADouble();
+            temp.Value = x1.Value - x2.Value;
+            temp.Count = AADTape._tapeCounter;
+            AADTape.AddEntry((int)Constants.AADType.Sub, x1.Count, x2.Count, 0, temp.Value);
+            return temp;
         }
 
         public static ADouble operator -(ADouble x, double K)
         {
-            ADouble Temp = new ADouble();
-            Temp.Value = x.Value - K;
-            Temp.Count = AADTape._tapeCounter;
-            AADTape.AddEntry((int)Constants.AADType.ConsSub, x.Count, 0, 0, Temp.Value, K);
-            return Temp;
+            ADouble temp = new ADouble();
+            temp.Value = x.Value - K;
+            temp.Count = AADTape._tapeCounter;
+            AADTape.AddEntry((int)Constants.AADType.ConsSub, x.Count, 0, 0, temp.Value, K);
+            return temp;
         }
 
         public static ADouble operator -(double K, ADouble x)
         {
-            ADouble Temp = new ADouble();
-            Temp.Value = K - x.Value;
-            Temp.Count = AADTape._tapeCounter;
-            AADTape.AddEntry((int)Constants.AADType.ConsSub, x.Count, 0, 0, Temp.Value, K);
-            return Temp;
+            ADouble temp = new ADouble();
+            temp.Value = K - x.Value;
+            temp.Count = AADTape._tapeCounter;
+            AADTape.AddEntry((int)Constants.AADType.ConsSub, x.Count, 0, 0, temp.Value, K);
+            return temp;
         }
 
-        //
-        // Division operator overloading
-        //
+        // ------- DIVISION OPERATOR OVERLOADING
         public static ADouble operator /(ADouble x1, ADouble x2)
         {
-            ADouble Temp = new ADouble();
-            Temp.Value = x1.Value / x2.Value;
-            Temp.Count = AADTape._tapeCounter;
-            //AADTape.AddEntry((int)Constants.AADType.Pow, x1.Count, 0, 0, Temp.Value, -1);
-            AADTape.AddEntry((int)Constants.AADType.Div, x1.Count, x2.Count, 0, Temp.Value);
-            return Temp;
+            ADouble temp = new ADouble();
+            temp.Value = x1.Value / x2.Value;
+            temp.Count = AADTape._tapeCounter;
+            AADTape.AddEntry((int)Constants.AADType.Div, x1.Count, x2.Count, 0, temp.Value);
+            return temp;
         }
 
         public static ADouble operator /(double K, ADouble x)
         {
-            ADouble Temp = new MasterThesis.ADouble();
-            Temp.Value = K / x.Value;
-            Temp.Count = AADTape._tapeCounter;
-            AADTape.AddEntry((int)Constants.AADType.ConsDiv, x.Count, 0, 0, Temp.Value, K);
-            return Temp;
+            ADouble temp = new MasterThesis.ADouble();
+            temp.Value = K / x.Value;
+            temp.Count = AADTape._tapeCounter;
+            AADTape.AddEntry((int)Constants.AADType.ConsDiv, x.Count, 0, 0, temp.Value, K);
+            return temp;
         }
 
         // Note ConsMul here
         public static ADouble operator /(ADouble x, double K)
         {
-            ADouble Temp = new MasterThesis.ADouble();
-            Temp.Value = x.Value / K;
-            Temp.Count = AADTape._tapeCounter;
-            AADTape.AddEntry((int)Constants.AADType.ConsMul, x.Count, 0, 0, Temp.Value, 1/K);
-            return Temp;
+            ADouble temp = new MasterThesis.ADouble();
+            temp.Value = x.Value / K;
+            temp.Count = AADTape._tapeCounter;
+            AADTape.AddEntry((int)Constants.AADType.ConsMul, x.Count, 0, 0, temp.Value, 1/K);
+            return temp;
         }
 
         ////////////////////
         // UNARY OPERATORS
         ////////////////////
 
+        // Allows "x = -y" instead of "x = -1.0*y"
         public static ADouble operator -(ADouble x1)
         {
-            // Allows "x = -y" instead of "x = -1.0*y"
             return -1.0 * x1;
         }
 
@@ -240,9 +287,7 @@ namespace MasterThesis
             return Pow(x1,0.5);
         }
 
-        //
-        // Comparison operators
-        //
+        // ------- COMPARISON OPERATORS
         public static bool operator <(ADouble x1, ADouble x2)
         {
             if (x1.Value < x2.Value)
@@ -291,11 +336,16 @@ namespace MasterThesis
                 return false;
         }
 
+        // To make the compiler happy
+        public override bool Equals(object obj)
+        {
+            return base.Equals(obj);
+        }
 
-    }
-
-    public class AAD
-    {
-
+        // To make th ecompiler happy
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
     }
 }

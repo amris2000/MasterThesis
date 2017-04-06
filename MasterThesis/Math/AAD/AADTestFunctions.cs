@@ -18,7 +18,7 @@ namespace MasterThesis
         public static void BlackScholes(ADouble Vol, ADouble Spot, ADouble Rate, ADouble Time, ADouble Mat, ADouble Strike)
         {
             ADouble Help1 = Vol * ADouble.Sqrt(Mat - Time);
-            ADouble d1 = 1 / Help1 * (ADouble.Log(Spot / Strike) + (Rate + 0.5 * ADouble.Pow(Vol, 2)) * (Mat - Time));
+            ADouble d1 = 1.0 / Help1 * (ADouble.Log(Spot / Strike) + (Rate + 0.5 * ADouble.Pow(Vol, 2)) * (Mat - Time));
             ADouble d2 = d1 - Vol * ADouble.Sqrt(Mat - Time);
             ADouble Out = Maths.NormalCdf(d1) * Spot - Strike * ADouble.Exp(-Rate * (Mat - Time)) * Maths.NormalCdf(d2);
 
@@ -32,7 +32,7 @@ namespace MasterThesis
         public static void BlackScholesNoReset(ADouble vol, ADouble spot, ADouble rate, ADouble time, ADouble mat, ADouble strike)
         {
             ADouble Help1 = vol * ADouble.Sqrt(mat - time);
-            ADouble d1 = 1 / Help1 * (ADouble.Log(spot / strike) + (rate + 0.5 * ADouble.Pow(vol, 2)) * (mat - time));
+            ADouble d1 = 1.0 / Help1 * (ADouble.Log(spot / strike) + (rate + 0.5 * ADouble.Pow(vol, 2)) * (mat - time));
             ADouble d2 = d1 - vol * ADouble.Sqrt(mat - time);
             ADouble Out = Maths.NormalCdf(d1) * spot - strike * ADouble.Exp(-rate * (mat - time)) * Maths.NormalCdf(d2);
         }
@@ -65,7 +65,7 @@ namespace MasterThesis
         {
             // Derivative: Fx(x) = 3 + 3*exp(3*x)
 
-            ADouble Temp = 3 * x + ADouble.Exp(3 * x) + 50;
+            ADouble Temp = 3.0 * x + ADouble.Exp(3.0 * x) + 50.0;
             AADTape.InterpretTape();
             AADTape.PrintTape();
             AADTape.ResetTape();
@@ -77,8 +77,8 @@ namespace MasterThesis
             Out1 = x * y * z;
             Out2 = x * y;
             Out3 = Out1 + x - y + Out2;
-            Out3 = Out3 * 3;
-            Out3 = 2 * Out3;
+            Out3 = Out3 * 3.0;
+            Out3 = 2.0 * Out3;
             Out3 = 10.0 + Out3;
             AADTape.InterpretTape();
             AADTape.PrintTape();
@@ -87,7 +87,7 @@ namespace MasterThesis
 
         public static void FuncDiv(ADouble x)
         {
-            ADouble Out = x * x * x / (3 + 2 * x);
+            ADouble Out = x * x * x / (3.0 + 2.0 * x);
             AADTape.InterpretTape();
             AADTape.PrintTape();
             AADTape.ResetTape();
@@ -95,7 +95,7 @@ namespace MasterThesis
 
         public static void FuncDiv2(ADouble x)
         {
-            ADouble Out = 1 / x;
+            ADouble Out = 1.0 / x;
             AADTape.InterpretTape();
             AADTape.PrintTape();
             AADTape.ResetTape();
@@ -111,7 +111,7 @@ namespace MasterThesis
 
         public static void FuncPow(ADouble x, double k)
         {
-            ADouble Out = 3 * ADouble.Log(x) + 5 * ADouble.Pow(x, k);
+            ADouble Out = 3.0 * ADouble.Log(x) + 5.0 * ADouble.Pow(x, k);
             Console.WriteLine(" ");
             Console.WriteLine("Testing Adjoint differentiation of a function involving powers");
             AADTape.InterpretTape();

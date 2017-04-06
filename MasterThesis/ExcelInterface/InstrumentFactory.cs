@@ -149,7 +149,7 @@ namespace MasterThesis.ExcelInterface
             try
             {
                 startDate = Convert.ToDateTime(fwdTenor);
-                endDate = Functions.AddTenorAdjust(startDate, floatPayFreq, dayRule);
+                endDate = DateHandling.AddTenorAdjust(startDate, floatPayFreq, dayRule);
 
                 curveTenor = StrToEnum.CurveTenorFromSimpleTenor(floatPayFreq);
                 Fra fra = new MasterThesis.Fra(AsOf, startDate, endDate, curveTenor, dayCount, dayRule, fixedRate);
@@ -248,12 +248,12 @@ namespace MasterThesis.ExcelInterface
             if (StrIsConvertableToDate(startTenor))
                 startDate = Convert.ToDateTime(startTenor);
             else
-                startDate = Functions.AddTenorAdjust(AsOf, settlementLag, dayRule);
+                startDate = DateHandling.AddTenorAdjust(AsOf, settlementLag, dayRule);
 
             if (StrIsConvertableToDate(endTenor))
                 endDate = Convert.ToDateTime(endTenor);
             else
-                endDate = Functions.AddTenorAdjust(startDate, endTenor, dayRule);
+                endDate = DateHandling.AddTenorAdjust(startDate, endTenor, dayRule);
 
             double fixedRate = 0.01;
             double notional = 1.0;

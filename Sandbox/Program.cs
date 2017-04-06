@@ -33,7 +33,8 @@ namespace Sandbox
             AADTests.ResultSetTest();
             AADFunc.BlackScholes();
 
-            
+            ADouble myDouble = 2.0;
+            double x = myDouble;
 
             //MiscTests.TestIt();
             //MultiThreadingTests.SimpleTest();

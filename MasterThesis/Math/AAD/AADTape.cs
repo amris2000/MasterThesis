@@ -111,6 +111,22 @@ namespace MasterThesis
             }
         }
 
+        // Overloads of initialize for convenience.
+        public static void Initialize(List<ADouble> inputs, List<string> identifiers = null)
+        {
+            Initialize(inputs.ToArray(), identifiers.ToArray());
+        }
+
+        public static void Initialize(List<ADouble> inputs, string[] identifiers)
+        {
+            Initialize(inputs.ToArray(), identifiers);
+        }
+
+        public static void Initialize(ADouble[] inputs, List<string> identifiers = null)
+        {
+            Initialize(inputs, identifiers.ToArray());
+        }
+
         public static void SetGradients()
         {
             if (TapeHasBeenInterpreted == false)
@@ -232,7 +248,7 @@ namespace MasterThesis
                     case 12: // Const Divide
                         Adjoint[Arg1[i]] -= Adjoint[i] * Consts[i] / (Math.Pow(Value[Arg1[i]], 2));
                         break;
-                    case 13: // Const add - Should perhabs do nothing here ... For efficiency (or not.. seems to give 0)
+                    case 13: // Const  add - Should perhabs do nothing here ... For efficiency (or not.. seems to give 0)
                         Adjoint[Arg1[i]] += Adjoint[i];
                         break;
                     case 14: // Const sub

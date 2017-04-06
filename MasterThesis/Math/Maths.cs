@@ -15,36 +15,37 @@ namespace MasterThesis
     public static class Maths
     {
         // TO DO
-        public static double Interpolation(List<double> xArr, double x, List<double> yArr, InterpMethod Method)
+        public static double Interpolate(double[] xArr, double x, double[] yArr, InterpMethod method)
         {
-            return 0.01;
+            return Interpolate(xArr.ToList<double>(), x, yArr.ToList<double>(), method);
         }
 
-        public static double InterpolateCurve(List<DateTime> dates, DateTime inputDate, List<double> values, InterpMethod Method)
+        /// <summary>
+        /// Main interpolation with all the action. The others derive from this
+        /// </summary>
+        /// <param name="xArr"></param>
+        /// <param name="x"></param>
+        /// <param name="yArr"></param>
+        /// <param name="Method"></param>
+        /// <returns></returns>
+        public static double Interpolate(List<double> xArr, double x, List<double> yArr, InterpMethod Method)
         {
             // To-do: CATROM interpolation
-            double Output = 0.0;
-
-            if (dates.Count() != values.Count())
+            if (xArr.Count() != yArr.Count())
                 throw new ArgumentException("Number of dates has to correspond to number of values");
 
-            // Convert to dates
-            double[] xArr = dates.Select(i=>i.ToOADate()).ToArray();
-            double x = inputDate.ToOADate();
-            int n = dates.Count();
+            int n = xArr.Count();
 
             // Extrapolation (flat)
             if (xArr[0] > x)
-                return values[0];
+                return yArr[0];
             else if (xArr[n - 1] <= x)
-                return values[n - 1];
+                return yArr[n - 1];
             else
             {
                 // No extrapolation - find relevant index in arrays
                 int i = 0;
                 int j = 0;
-                //while (dates[j] <= inputDate)
-                //    j = j + 1;
 
                 for (i = 0; i < n; i++)
                 {
@@ -61,121 +62,93 @@ namespace MasterThesis
                 switch (Method)
                 {
                     case InterpMethod.Constant:
-                        return values[j];
+
+                        return yArr[j];
+
                     case InterpMethod.Linear:
-                        //double HelpLin = inputDate.Subtract(dates[j]).TotalDays * values[j + 1] + dates[j + 1].Subtract(inputDate).TotalDays * values[j];
-                        //return HelpLin / (dates[j + 1].Subtract(dates[j]).TotalDays);
-                        double tempLinear = (x - xArr[j]) * values[j + 1] + (xArr[j + 1] - x) * values[j];
-                        return tempLinear/ (xArr[j+1] - xArr[j]);
+
+                        double tempLinear = (x - xArr[j]) * yArr[j + 1] + (xArr[j + 1] - x) * yArr[j];
+                        return tempLinear / (xArr[j + 1] - xArr[j]);
+
                     case InterpMethod.LogLinear:
 
                         // Log-Linear interpolation is only valid for positive stuff
-                        if (values[j + 1] < 0 || values[j] < 0)
-                            return values[j];
+                        if (yArr[j + 1] < 0 || yArr[j] < 0)
+                            return yArr[j];
                         else
                         {
-                            // double HelpLogLin1 = inputDate.Subtract(dates[j]).TotalDays / dates[j + 1].Subtract(dates[j]).TotalDays;
-                            // double HelpLogLin2 = dates[j + 1].Subtract(inputDate).TotalDays / dates[j + 1].Subtract(dates[j]).TotalDays;
-                            // return Math.Pow(values[j + 1], HelpLogLin1) * Math.Pow(values[j], HelpLogLin2);
-
                             double tempLogLinear1 = (x - xArr[j]) / (xArr[j + 1] - xArr[j]);
                             double tempLogLinear2 = (xArr[j + 1] - x) / (xArr[j + 1] - xArr[j]);
-                            return Math.Pow(values[j + 1], tempLogLinear1) * Math.Pow(values[j], tempLogLinear2);       
+                            return Math.Pow(yArr[j + 1], tempLogLinear1) * Math.Pow(yArr[j], tempLogLinear2);
                         }
 
                     case InterpMethod.Hermite:
+
                         double bi, bk, hi, mi, ci, di;
-                        //double D11, D01, D10, Dn11, Dn01, Dn10, Dk11, Dk10, Dk01;
                         int k = j + 1;
                         if (j == 0)
                         {
-                            //D11 = dates[2].Subtract(dates[0]).TotalDays;
-                            //D10 = dates[2].Subtract(dates[1]).TotalDays;
-                            //D01 = dates[1].Subtract(dates[0]).TotalDays;
-                            //Dk11 = dates[K + 1].Subtract(dates[K - 1]).TotalDays;
-                            //Dk10 = dates[K + 1].Subtract(dates[K]).TotalDays;
-                            //Dk01 = dates[K].Subtract(dates[K - 1]).TotalDays;
-
-                            //bi = Math.Pow((D11 + D01) * (values[1] - values[0]) / D01 - D01 * (values[2] - values[1]) / D10 * D11, -1);
-                            //bk = Math.Pow(Dk10 * (values[K] - values[K - 1]) / Dk01 + Dk01 * (values[K + 1] - values[K]) / Dk10 * Dk11, -1);
-
-                            bi = (xArr[2] + xArr[1] - 2 * xArr[0]) * (values[1] - values[0]) / (xArr[1] - xArr[0]);
-                            bi += -1 * (xArr[1] - xArr[0]) * (values[2] - values[1]) / (xArr[2] - xArr[1]);
+                            bi = (xArr[2] + xArr[1] - 2 * xArr[0]) * (yArr[1] - yArr[0]) / (xArr[1] - xArr[0]);
+                            bi += -1 * (xArr[1] - xArr[0]) * (yArr[2] - yArr[1]) / (xArr[2] - xArr[1]);
                             bi *= Math.Pow(xArr[2] - xArr[0], -1.0);
 
-                            bk = (xArr[k + 1] - xArr[k]) * (values[k] - values[k - 1]) / (xArr[k] - xArr[k - 1]);
-                            bk += (xArr[k] - xArr[k - 1]) * (values[k + 1] - values[k]) / (xArr[k + 1] - xArr[k]);
-                            bk *= Math.Pow(xArr[k + 1] - xArr[k - 1],-1);
+                            bk = (xArr[k + 1] - xArr[k]) * (yArr[k] - yArr[k - 1]) / (xArr[k] - xArr[k - 1]);
+                            bk += (xArr[k] - xArr[k - 1]) * (yArr[k + 1] - yArr[k]) / (xArr[k + 1] - xArr[k]);
+                            bk *= Math.Pow(xArr[k + 1] - xArr[k - 1], -1);
 
                         }
                         else if (j == n - 2)
                         {
-                            //D11 = dates[j + 1].Subtract(dates[j - 1]).TotalDays;
-                            //D10 = dates[j + 1].Subtract(dates[j]).TotalDays;
-                            //D01 = dates[j].Subtract(dates[j - 1]).TotalDays;
-                            //Dn11 = dates[n].Subtract(dates[n - 2]).TotalDays;
-                            //Dn10 = dates[n].Subtract(dates[n - 1]).TotalDays;
-                            //Dn01 = dates[n - 1].Subtract(dates[n - 2]).TotalDays;
-
-                            //bi = Math.Pow(D10 * (values[j] - values[j - 1]) / Dn01 + D01 * (values[j + 1] - values[j]) / D10 * D11, -1);
-                            //bk = Math.Pow(-Dn10 * (values[n - 1] - values[n - 2]) / Dn10 - (Dn10 - Dn11) * (values[n] - values[n - 1]) / Dn10 * Dn11, -1);
-
-                            bi = (xArr[j + 1] - xArr[j]) * (values[j] - values[k - 1]) / (xArr[j] - xArr[j - 1]);
-                            bi += (xArr[j] - xArr[j - 1]) * (values[j + 1] - values[j]) / (xArr[j + 1] - xArr[j]);
+                            bi = (xArr[j + 1] - xArr[j]) * (yArr[j] - yArr[k - 1]) / (xArr[j] - xArr[j - 1]);
+                            bi += (xArr[j] - xArr[j - 1]) * (yArr[j + 1] - yArr[j]) / (xArr[j + 1] - xArr[j]);
                             bi *= Math.Pow(xArr[j + 1] - xArr[j - 1], -1.0);
 
-                            bk = -1*(xArr[n-1] - xArr[n - 2]) * (values[n - 2] - values[n - 3]) / (xArr[n - 2] - xArr[n - 3]);
-                            bk += -1 * (xArr[n - 1] - xArr[n - 2] - (xArr[n - 1] - xArr[n - 3])) * (values[n - 1] - values[n - 2]) / (xArr[n - 1] - xArr[n - 2]);
-                            bk *= Math.Pow(xArr[n-1] - xArr[n - 3], -1.0);
+                            bk = -1 * (xArr[n - 1] - xArr[n - 2]) * (yArr[n - 2] - yArr[n - 3]) / (xArr[n - 2] - xArr[n - 3]);
+                            bk += -1 * (xArr[n - 1] - xArr[n - 2] - (xArr[n - 1] - xArr[n - 3])) * (yArr[n - 1] - yArr[n - 2]) / (xArr[n - 1] - xArr[n - 2]);
+                            bk *= Math.Pow(xArr[n - 1] - xArr[n - 3], -1.0);
                         }
                         else
                         {
-                            //D11 = dates[j + 1].Subtract(dates[j - 1]).TotalDays;
-                            //D10 = dates[j + 1].Subtract(dates[j]).TotalDays;
-                            //D01 = dates[j].Subtract(dates[j - 1]).TotalDays;
-                            //Dk11 = dates[K + 1].Subtract(dates[K - 1]).TotalDays;
-                            //Dk10 = dates[K + 1].Subtract(dates[K]).TotalDays;
-                            //Dk01 = dates[K].Subtract(dates[K - 1]).TotalDays;
+                            bi = (xArr[j + 1] - xArr[j]) * (yArr[j] - yArr[j - 1]) / (xArr[j] - xArr[j - 1]);
+                            bi += (xArr[j] - xArr[j - 1]) * (yArr[j + 1] - yArr[j]) / (xArr[j + 1] - xArr[j]);
+                            bi *= Math.Pow(xArr[j + 1] - xArr[j - 1], -1.0);
 
-                            //bi = Math.Pow(D10 * (values[j] - values[j - 1]) / D01 + D01 * (values[j + 1] - values[j]) / D10 * D11, -1);
-                            //bk = Math.Pow(Dk10 * (values[K] - values[K - 1]) / Dk01 + Dk01 * (values[K + 1] - values[K]) / Dk10 * Dk11, -1);
-
-                            bi = (xArr[j + 1] - xArr[j]) * (values[j] - values[j - 1]) / (xArr[j] - xArr[j - 1]);
-                            bi += (xArr[j] - xArr[j - 1]) * (values[j + 1] - values[j]) / (xArr[j + 1] - xArr[j]);
-                            bi *= Math.Pow(xArr[j + 1] - xArr[j - 1],-1.0);
-
-                            bk = (xArr[k + 1] - xArr[k]) * (values[k] - values[k - 1]) / (xArr[k] - xArr[k-1]);
-                            bk += (xArr[k] - xArr[k - 1]) * (values[k + 1] - values[k]) / (xArr[k + 1] - xArr[k]);
-                            bk *= Math.Pow(xArr[k + 1] - xArr[k - 1],-1.0);
+                            bk = (xArr[k + 1] - xArr[k]) * (yArr[k] - yArr[k - 1]) / (xArr[k] - xArr[k - 1]);
+                            bk += (xArr[k] - xArr[k - 1]) * (yArr[k + 1] - yArr[k]) / (xArr[k + 1] - xArr[k]);
+                            bk *= Math.Pow(xArr[k + 1] - xArr[k - 1], -1.0);
                         }
 
-                        //hi = dates[j + 1].Subtract(dates[j]).TotalDays;
-                        //return values[j] + bi * inputDate.Subtract(dates[j]).TotalDays +
-                        //                    ci * Math.Pow(inputDate.Subtract(dates[j]).TotalDays, 2) +
-                        //                    di * Math.Pow(inputDate.Subtract(dates[j]).TotalDays, 3);
-
                         hi = xArr[j + 1] - xArr[j];
-                        mi = (values[j + 1] - values[j]) / hi;
+                        mi = (yArr[j + 1] - yArr[j]) / hi;
                         ci = (3.0 * mi - bk - 2.0 * bi) / hi;
                         di = (bk + bi - 2.0 * mi) * Math.Pow(hi, -2.0);
 
-                        return values[j] + bi*(x - xArr[j]) + ci * Math.Pow(x - xArr[j], 2.0) + di *Math.Pow(x - xArr[j], 3.0);
+                        return yArr[j] + bi * (x - xArr[j]) + ci * Math.Pow(x - xArr[j], 2.0) + di * Math.Pow(x - xArr[j], 3.0);
+                    default:
+                        throw new InvalidOperationException("Interpolation method is not valid");
                 }
-
-
             }
+        }
 
-            return Output;
+        public static double InterpolateCurve(List<DateTime> dates, DateTime inputDate, List<double> values, InterpMethod method)
+        {
+            double[] xArr = dates.Select(i=>i.ToOADate()).ToArray();
+            double x = inputDate.ToOADate();
+            return Interpolate(xArr, x, values.ToArray(), method);
+        }
 
+        public static double InterpolateCurve(Curve curve, DateTime inputDate, InterpMethod method)
+        {
+            return InterpolateCurve(curve.Dates, inputDate, curve.Values, method);
         }
         
         public static ADouble NormalCdf(ADouble x) 
         {
             // Courtesy of Antoine Savine (Danske Bank)
             if (x < -10.0)
-                return new ADouble(0.0);
+                return 0.0;
             else if (x > 10.0)
-                return new ADouble(1.0);
+                return 1.0;
             if (x < 0.0)
                 return 1.0 - NormalCdf(-x);
 
@@ -190,10 +163,10 @@ namespace MasterThesis
             // Transform
             ADouble t = 1.0 / (1.0 + p * x);
             ADouble pol = t * (b1 + t * (b2 + t * (b3 + t * (b4 + t * b5))));
-            ADouble pdf = new ADouble();
+            ADouble pdf = 0.0;
 
             if (x < -10.0 || 10.0 < x)
-                pdf = new ADouble(0.0);
+                pdf = 0.0;
             else
                 pdf = ADouble.Exp(-0.5 * x * x) / MathConstants.SqrtTwoPi;
 

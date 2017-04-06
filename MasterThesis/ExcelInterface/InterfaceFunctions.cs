@@ -26,7 +26,7 @@ namespace MasterThesis.ExcelInterface
                 else
                 {
                     output[i, 0] = curve.Dates[i];
-                    output[i, 1] = curve.values[i];
+                    output[i, 1] = curve.Values[i];
                 }
             }
             return output;
