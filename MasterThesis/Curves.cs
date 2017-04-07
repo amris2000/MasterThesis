@@ -172,6 +172,11 @@ namespace MasterThesis
             OneCurveToRuleThemAll(discCurve);
         }
 
+        public void UpdateCurveValues(List<double> values, CurveTenor tenor)
+        {
+            FwdCurveCollection[tenor].Values = values;
+        }
+
         public Curve GetCurve(CurveTenor curveType)
         {
             return FwdCurveCollection[curveType];

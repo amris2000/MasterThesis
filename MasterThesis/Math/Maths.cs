@@ -142,6 +142,11 @@ namespace MasterThesis
             return InterpolateCurve(curve.Dates, inputDate, curve.Values, method);
         }
         
+        public static double NormalCdf(double x)
+        {
+            return NormalCdf(x);
+        }
+
         public static ADouble NormalCdf(ADouble x) 
         {
             // Courtesy of Antoine Savine (Danske Bank)
@@ -173,38 +178,38 @@ namespace MasterThesis
             return 1.0 - pdf * pol;
         }
 
-        public static double NormalCdf(double x)
-        {
-            // Courtesy of Antoine Savine (Danske Bank)
-            if (x < -10.0)
-                return 0.0;
-            else if (x > 10.0)
-                return 1.0;
-            if (x < 0.0)
-                return 1.0 - NormalCdf(-x);
+        //public static double NormalCdf(double x)
+        //{
+        //    // Courtesy of Antoine Savine (Danske Bank)
+        //    if (x < -10.0)
+        //        return 0.0;
+        //    else if (x > 10.0)
+        //        return 1.0;
+        //    if (x < 0.0)
+        //        return 1.0 - NormalCdf(-x);
 
-            // Constants
-            double p = 0.2316419;
-            double b1 = 0.319381530;
-            double b2 = -0.356563782;
-            double b3 = 1.781477937;
-            double b4 = -1.821255978;
-            double b5 = 1.330274429;
+        //    // Constants
+        //    double p = 0.2316419;
+        //    double b1 = 0.319381530;
+        //    double b2 = -0.356563782;
+        //    double b3 = 1.781477937;
+        //    double b4 = -1.821255978;
+        //    double b5 = 1.330274429;
 
-            // Transform
-            double t = 1.0 / (1.0 + p * x);
-            double pol = t * (b1 + t * (b2 + t * (b3 + t * (b4 + t * b5))));
-            double pdf;
+        //    // Transform
+        //    double t = 1.0 / (1.0 + p * x);
+        //    double pol = t * (b1 + t * (b2 + t * (b3 + t * (b4 + t * b5))));
+        //    double pdf;
 
-            if (x < -10.0 || 10.0 < x)
-                pdf = 0.0;
-            else
-                pdf = Math.Exp(-0.5 * x * x) / MathConstants.SqrtTwoPi;
+        //    if (x < -10.0 || 10.0 < x)
+        //        pdf = 0.0;
+        //    else
+        //        pdf = Math.Exp(-0.5 * x * x) / MathConstants.SqrtTwoPi;
 
-            return 1.0 - pdf * pol;
-        }
+        //    return 1.0 - pdf * pol;
+        //}
 
-        // TEMPLATE THIS
+        // This does not have to be templated, no reason for having normal samples as ADouble
         public static double U2G(double u)
         {
             return InvNormalCdf(u);

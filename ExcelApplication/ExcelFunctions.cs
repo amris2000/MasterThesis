@@ -203,10 +203,26 @@ namespace ExcelApplication
         }
 
         [ExcelFunction(Description = "Make CalibrationSpec", Name = "mt.Calibration.CalibrationSettings.Make")]
-        public static string Calibration_CalibrationSettings_Make(string baseName, double precision, double scaling, double diffStep, string interpolation, int maxIterations, double startingValues, int bfgs_m)
+        public static string Calibration_CalibrationSettings_Make(string baseName, double precision, double scaling, double diffStep, string interpolation, int maxIterations, double startingValues, int bfgs_m, bool useAd, object[] calibrationOrder = null)
         {
             InterpMethod interp = StrToEnum.InterpolationConvert(interpolation);
-            CalibrationFunctions.CalibrationSpec_Make(baseName, precision, scaling, diffStep, interp, maxIterations, startingValues, bfgs_m);
+
+            if (calibrationOrder[0] is ExcelMissing)
+            {
+                calibrationOrder = null;
+                CalibrationFunctions.CalibrationSpec_Make(baseName, precision, scaling, diffStep, interp, maxIterations, startingValues, bfgs_m, useAd);
+            }
+            else
+            {
+                // Need to do this, since object[] cannot be cast to int[]...
+                int[] intCalibrationOrder = new int[calibrationOrder.Length];
+                for (int i = 0; i < calibrationOrder.Length; i++)
+                    intCalibrationOrder[i] = Convert.ToInt32(calibrationOrder[i]);
+                
+                CalibrationFunctions.CalibrationSpec_Make(baseName, precision, scaling, diffStep, interp, maxIterations, startingValues, bfgs_m, useAd, intCalibrationOrder);
+
+            }
+
             return baseName;
         }
 

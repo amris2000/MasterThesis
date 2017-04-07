@@ -35,9 +35,9 @@ namespace MasterThesis.ExcelInterface
 
     public static class CalibrationFunctions
     {
-        public static void CalibrationSpec_Make(string baseName, double precision, double scaling, double diffStep, InterpMethod interpolation, int maxIterations, double startingValues, int bfgs_m)
+        public static void CalibrationSpec_Make(string baseName, double precision, double scaling, double diffStep, InterpMethod interpolation, int maxIterations, double startingValues, int bfgs_m, bool useAd, int[] calibrationOrder = null)
         {
-            CalibrationSpec spec = new ExcelInterface.CalibrationSpec(precision, scaling, diffStep, interpolation, maxIterations, startingValues, bfgs_m);
+            CalibrationSpec spec = new ExcelInterface.CalibrationSpec(precision, scaling, diffStep, interpolation, maxIterations, startingValues, bfgs_m, useAd, calibrationOrder);
             ObjectMap.CalibrationSettings[baseName] = spec;
         }
 
@@ -76,7 +76,7 @@ namespace MasterThesis.ExcelInterface
         public static void FwdCurveCollection_MakeFromCalibrationProblem(string baseName, string calibrationProblem)
         {
             FwdCurveConstructor constructor = ObjectMap.FwdCurveConstructors[calibrationProblem];
-            constructor.CalibrateCurves();
+            constructor.CalibrateAllCurves();
             ObjectMap.FwdCurveCollections[baseName] = constructor.GetFwdCurves();
         }
 

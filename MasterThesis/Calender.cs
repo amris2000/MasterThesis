@@ -223,6 +223,42 @@ namespace MasterThesis
             GenerateSchedule(asOf, startDate, endDate, dayCount, dayRule, frequency, stub);
         }
 
+        private int CalculatePeriods(DateTime startDate, DateTime endDate, CurveTenor tenor)
+        {
+            int number;
+            
+            switch(tenor)
+            {
+                case CurveTenor.Fwd1M:
+                    number = 1;
+                    break;
+                case CurveTenor.Fwd3M:
+                    number = 3;
+                    break;
+                case CurveTenor.Fwd6M:
+                    number = 6;
+                    break;
+                case CurveTenor.Fwd1Y:
+                    number = 12;
+                    break;
+                default:
+                    throw new InvalidOperationException("Wrong tenor in CalculatePeriods.");
+            }
+
+            int Years = endDate.Year - startDate.Year;
+            int Month = endDate.Month - startDate.Month;
+
+            int periodsInMonths = 0;
+
+            if (Month < 0)
+                periodsInMonths = (Years-1) * 12 + (12 + Month);
+            else
+                periodsInMonths = Years * 12 + Month;
+
+            return periodsInMonths / number;
+
+        }
+
         private void GenerateSchedule(DateTime asOf, DateTime startDate, DateTime endDate, DayCount dayCount, DayRule dayRule, CurveTenor tenor, StubPlacement stub = StubPlacement.NullStub)
         {
             // This only works for short stubs atm, although NullStub will generate a long stub
@@ -234,14 +270,13 @@ namespace MasterThesis
             string TenorLetter = DateHandling.GetTenorLetterFromTenor(tenorString);
             double TenorNumber = DateHandling.GetTenorNumberFromTenor(tenorString);
 
-            // Create estimate of how long the schedule should be
-            double YearsUpper = DateHandling.Cvg(AdjStart, AdjEnd, dayCount);
-            double YearLower = DateHandling.Cvg(AsOf, AdjStart, dayCount);
 
-            int WholePeriods = 0;
-#pragma warning disable CS0219 // Variable is assigned but its value is never used
-            double Excess = 0.0;
-#pragma warning restore CS0219 // Variable is assigned but its value is never used
+            int periods = CalculatePeriods(startDate, endDate, tenor);
+
+            // Create estimate of how long the schedule should be
+            //double YearsUpper = DateHandling.Cvg(AdjStart, AdjEnd, dayCount);
+            //double YearLower = DateHandling.Cvg(AsOf, AdjStart, dayCount);
+
 
             // Will be sorted at end (when coverages are also calculated)
             UnAdjStartDates.Add(StartDate);
@@ -249,23 +284,29 @@ namespace MasterThesis
             AdjStartDates.Add(AdjStart);
             AdjEndDates.Add(AdjEnd);
 
-            if (StrToEnum.ConvertTenorLetter(TenorLetter) == Tenor.M)
-            {
-                WholePeriods = (int) Math.Truncate(YearsUpper) * 12 / (int) Math.Round(TenorNumber);
-            }
-            else if (StrToEnum.ConvertTenorLetter(TenorLetter) == Tenor.Y)
-            {
-                WholePeriods = (int) Math.Truncate(YearsUpper);
-            }
-            else
-            {
-                throw new ArgumentException("Can only roll out swap calender for month and year tenors");
-            }
+            //if (StrToEnum.ConvertTenorLetter(TenorLetter) == Tenor.M)
+            //{
+            //    periods = periodsInMonths / (int)TenorNumber;
+
+            //    //WholePeriods = periodsInMonths / (int) TenorNumber;
+            //    //double tempPeriods = YearsUpper * 12 / TenorNumber;
+            //    //WholePeriods = (int)Math.Truncate(tempPeriods);
+            //}
+            //else if (StrToEnum.ConvertTenorLetter(TenorLetter) == Tenor.Y)
+            //{
+            //    periods = periodsInMonths / (12 * (int)TenorNumber);
+
+            //    //WholePeriods = (int) Math.Truncate(YearsUpper);
+            //}
+            //else
+            //{
+            //    throw new ArgumentException("Can only roll out swap calender for month and year tenors");
+            //}
             
             if (stub == StubPlacement.Beginning)
             {
-                WholePeriods += 1 * 12 / (int) Math.Round(TenorNumber);
-                for (int i = 1; i<WholePeriods; i++)
+                periods += 1 * 12 / (int) Math.Round(TenorNumber);
+                for (int i = 1; i<periods; i++)
                 {
                     UnAdjEndDates.Add(DateHandling.AddTenorAdjust(UnAdjEndDates[i-1], "-" + tenorString));
                     AdjEndDates.Add(DateHandling.AdjustDate(UnAdjEndDates[i],DayRule));
@@ -276,8 +317,8 @@ namespace MasterThesis
             }
             else if (stub == StubPlacement.End)
             {
-                WholePeriods += 1 * 12 / (int)Math.Round(TenorNumber);
-                for (int i = 1; i < WholePeriods; i++)
+                periods += 1 * 12 / (int)Math.Round(TenorNumber);
+                for (int i = 1; i < periods; i++)
                 {
                     UnAdjStartDates.Add(DateHandling.AddTenorAdjust(UnAdjStartDates[i - 1], tenorString));
                     AdjStartDates.Add(DateHandling.AdjustDate(UnAdjStartDates[i], DayRule));
@@ -287,7 +328,7 @@ namespace MasterThesis
             }
             else if (stub == StubPlacement.NullStub)
             {
-                for (int i = 1; i<WholePeriods; i++)
+                for (int i = 1; i<periods; i++)
                 {
                     UnAdjEndDates.Add(DateHandling.AddTenorAdjust(UnAdjEndDates[i - 1], "-" + tenorString));
                     AdjEndDates.Add(DateHandling.AdjustDate(UnAdjEndDates[i], DayRule));
