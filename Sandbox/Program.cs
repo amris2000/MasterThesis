@@ -7,6 +7,7 @@ using System.Diagnostics;
 using MasterThesis;
 using System.Threading;
 using MasterThesis.Extensions;
+using MasterThesis.ExcelInterface;
 
 namespace Sandbox
 {
@@ -24,6 +25,17 @@ namespace Sandbox
 
             mySchedule.Print();
             Console.WriteLine("");
+        }
+
+        public static void testInstrumentOutput()
+        {
+            string instrumentString = "EURAB6E29Y,SWAP,EUR,0D,29Y,2B,MF,EUR,EUR,1Y,6M,6M,6M_EURIBOR,30/360,ACT/360";
+            InstrumentFactory factory = new InstrumentFactory(DateTime.Today);
+            factory.AddSwaps(new string[] { instrumentString });
+
+            object[,] output = ConstructInstrumentInspector.MakeExcelOutput(factory, "EURAB6E29Y");
+            Console.Write("");
+
         }
 
       static void Main(string[] args)
@@ -50,7 +62,9 @@ namespace Sandbox
             //ADouble myDouble = 2.0;
             //double x = myDouble;
 
-            Schedule123();
+            //Schedule123();
+            testInstrumentOutput();
+
 
             //MiscTests.TestIt();
             //MultiThreadingTests.SimpleTest();

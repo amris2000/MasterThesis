@@ -175,7 +175,6 @@ namespace MasterThesis.ExcelInterface
                 _fwdCurveCollection.AddCurve(problems[i].CurveToBeCalibrated, tenors[i]);
             }
 
-            //ConstructCurvePointsArray();
             _internalState = 0;
         }
 
@@ -234,13 +233,22 @@ namespace MasterThesis.ExcelInterface
                 //_fwdCurveCollection.AddCurve(tempFwdCurve, _tenors[i]);
             }
 
+            // If max iterations has been hit, exit. For some reason
+            // AlgLibs build in maxIterations does not exit the procedure..
             if (_internalState > _internalStateMax)
                 return;
 
+            // Construct new LinearRateModel based on the next iteration.
             LinearRateModel tempModel = new LinearRateModel(_discCurve, _fwdCurveCollection, _settings.Interpolation);
             func = GoalFunction(_currentTenors, tempModel);
         }
 
+        /// <summary>
+        /// Sets starting values for the curve calibration problem. Here, i'm exploiting the fact
+        /// that i know that curves on longer maturity fixings are above the disc curve.
+        /// Taking the disc curve as a starting point (inherit the shape)
+        /// </summary>
+        /// <returns></returns>
         public double[] ConstructStartingValues()
         {
             List<double> output = new List<double>();

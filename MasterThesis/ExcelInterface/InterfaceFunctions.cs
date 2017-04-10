@@ -91,6 +91,11 @@ namespace MasterThesis.ExcelInterface
 
     public static class InstrumentFactoryFunctions
     {
+        public static object[,] InstrumentFactory_GetInstrumentInfo(string baseName, string identifier)
+        {
+            return ConstructInstrumentInspector.MakeExcelOutput(ObjectMap.InstrumentFactories[baseName], identifier);
+        }
+
         public static void InstrumentFactory_Make(string baseName, DateTime asOf)
         {
             ObjectMap.InstrumentFactories[baseName] = new InstrumentFactory(asOf);

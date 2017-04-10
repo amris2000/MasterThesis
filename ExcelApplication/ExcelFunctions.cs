@@ -355,6 +355,11 @@ namespace ExcelApplication
             return InstrumentFactoryFunctions.ValueInstrument(instrument, factory, model);
         }
 
+        [ExcelFunction(Description = "some description", Name = "mt.InstrumentFactory.GetInstrumentInfo", IsVolatile = true)]
+        public static object[,] Factory_InstrumentFactory_GetInstrumentInfo(string instrument, string factory)
+        {
+            return InstrumentFactoryFunctions.InstrumentFactory_GetInstrumentInfo(factory, instrument);
+        }
 
 
 

@@ -8,6 +8,7 @@ using System.IO;
 using System.Reflection;
 using Excel;
 using System.Data;
+using MasterThesis.ExcelInterface;
 
 namespace MasterThesis
 {
@@ -18,6 +19,7 @@ namespace MasterThesis
     public enum DayCount { ACT360, ACT365, ACT36525, THIRTY360 }
     public enum InterpMethod { Constant, Linear, LogLinear, Hermite, Catrom }
     public enum QuoteType { ParSwapRate, ParBasisSpread, OisRate, FraRate, FuturesRate, Deposit };
+    public enum InstrumentFormatType { Swaps, Fras, Futures, BasisSpreads, FwdStartingSwaps };
     public enum Tenor { D, B, W, M, Y };
 
     // OLD / UNUSED
@@ -25,6 +27,202 @@ namespace MasterThesis
     public enum SwapQuoteType { Vanilla, ShortSwap }
     public enum InstrumentComplexity { Linear, NonLinear }
     public enum QuoteTypeOld { SwapRate, BasisSpread, Fixing, FraRate, FutureRate, BaseSpread }
+
+    /// <summary>
+    /// Used to inspect instrument in Excel Layer. 
+    /// </summary>
+    public static class ConstructInstrumentInspector
+    {
+
+        public static object[,] MakeExcelOutput(InstrumentFactory factory, string identifier)
+        {
+            Schedule schedule1 = null;
+            Schedule schedule2 = null;
+            QuoteType quoteType = factory.InstrumentTypeMap[identifier];
+            bool instrumentHasSchedule = false;
+
+            switch(quoteType)
+            {
+                case QuoteType.ParSwapRate:
+                    schedule1 = factory.IrSwaps[identifier].Leg1.Schedule;
+                    schedule2 = factory.IrSwaps[identifier].Leg2.Schedule;
+                    instrumentHasSchedule = true;
+                    break;
+                case QuoteType.ParBasisSpread:
+                    schedule1 = factory.BasisSwaps[identifier].FloatLegNoSpread.Schedule;
+                    schedule2 = factory.BasisSwaps[identifier].FloatLegSpread.Schedule;
+                    instrumentHasSchedule = true;
+                    break;
+                case QuoteType.OisRate:
+                    schedule1 = factory.OisSwaps[identifier].FloatSchedule;
+                    schedule2 = factory.OisSwaps[identifier].FixedSchedule;
+                    instrumentHasSchedule = true;
+                    break;
+            }
+
+            if (instrumentHasSchedule)
+            {
+                object[,] schedule1Object = MakeScheduleArray(schedule1);
+                object[,] schedule2Object = MakeScheduleArray(schedule2);
+                object[,] infoArray = MakeInstrumentInfoArray(factory, identifier);
+
+                int length = infoArray.Length / 2;
+                int totalLength = length + Math.Max(schedule1Object.Length / 5, schedule2Object.Length / 5) + 1;
+
+                object[,] output = new object[totalLength, 11];
+
+                for (int i = 0; i < totalLength; i ++)
+                {
+                    for (int j = 0; j < 11; j++)
+                        output[i, j] = "";
+                }
+
+                for (int i = 0; i<length; i++)
+                {
+                    output[i, 0] = infoArray[i, 0];
+                    output[i, 1] = infoArray[i, 1];
+                }
+
+                // Fill out first schedule
+                for (int i = length; i < schedule1Object.Length/5 + length; i++)
+                {
+                    output[i, 0] = schedule1Object[i - length, 0];
+                    output[i, 1] = schedule1Object[i - length, 1];
+                    output[i, 2] = schedule1Object[i - length, 2];
+                    output[i, 3] = schedule1Object[i - length, 3];
+                    output[i, 4] = schedule1Object[i - length, 4];
+                }
+
+                // Fill out second schedule
+                for (int i = length; i < schedule2Object.Length / 5 + length; i++)
+                {
+                    output[i, 6] = schedule2Object[i - length, 0];
+                    output[i, 7] = schedule2Object[i - length, 1];
+                    output[i, 8] = schedule2Object[i - length, 2];
+                    output[i, 9] = schedule2Object[i - length, 3];
+                    output[i, 10] = schedule2Object[i - length, 4];
+                }
+
+                return output;
+
+            }
+            else
+            {
+                return MakeInstrumentInfoArray(factory, identifier);
+            }
+
+            
+
+        }
+
+        public static object[,] MakeInstrumentInfoArray(InstrumentFactory factory, string identifier)
+        {
+            object[,] output = new object[9,2];
+            string whiteSpace = "";
+
+            QuoteType quoteType = factory.InstrumentTypeMap[identifier];
+
+            output[0, 0] = quoteType.ToString();
+            output[0, 1] = whiteSpace;
+
+            output[4, 0] = whiteSpace;
+            output[4, 1] = whiteSpace;
+            output[7, 0] = whiteSpace;
+            output[7, 1] = whiteSpace;
+            output[8, 0] = whiteSpace;
+            output[8, 1] = whiteSpace;
+
+            // InstrumentStrings
+            output[5, 0] = InstrumentFactoryHeaders.GetHeaders[factory.InstrumentFormatTypeMap[identifier]];
+            output[5, 1] = whiteSpace;
+            output[6, 0] = factory.IdentifierStringMap[identifier];
+            output[6, 1] = whiteSpace;
+
+            switch (quoteType)
+            {
+                case QuoteType.ParSwapRate:
+                    output[1, 0] = factory.IrSwaps[identifier].Leg1.StartDate.ToString("dd/MM/yyyy");
+                    output[1, 1] = factory.IrSwaps[identifier].Leg2.StartDate.ToString("dd/MM/yyyy");
+                    output[2, 0] = factory.IrSwaps[identifier].Leg1.EndDate.ToString("dd/MM/yyyy");
+                    output[2, 1] = factory.IrSwaps[identifier].Leg2.EndDate.ToString("dd/MM/yyyy");
+                    output[3, 0] = factory.IrSwaps[identifier].Leg1.Tenor.ToString();
+                    output[3, 1] = factory.IrSwaps[identifier].Leg2.Tenor.ToString();
+
+                    break;
+                case QuoteType.OisRate:
+                    output[1, 0] = factory.OisSwaps[identifier].StartDate.ToString("dd/MM/yyyy");
+                    output[1, 1] = whiteSpace;
+                    output[2, 0] = factory.OisSwaps[identifier].EndDate.ToString("dd/MM/yyyy");
+                    output[2, 1] = whiteSpace;
+
+                    //output[3, 1] = factory.OisSwaps[dentifier].
+                    output[3, 0] = whiteSpace;
+                    output[3, 1] = whiteSpace;
+                    output[8, 0] = "(Float schedule -- Fixed schedule)";
+
+                    break;
+                case QuoteType.FraRate:
+                    output[1, 0] = factory.Fras[identifier].StartDate.ToString("dd/MM/yyyy");
+                    output[1, 1] = whiteSpace;
+                    output[2, 0] = factory.Fras[identifier].EndDate.ToString("dd/MM/yyyy");
+                    output[2, 1] = whiteSpace;
+                    output[3, 0] = factory.Fras[identifier].ReferenceIndex.ToString();
+                    output[3, 1] = whiteSpace;
+
+                    break;
+                case QuoteType.ParBasisSpread:
+                    output[1, 0] = factory.BasisSwaps[identifier].FloatLegNoSpread.StartDate.ToString("dd/MM/yyyy");
+                    output[1, 1] = factory.BasisSwaps[identifier].FloatLegSpread.StartDate.ToString("dd/MM/yyyy");
+                    output[2, 0] = factory.BasisSwaps[identifier].FloatLegNoSpread.EndDate.ToString("dd/MM/yyyy");
+                    output[2, 1] = factory.BasisSwaps[identifier].FloatLegSpread.EndDate.ToString("dd/MM/yyyy");
+                    output[3, 0] = factory.BasisSwaps[identifier].FloatLegNoSpread.Tenor.ToString();
+                    output[3, 1] = factory.BasisSwaps[identifier].FloatLegNoSpread.Tenor.ToString(); 
+
+                    break;
+                case QuoteType.FuturesRate:
+                    output[1, 0] = factory.Futures[identifier].FraSameSpec.StartDate.ToString("dd/MM/yyyy");
+                    output[1, 1] = whiteSpace;
+                    output[2, 0] = factory.Futures[identifier].FraSameSpec.EndDate.ToString("dd/MM/yyyy");
+                    output[2, 1] = whiteSpace;
+                    output[3, 0] = factory.Futures[identifier].FraSameSpec.ReferenceIndex.ToString();
+                    output[3, 1] = whiteSpace;
+                    output[8, 0] = "Convexity adjustment: " + Math.Round(factory.Futures[identifier].Convexity,4).ToString();
+
+                    break;
+                case QuoteType.Deposit:
+                    // do something
+                    break;
+                default:
+                    throw new InvalidOperationException("QuoteType for identifier is not valid.");
+            }
+            return output;
+        }
+
+        public static object[,] MakeScheduleArray(Schedule schedule)
+        {
+            int rows = schedule.AdjEndDates.Count + 2;
+            object[,] output = new object[rows,5];
+
+            output[0, 0] = "Daycount = " + schedule.DayCount.ToString() + ", DayRule = " + schedule.DayRule.ToString();
+            output[1, 0] = "UnadjStartDates";
+            output[1, 1] = "UnadjEndDates";
+            output[1, 2] = "AdjStartDates";
+            output[1, 3] = "AdjEndDates";
+            output[1, 4] = "Coverage";
+
+            for (int i = 0; i<schedule.AdjEndDates.Count; i++)
+            {
+                output[i + 2, 0] = schedule.UnAdjStartDates[i].ToString("dd/MM/yyyy");
+                output[i + 2, 1] = schedule.UnAdjEndDates[i].ToString("dd/MM/yyyy");
+                output[i + 2, 2] = schedule.AdjStartDates[i].ToString("dd/MM/yyyy");
+                output[i + 2, 3] = schedule.AdjEndDates[i].ToString("dd/MM/yyyy");
+                output[i + 2, 4] = Math.Round(schedule.Coverages[i],4).ToString();
+            }
+
+            return output;
+        }
+    }
+
 
     public static class StrToEnum
     {
