@@ -13,11 +13,11 @@ using MasterThesis.ExcelInterface;
 namespace MasterThesis
 {
     public enum CurveTenor { Simple, DiscOis, DiscLibor, Fwd1D, Fwd1M, Fwd3M, Fwd6M, Fwd1Y }
-    public enum InstrumentType { Swap, Fra, Future, IrSwap, MmBasisSwap, BasisSwap, FxFwd, OisSwap, Deposit, Swaption, Fixing }
     public enum DayRule {  MF, F, P, N }
     public enum StubPlacement { Beginning, End, NullStub };
     public enum DayCount { ACT360, ACT365, ACT36525, THIRTY360 }
     public enum InterpMethod { Constant, Linear, LogLinear, Hermite, Catrom }
+    public enum Instrument { IrSwap, BasisSwap, Fra, Future, OisSwap };
     public enum QuoteType { ParSwapRate, ParBasisSpread, OisRate, FraRate, FuturesRate, Deposit };
     public enum InstrumentFormatType { Swaps, Fras, Futures, BasisSpreads, FwdStartingSwaps };
     public enum Tenor { D, B, W, M, Y };
@@ -27,6 +27,8 @@ namespace MasterThesis
     public enum SwapQuoteType { Vanilla, ShortSwap }
     public enum InstrumentComplexity { Linear, NonLinear }
     public enum QuoteTypeOld { SwapRate, BasisSpread, Fixing, FraRate, FutureRate, BaseSpread }
+    public enum InstrumentType { Swap, Fra, Future, IrSwap, MmBasisSwap, BasisSwap, FxFwd, OisSwap, Deposit, Swaption, Fixing }
+
 
     /// <summary>
     /// Used to inspect instrument in Excel Layer. 
@@ -66,8 +68,8 @@ namespace MasterThesis
                 object[,] schedule2Object = MakeScheduleArray(schedule2);
                 object[,] infoArray = MakeInstrumentInfoArray(factory, identifier);
 
-                int length = infoArray.Length / 2;
-                int totalLength = length + Math.Max(schedule1Object.Length / 5, schedule2Object.Length / 5) + 1;
+                int length = infoArray.GetLength(0);
+                int totalLength = length + Math.Max(schedule1Object.GetLength(0), schedule2Object.GetLength(0)) + 1;
 
                 object[,] output = new object[totalLength, 11];
 
@@ -84,7 +86,7 @@ namespace MasterThesis
                 }
 
                 // Fill out first schedule
-                for (int i = length; i < schedule1Object.Length/5 + length; i++)
+                for (int i = length; i < schedule1Object.GetLength(0) + length; i++)
                 {
                     output[i, 0] = schedule1Object[i - length, 0];
                     output[i, 1] = schedule1Object[i - length, 1];
@@ -94,7 +96,7 @@ namespace MasterThesis
                 }
 
                 // Fill out second schedule
-                for (int i = length; i < schedule2Object.Length / 5 + length; i++)
+                for (int i = length; i < schedule2Object.GetLength(0) + length; i++)
                 {
                     output[i, 6] = schedule2Object[i - length, 0];
                     output[i, 7] = schedule2Object[i - length, 1];

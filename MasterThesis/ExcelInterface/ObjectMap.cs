@@ -27,6 +27,11 @@ namespace MasterThesis.ExcelInterface
         public static IDictionary<string, FwdCurveConstructor> FwdCurveConstructors = new Dictionary<string, FwdCurveConstructor>();
         public static IDictionary<string, CalibrationSpec> CalibrationSettings = new Dictionary<string, CalibrationSpec>();
 
+        // RiskEngine
+        public static IDictionary<string, RiskEngine> RiskEngines = new Dictionary<string, RiskEngine>();
+        public static IDictionary<string, RiskOutputContainer> RiskOutputContainers = new Dictionary<string, RiskOutputContainer>();
+        
+
         public static void CheckExists<T>(IDictionary<string, T> dictionary, string key, string errMessage)
         {
             if (dictionary.ContainsKey(key) == false)

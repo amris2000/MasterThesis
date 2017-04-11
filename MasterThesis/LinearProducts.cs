@@ -18,9 +18,10 @@ namespace MasterThesis
         //}
     }
 
-    public interface ICalibrationInstrument
+    public interface LinearRateProduct
     {
         DateTime GetCurvePoint();
+        Instrument GetInstrumentType();
     }
 
     public abstract class SwapLeg
@@ -91,7 +92,7 @@ namespace MasterThesis
 
     // MAKE OISSWAP A SWAP!
     // CONSIDER IF WE REALLY NEED AN "OIS SCHEDULE". Really just schedule with a stub
-    public class OisSwap : ICalibrationInstrument
+    public class OisSwap : LinearRateProduct
     {
         public OisSchedule FloatSchedule, FixedSchedule;
         public DateTime AsOf, StartDate, EndDate;
@@ -131,9 +132,14 @@ namespace MasterThesis
 
             return EndDate;
         }
+
+        public Instrument GetInstrumentType()
+        {
+            return Instrument.OisSwap;
+        }
     }
 
-    public abstract class Swap : ICalibrationInstrument
+    public abstract class Swap : LinearRateProduct
     {
         public SwapLeg Leg1;
         public SwapLeg Leg2;
@@ -159,6 +165,7 @@ namespace MasterThesis
         }
 
         public abstract DateTime GetCurvePoint();
+        public abstract Instrument GetInstrumentType();
     }
 
     public class IrSwap : Swap
@@ -179,6 +186,11 @@ namespace MasterThesis
         public override DateTime GetCurvePoint()
         {
             return Leg1.EndDate;
+        }
+
+        public override Instrument GetInstrumentType()
+        {
+            return Instrument.IrSwap;
         }
     }
 
@@ -207,6 +219,11 @@ namespace MasterThesis
 
             return FloatLegSpread.EndDate;
         }
+
+        public override Instrument GetInstrumentType()
+        {
+            return Instrument.BasisSwap;
+        }
     }
 
 
@@ -233,7 +250,7 @@ namespace MasterThesis
             this.FloatFreq = FloatFreq;
         }
     }
-    public class Fra : ICalibrationInstrument
+    public class Fra : LinearRateProduct
     {
         public DateTime StartDate, EndDate, AsOf;
         public DayCount FloatDayCount;
@@ -272,8 +289,13 @@ namespace MasterThesis
             return EndDate;
         }
 
+        public Instrument GetInstrumentType()
+        {
+            return Instrument.Fra;
+        }
+
     }
-    public class Future : ICalibrationInstrument
+    public class Future : LinearRateProduct
     {
         public double Convexity;
         public Fra FraSameSpec;
@@ -324,6 +346,12 @@ namespace MasterThesis
 
             return FraSameSpec.EndDate;
         }
+
+        public Instrument GetInstrumentType()
+        {
+            return Instrument.Future;
+        }
+
     }
 
 }

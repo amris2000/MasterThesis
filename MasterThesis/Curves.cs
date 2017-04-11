@@ -29,6 +29,23 @@ namespace MasterThesis
             this.Dimension = Values.Count;
         }
 
+        /// <summary>
+        /// Used for risk calculations.
+        /// </summary>
+        /// <param name="curvePoint"></param>
+        /// <param name="bump"></param>
+        public void BumpCurvePoint(int curvePoint, double bump)
+        {
+            if (curvePoint < 0)
+                throw new InvalidOperationException("CurvePoint has to be non-zero."); // Redundant?
+
+            if (curvePoint > Values.Count)
+                throw new InvalidOperationException("CurvePoint is larger than length of value array.");
+
+            Values[curvePoint] += bump;
+
+        }
+
         public double Interp(DateTime date, InterpMethod interpolation)
         {
             return Maths.InterpolateCurve(Dates, date, Values, interpolation);

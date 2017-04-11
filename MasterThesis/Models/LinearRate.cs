@@ -20,6 +20,83 @@ namespace MasterThesis
             FwdCurveCollection = fwdCurveCollection;
         }
 
+        // --------- RELATED TO BUMP-AND-RUN RISK -------------
+        // ... Remember to make sure that deep copy actually works.
+
+        private LinearRateModel BumpFwdCurveAndReturn(CurveTenor fwdCurve, int curvePoint, double bump = 0.0001)
+        {
+            Curve newCurve = FwdCurveCollection.GetCurve(fwdCurve).Copy();
+            newCurve.BumpCurvePoint(curvePoint, bump);
+            return ReturnModelWithReplacedFwdCurve(fwdCurve, newCurve);
+        }
+
+        private LinearRateModel ReturnModelWithReplacedFwdCurve(CurveTenor tenor, Curve newCurve)
+        {
+            FwdCurves newCollection = FwdCurveCollection.Copy();
+            newCollection.AddCurve(newCurve, tenor);
+            return new LinearRateModel(DiscCurve, newCollection);
+        }
+        
+        private LinearRateModel BumpDiscCurveAndReturn(int curvePoint, double bump = 0.0001)
+        {
+            Curve newCurve = DiscCurve.Copy();
+            newCurve.BumpCurvePoint(curvePoint, bump);
+            return ReturnModelWithReplacedDiscCurve(newCurve);
+        }
+
+        private LinearRateModel ReturnModelWithReplacedDiscCurve(Curve newDiscCurve)
+        {
+            return new LinearRateModel(newDiscCurve, FwdCurveCollection.Copy());
+        } 
+
+        public double BumpAndRunFwdRisk(LinearRateProduct product, CurveTenor fwdCurve, int curvePoint, double bump = 0.0001)
+        {
+            double valueNoBump = ValueLinearRateProduct(product);
+            LinearRateModel newModel = BumpFwdCurveAndReturn(fwdCurve, curvePoint, bump);
+            double valueBump = newModel.ValueLinearRateProduct(product);
+            return (valueNoBump - valueBump); // REMEMBER THIS!!!
+        }
+
+        public double BumpAndRunDisc(LinearRateProduct product, int curvePoint, double bump = 0.0001)
+        {
+            double valueNoBump = ValueLinearRateProduct(product);
+            LinearRateModel newModel = BumpDiscCurveAndReturn(curvePoint, bump);
+            double valueBump = newModel.ValueLinearRateProduct(product);
+            return (valueNoBump - valueBump); // REMEMBER THIS!!!
+        }
+
+        // -------- RELATED TO VALUING INSTRUMENTS -------------
+
+        public double ValueLinearRateProduct(LinearRateProduct product)
+        {
+            switch(product.GetInstrumentType())
+            {
+                case Instrument.IrSwap:
+                    return IrSwapPv((IrSwap)product);
+                case Instrument.Fra:
+                    return 0.0;
+                case Instrument.Future:
+                    return 0.0;
+                case Instrument.OisSwap:
+                    return 0.0;
+                case Instrument.BasisSwap:
+                    return BasisSwapPv((BasisSwap)product);
+                default:
+                    throw new InvalidOperationException("product instrument type is not valid.");
+            }
+        }
+
+        /// <summary>
+        /// Calculate the value of an annuity
+        /// </summary>
+        /// <param name="AsOf"></param>
+        /// <param name="StartDate"></param>
+        /// <param name="EndDate"></param>
+        /// <param name="Tenor"></param>
+        /// <param name="DayCount"></param>
+        /// <param name="DayRule"></param>
+        /// <param name="Method"></param>
+        /// <returns></returns>
         public double Annuity(DateTime AsOf, DateTime StartDate, DateTime EndDate, CurveTenor Tenor, DayCount DayCount, DayRule DayRule, InterpMethod Method)
         {
             SwapSchedule AnnuitySchedule = new SwapSchedule(AsOf, StartDate, EndDate, DayCount, DayRule, Tenor);
@@ -32,11 +109,23 @@ namespace MasterThesis
             }
             return Out;
         }
+
+        /// <summary>
+        /// Calculate value from annuity from a swap schedule
+        /// </summary>
+        /// <param name="Schedule"></param>
+        /// <param name="Method"></param>
+        /// <returns></returns>
         public double Annuity(SwapSchedule Schedule, InterpMethod Method)
         {
             return Annuity(Schedule.AsOf, Schedule.StartDate, Schedule.EndDate, Schedule.Frequency, Schedule.DayCount, Schedule.DayRule, Method);
         }
 
+        /// <summary>
+        /// Calculate the par fra rate (used for curve calibration)
+        /// </summary>
+        /// <param name="fra"></param>
+        /// <returns></returns>
         public double ParFraRate(Fra fra)
         {
             Curve fwdCurve = this.FwdCurveCollection.GetCurve(fra.ReferenceIndex);
@@ -44,18 +133,24 @@ namespace MasterThesis
             return rate;
         }
 
+        /// <summary>
+        /// Calculate par futures rate (used for curve calibration). Here, we value
+        /// futures as the par value of a fra + a convexity adjustment.
+        /// </summary>
+        /// <param name="future"></param>
+        /// <returns></returns>
         public double ParFutureRate(Future future)
         {
             return ParFraRate(future.FraSameSpec) + future.Convexity;
         }
 
-        #region SWAPS
         public double ValueFloatLeg(FloatLeg floatLeg)
         {
             double floatValue = 0.0;
             double spread = floatLeg.Spread;
 
-            for (int i = 0; i < floatLeg.Schedule.AdjStartDates.Count; i++)
+            for (int i = 0; i < floatLeg.
+                Schedule.AdjStartDates.Count; i++)
             {
                 DateTime startDate = floatLeg.Schedule.AdjStartDates[i];
                 DateTime endDate = floatLeg.Schedule.AdjEndDates[i];
@@ -101,8 +196,6 @@ namespace MasterThesis
             return FloatPv / FixedAnnuity;
         }
 
-        #endregion
-
         public double BasisSwapPv(BasisSwap swap)
         {
             return ValueFloatLeg((FloatLeg)swap.Leg1) - ValueFloatLeg((FloatLeg)swap.Leg2);
@@ -124,6 +217,7 @@ namespace MasterThesis
             return MySwap.FixedRate * FixedAnnuity;
         }
 
+        // Not used
         public double SwapRate(SwapSimple MySwap)
         {
             double FloatPv = SwapFloatPv(MySwap);

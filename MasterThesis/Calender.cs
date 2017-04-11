@@ -141,8 +141,8 @@ namespace MasterThesis
             {
                 // Simple OIS swap
                 double cvg = DateHandling.Cvg(StartDate, EndDate, dayCount);
-                AdjEndDates.Add(EndDate);
-                AdjStartDates.Add(StartDate);
+                UnAdjEndDates.Add(EndDate);
+                AdjEndDates.Add(DateHandling.AdjustDate(EndDate));
                 Coverages.Add(cvg);
                 return;
             }

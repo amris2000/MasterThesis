@@ -33,11 +33,38 @@ namespace MasterThesis.ExcelInterface
         }
     }
 
+    public static class RiskEngineFunctions
+    {
+        public static void RiskEngine_Make(string baseName, string linearRateModel, string instrumentFactory, string product)
+        {
+            LinearRateModel model = ObjectMap.LinearRateModels[linearRateModel];
+            InstrumentFactory factory = ObjectMap.InstrumentFactories[instrumentFactory];
+            IrSwap swap = ObjectMap.IrSwaps[product];
+            ObjectMap.RiskEngines[baseName] = new RiskEngine(model, factory, swap);
+        }
+
+        public static void RiskEngine_RiskSwap(string baseName)
+        {
+            ObjectMap.RiskEngines[baseName].CurveRiskSwap();
+        }
+
+        public static object[,] RiskEngine_GetFwdRiskOutput(string baseName, CurveTenor tenor)
+        {
+            return ObjectMap.RiskEngines[baseName].RiskOutput.FwdRiskCollection[tenor].CreateRiskArray();
+        }
+
+        public static object[,] RiskEngine_GetDiscRiskOutput(string baseName)
+        {
+            return ObjectMap.RiskEngines[baseName].RiskOutput.DiscRisk.CreateRiskArray();
+        }
+    }
+
+
     public static class CalibrationFunctions
     {
         public static void CalibrationSpec_Make(string baseName, double precision, double scaling, double diffStep, InterpMethod interpolation, int maxIterations, double startingValues, int bfgs_m, bool useAd, int[] calibrationOrder = null)
         {
-            CalibrationSpec spec = new ExcelInterface.CalibrationSpec(precision, scaling, diffStep, interpolation, maxIterations, startingValues, bfgs_m, useAd, calibrationOrder);
+            CalibrationSpec spec = new CalibrationSpec(precision, scaling, diffStep, interpolation, maxIterations, startingValues, bfgs_m, useAd, calibrationOrder);
             ObjectMap.CalibrationSettings[baseName] = spec;
         }
 
@@ -87,7 +114,6 @@ namespace MasterThesis.ExcelInterface
             ObjectMap.DiscCurves[baseName] = constructor.GetCurve();
         }
     }
-
 
     public static class InstrumentFactoryFunctions
     {

@@ -56,6 +56,7 @@
   <ItemGroup>
     <Compile Include="ExcelInterface\ObjectMap.cs" />
     <Compile Include="DateHandling.cs" />
+    <Compile Include="Extensions\ObjectExtensions.cs" />
     <Compile Include="Math\AAD\ADouble.cs" />
     <Compile Include="Math\AAD\AADTestFunctions.cs" />
     <Compile Include="Math\AAD\AADTape.cs" />
@@ -64,9 +65,9 @@
     <Compile Include="Old\Conventions.cs" />
     <Compile Include="Old\CurveConstruction.cs" />
     <Compile Include="Curves.cs" />
-    <Compile Include="ExcelInterface\CurveCalibrationProblem.cs" />
+    <Compile Include="CurveCalibrationProblem.cs" />
     <Compile Include="ExcelInterface\InterfaceFunctions.cs" />
-    <Compile Include="ExcelInterface\InstrumentFactory.cs" />
+    <Compile Include="InstrumentFactory.cs" />
     <Compile Include="Extensions\OtherExtensions.cs" />
     <Compile Include="Models\LinearRate.cs" />
     <Compile Include="Extensions\DateTimeExtensions.cs" />
@@ -77,6 +78,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Calender.cs" />
     <Compile Include="Old\Store.cs" />
+    <Compile Include="RiskEngine.cs" />
     <Compile Include="Utility.cs" />
   </ItemGroup>
   <ItemGroup>

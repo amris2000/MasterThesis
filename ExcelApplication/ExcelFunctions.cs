@@ -361,7 +361,46 @@ namespace ExcelApplication
             return InstrumentFactoryFunctions.InstrumentFactory_GetInstrumentInfo(factory, instrument);
         }
 
+        [ExcelFunction(Description = "some description", Name = "mt.ParseStringAndOutput", IsVolatile = true)]
+        public static object[,] ParseStringAndOutput(string str)
+        {
+            object[] output = str.Split(',');
+            object[,] realOutput = new object[output.Length, 1];
+            for (int i = 0; i<output.Length; i++)
+            {
+                realOutput[i, 0] = output[i];
+            }
 
+            return realOutput;
+        }
+
+        // --- RELATED TO RISK ENGINE
+        [ExcelFunction(Description = "some description", Name = "mt.RiskEngine.Make", IsVolatile = true)]
+        public static string RiskEngine_Make(string baseName, string linearRateModel, string instrumentFactory, string portfolio)
+        {
+            RiskEngineFunctions.RiskEngine_Make(baseName, linearRateModel, instrumentFactory, portfolio);
+            return baseName;
+        }
+
+        [ExcelFunction(Description = "seom description", Name = "mt.RiskEngine.RiskPortfolio", IsVolatile = true)]
+        public static string RiskEngine_Make(string baseName)
+        {
+            RiskEngineFunctions.RiskEngine_RiskSwap(baseName);
+            return "SWAP RISK CALCULATED";
+        }
+
+        [ExcelFunction(Description = "some description", Name = "mt.RiskEngine.GetFwdRiskOutput", IsVolatile = true)]
+        public static object[,] RiskEngin_GetFwdRiskOutput(string baseName, string curveTenor)
+        {
+            CurveTenor tenor = StrToEnum.CurveTenorConvert(curveTenor);
+            return RiskEngineFunctions.RiskEngine_GetFwdRiskOutput(baseName, tenor);
+        }
+
+        [ExcelFunction(Description = "some description", Name = "mt.RiskEngine.GetDiscRiskOutput", IsVolatile = true)]
+        public static object[,] RiskEngin_GetDiscRiskOutput(string baseName)
+        {
+            return RiskEngineFunctions.RiskEngine_GetDiscRiskOutput(baseName);
+        }
 
     }
 }
