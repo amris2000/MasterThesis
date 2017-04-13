@@ -7,7 +7,6 @@ using MasterThesis;
 
 namespace MasterThesis
 {
-
     /// <summary>
     /// Used for inspecting instrument schedule in Excel Layer.
     /// </summary>
@@ -42,6 +41,7 @@ namespace MasterThesis
         public IDictionary<string, InstrumentFormatType> InstrumentFormatTypeMap;
         public IDictionary<string, string> IdentifierStringMap;
         public IDictionary<string, DateTime> CurvePointMap;
+        private double _notional = 10000000.0;
 
         public InstrumentFactory(DateTime asOf)
         {
@@ -229,26 +229,13 @@ namespace MasterThesis
                 // handle FRA
                 // Has to consider both FwdTenor and SettlementLag here..
                 curveTenor = StrToEnum.CurveTenorFromSimpleTenor(floatPayFreq);
-                Fra fra = new MasterThesis.Fra(AsOf, fwdTenor, endTenor, curveTenor, dayCount, dayRule, fixedRate);
+                Fra fra = new MasterThesis.Fra(AsOf, fwdTenor, endTenor, curveTenor, dayCount, dayRule, fixedRate, _notional);
                 Fras[identifier] = fra;
                 CurvePointMap[identifier] = fra.GetCurvePoint();
                 InstrumentTypeMap[identifier] = QuoteType.FraRate;
                 InstrumentFormatTypeMap[identifier] = InstrumentFormatType.Fras;
                 IdentifierStringMap[identifier] = instrumentString;
 
-            }
-        }
-
-        private bool StrIsConvertableToDate(string str)
-        {
-            try
-            {
-                DateTime myDate = Convert.ToDateTime(str);
-                return true;
-            }
-            catch
-            {
-                return false;
             }
         }
 
@@ -280,18 +267,17 @@ namespace MasterThesis
             DateTime startDate, endDate;
 
             // Make sure to get fwd starting stuff right here...
-            if (StrIsConvertableToDate(startTenor))
+            if (DateHandling.StrIsConvertableToDate(startTenor))
                 startDate = Convert.ToDateTime(startTenor);
             else
                 startDate = DateHandling.AddTenorAdjust(AsOf, settlementLag, dayRule);
 
-            if (StrIsConvertableToDate(endTenor))
+            if (DateHandling.StrIsConvertableToDate(endTenor))
                 endDate = Convert.ToDateTime(endTenor);
             else
                 endDate = DateHandling.AddTenorAdjust(startDate, endTenor, dayRule);
 
             double fixedRate = 0.01;
-            double notional = 1.0;
 
             try
             {
@@ -299,7 +285,7 @@ namespace MasterThesis
                 {
                     // Handle OIS case
                     // Error with endTenor here and string parsing 
-                    OisSwap oisSwap = new OisSwap(AsOf, startTenor, endTenor, settlementLag, fixedDayCount, floatDayCount, dayRule, notional, fixedRate);
+                    OisSwap oisSwap = new OisSwap(AsOf, startTenor, endTenor, settlementLag, fixedDayCount, floatDayCount, dayRule, _notional, fixedRate);
                     OisSwaps[identifier] = oisSwap;
                     CurvePointMap[identifier] = oisSwap.GetCurvePoint();
                     InstrumentTypeMap[identifier] = QuoteType.OisRate;
@@ -310,7 +296,7 @@ namespace MasterThesis
                 else
                 {
                     // Handle non-OIS case
-                    IrSwap swap = new IrSwap(AsOf, startDate, endDate, fixedRate, fixedTenor, floatTenor, fixedDayCount, floatDayCount, dayRule, dayRule, 1.0, 0.0);
+                    IrSwap swap = new IrSwap(AsOf, startDate, endDate, fixedRate, fixedTenor, floatTenor, fixedDayCount, floatDayCount, dayRule, dayRule, _notional, 0.0);
                     IrSwaps[identifier] = swap;
                     CurvePointMap[identifier] = swap.GetCurvePoint();
                     InstrumentTypeMap[identifier] = QuoteType.ParSwapRate;

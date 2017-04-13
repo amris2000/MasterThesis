@@ -8,6 +8,26 @@ using MasterThesis;
 namespace MasterThesis
 {
 
+    public class CalibrationInstrument
+    {
+        public CurveTenor Tenor { get; private set; }
+        public LinearRateProduct Instrument { get; private set; }
+        public DateTime CurvePoint { get; private set; }
+        public RiskOutputContainer RiskOutput { get; private set; }
+
+        public CalibrationInstrument(LinearRateProduct instrument, CurveTenor tenor, DateTime point)
+        {
+            Tenor = tenor;
+            Instrument = instrument;
+            CurvePoint = point;
+        }
+
+        public void RiskInstrument(LinearRateModel model)
+        {
+
+        }
+    }
+
     public class InstrumentQuote
     {
         private string _identifier;

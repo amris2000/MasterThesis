@@ -13,6 +13,20 @@ namespace MasterThesis
     /// </summary>
     public static class DateHandling
     {
+
+        public static bool StrIsConvertableToDate(string str)
+        {
+            try
+            {
+                DateTime myDate = Convert.ToDateTime(str);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         /// <summary>
         /// Takes as input a tenor of, say, the form "3M" and returns the tenor enum.
         /// </summary>

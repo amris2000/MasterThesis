@@ -257,13 +257,14 @@ namespace MasterThesis
         public DayRule FloatDayRule;
         public CurveTenor ReferenceIndex;
         public double FixedRate;
+        public double Notional;
         
-        public Fra(DateTime asOf, DateTime startDate, DateTime endDate, CurveTenor referenceIndex, DayCount dayCount, DayRule dayRule, double fixedRate)
+        public Fra(DateTime asOf, DateTime startDate, DateTime endDate, CurveTenor referenceIndex, DayCount dayCount, DayRule dayRule, double fixedRate, double notional = 1.0)
         {
-            Initialize(asOf, startDate, endDate, referenceIndex, dayCount, dayRule, fixedRate);
+            Initialize(asOf, startDate, endDate, referenceIndex, dayCount, dayRule, fixedRate, notional);
         }
 
-        private void Initialize(DateTime asOf, DateTime startDate, DateTime endDate, CurveTenor referenceIndex, DayCount dayCount, DayRule dayRule, double fixedRate)
+        private void Initialize(DateTime asOf, DateTime startDate, DateTime endDate, CurveTenor referenceIndex, DayCount dayCount, DayRule dayRule, double fixedRate, double notional)
         {
             this.StartDate = startDate;
             this.EndDate = endDate;
@@ -272,13 +273,14 @@ namespace MasterThesis
             this.FixedRate = fixedRate;
             this.ReferenceIndex = referenceIndex;
             this.AsOf = asOf;
+            this.Notional = notional;
         }
 
-        public Fra(DateTime asOf, string startTenor, string endTenor, CurveTenor referenceIndex, DayCount dayCount, DayRule dayRule, double fixedRate)
+        public Fra(DateTime asOf, string startTenor, string endTenor, CurveTenor referenceIndex, DayCount dayCount, DayRule dayRule, double fixedRate, double notional = 1.0)
         {
             DateTime startDate = DateHandling.AddTenorAdjust(asOf, startTenor, dayRule);
             DateTime endDate = DateHandling.AddTenorAdjust(startDate, endTenor, dayRule);
-            Initialize(asOf, startDate, endDate, referenceIndex, dayCount, dayRule, fixedRate);
+            Initialize(asOf, startDate, endDate, referenceIndex, dayCount, dayRule, fixedRate, notional);
         }
 
         public DateTime GetCurvePoint()

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Diagnostics;
 using ExcelDna.Integration;
 using MasterThesis;
 using MasterThesis.ExcelInterface;
@@ -271,6 +272,13 @@ namespace ExcelApplication
             return baseName;
         }
 
+        [ExcelFunction(Description = "Some description", Name = "mt.InstrumentFactory.AddInstrumentsToProductMap")]
+        public static string Factory_InstrumentFactory_Make(string baseName)
+        {
+            InstrumentFactoryFunctions.InstrumentFactory_StoreInstrumentsInMap(baseName);
+            return "Instruments added to ObjectMap.";
+        }
+
         [ExcelFunction(Description = "some description.", Name = "mt.InstrumentFactory.AddSwaps", IsVolatile = true)]
         public static string Factory_InstrumentFactory_AddSwaps(string baseName, object[] swapStrings)
         {
@@ -383,10 +391,13 @@ namespace ExcelApplication
         }
 
         [ExcelFunction(Description = "seom description", Name = "mt.RiskEngine.RiskPortfolio", IsVolatile = true)]
-        public static string RiskEngine_Make(string baseName)
+        public static string RiskEngine_RiskPortfolio(string baseName)
         {
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
             RiskEngineFunctions.RiskEngine_RiskSwap(baseName);
-            return "SWAP RISK CALCULATED";
+            sw.Stop();
+            return  sw.ElapsedMilliseconds + " ms.";
         }
 
         [ExcelFunction(Description = "some description", Name = "mt.RiskEngine.GetFwdRiskOutput", IsVolatile = true)]

@@ -178,7 +178,7 @@ namespace MasterThesis
                     output[2, 0] = factory.BasisSwaps[identifier].FloatLegNoSpread.EndDate.ToString("dd/MM/yyyy");
                     output[2, 1] = factory.BasisSwaps[identifier].FloatLegSpread.EndDate.ToString("dd/MM/yyyy");
                     output[3, 0] = factory.BasisSwaps[identifier].FloatLegNoSpread.Tenor.ToString();
-                    output[3, 1] = factory.BasisSwaps[identifier].FloatLegNoSpread.Tenor.ToString(); 
+                    output[3, 1] = factory.BasisSwaps[identifier].FloatLegSpread.Tenor.ToString(); 
 
                     break;
                 case QuoteType.FuturesRate:

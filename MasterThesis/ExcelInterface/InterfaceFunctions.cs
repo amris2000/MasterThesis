@@ -39,7 +39,7 @@ namespace MasterThesis.ExcelInterface
         {
             LinearRateModel model = ObjectMap.LinearRateModels[linearRateModel];
             InstrumentFactory factory = ObjectMap.InstrumentFactories[instrumentFactory];
-            IrSwap swap = ObjectMap.IrSwaps[product];
+            LinearRateProduct swap = ObjectMap.Products[product];
             ObjectMap.RiskEngines[baseName] = new RiskEngine(model, factory, swap);
         }
 
@@ -120,6 +120,26 @@ namespace MasterThesis.ExcelInterface
         public static object[,] InstrumentFactory_GetInstrumentInfo(string baseName, string identifier)
         {
             return ConstructInstrumentInspector.MakeExcelOutput(ObjectMap.InstrumentFactories[baseName], identifier);
+        }
+
+        public static void InstrumentFactory_StoreInstrumentsInMap(string baseName)
+        {
+            InstrumentFactory factory = ObjectMap.InstrumentFactories[baseName];
+
+            foreach (string key in factory.IrSwaps.Keys)
+                ObjectMap.Products[key] = factory.IrSwaps[key];
+
+            foreach (string key in factory.OisSwaps.Keys)
+                ObjectMap.Products[key] = factory.OisSwaps[key];
+
+            foreach (string key in factory.BasisSwaps.Keys)
+                ObjectMap.Products[key] = factory.BasisSwaps[key];
+
+            foreach (string key in factory.Futures.Keys)
+                ObjectMap.Products[key] = factory.Futures[key];
+
+            foreach (string key in factory.Fras.Keys)
+                ObjectMap.Products[key] = factory.Fras[key];
         }
 
         public static void InstrumentFactory_Make(string baseName, DateTime asOf)
@@ -272,7 +292,8 @@ namespace MasterThesis.ExcelInterface
         public static double LinearRateModel_SwapValue(string baseName, string swapName)
         {
             LinearRateModel model = ObjectMap.LinearRateModels[baseName];
-            IrSwap swap = ObjectMap.IrSwaps[swapName];
+            IrSwap swap = (IrSwap) ObjectMap.Products[swapName];
+            //IrSwap swap = ObjectMap.IrSwaps[swapName];
             return model.IrSwapPv(swap);
         }
 
@@ -293,21 +314,24 @@ namespace MasterThesis.ExcelInterface
         public static double LinearRateModel_SwapParRate(string baseName, string swapName)
         {
             LinearRateModel model = ObjectMap.LinearRateModels[baseName];
-            IrSwap swap = ObjectMap.IrSwaps[swapName];
+            IrSwap swap = (IrSwap) ObjectMap.Products[swapName];
+            //IrSwap swap = ObjectMap.IrSwaps[swapName];
             return model.IrParSwapRate(swap);
         }
 
         public static double LinearRateModel_BasisSwapValue(string baseName, string swapName)
         {
             LinearRateModel model = ObjectMap.LinearRateModels[baseName];
-            BasisSwap swap = ObjectMap.BasisSwaps[swapName];
+            BasisSwap swap = (BasisSwap) ObjectMap.Products[swapName];
+            //BasisSwap swap = ObjectMap.BasisSwaps[swapName];
             return model.BasisSwapPv(swap);
         }
 
         public static double LinearRateModel_BasisParSpread(string modelName, string basisSwapName)
         {
             LinearRateModel model = ObjectMap.LinearRateModels[modelName];
-            BasisSwap swap = ObjectMap.BasisSwaps[basisSwapName];
+            BasisSwap swap = (BasisSwap)ObjectMap.Products[basisSwapName];
+            //BasisSwap swap = ObjectMap.BasisSwaps[basisSwapName];
             return model.ParBasisSpread(swap);
         }
 
@@ -333,6 +357,7 @@ namespace MasterThesis.ExcelInterface
             FloatLeg floatLeg = ObjectMap.FloatLegs[floatLegName];
             IrSwap swap = new MasterThesis.IrSwap(floatLeg, fixedLeg);
 
+            ObjectMap.Products[baseName] = swap;
             ObjectMap.IrSwaps[baseName] = swap;
         }
 
@@ -343,6 +368,7 @@ namespace MasterThesis.ExcelInterface
             FloatLeg floatLegSpread = ObjectMap.FloatLegs[floatLegSpreadName];
             BasisSwap swap = new MasterThesis.BasisSwap(floatLegNoSpread, floatLegSpread);
 
+            ObjectMap.Products[baseName] = swap;
             ObjectMap.BasisSwaps[baseName] = swap;
         }
 

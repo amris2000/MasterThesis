@@ -63,12 +63,10 @@ namespace Sandbox
             //double x = myDouble;
 
             //Schedule123();
-            testInstrumentOutput();
-
+            //testInstrumentOutput();       
 
             //MiscTests.TestIt();
             //MultiThreadingTests.SimpleTest();
-
             Console.ReadLine();
         }
     }

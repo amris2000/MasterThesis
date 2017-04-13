@@ -11,7 +11,7 @@ namespace MasterThesis
     {
         public Curve DiscCurve;
         public FwdCurves FwdCurveCollection;
-        public InterpMethod Interpolation = InterpMethod.Linear;
+        public InterpMethod Interpolation;
 
         public LinearRateModel(Curve discCurve, FwdCurves fwdCurveCollection, InterpMethod interpolation = InterpMethod.Linear)
         {
@@ -34,7 +34,7 @@ namespace MasterThesis
         {
             FwdCurves newCollection = FwdCurveCollection.Copy();
             newCollection.AddCurve(newCurve, tenor);
-            return new LinearRateModel(DiscCurve, newCollection);
+            return new LinearRateModel(DiscCurve.Copy(), newCollection, Interpolation);
         }
         
         private LinearRateModel BumpDiscCurveAndReturn(int curvePoint, double bump = 0.0001)
@@ -46,7 +46,7 @@ namespace MasterThesis
 
         private LinearRateModel ReturnModelWithReplacedDiscCurve(Curve newDiscCurve)
         {
-            return new LinearRateModel(newDiscCurve, FwdCurveCollection.Copy());
+            return new LinearRateModel(newDiscCurve, FwdCurveCollection.Copy(), Interpolation);
         } 
 
         public double BumpAndRunFwdRisk(LinearRateProduct product, CurveTenor fwdCurve, int curvePoint, double bump = 0.0001)
@@ -54,7 +54,7 @@ namespace MasterThesis
             double valueNoBump = ValueLinearRateProduct(product);
             LinearRateModel newModel = BumpFwdCurveAndReturn(fwdCurve, curvePoint, bump);
             double valueBump = newModel.ValueLinearRateProduct(product);
-            return (valueNoBump - valueBump); // REMEMBER THIS!!!
+            return (valueBump - valueNoBump)/bump*0.0001; // REMEMBER THIS!!!
         }
 
         public double BumpAndRunDisc(LinearRateProduct product, int curvePoint, double bump = 0.0001)
@@ -62,7 +62,7 @@ namespace MasterThesis
             double valueNoBump = ValueLinearRateProduct(product);
             LinearRateModel newModel = BumpDiscCurveAndReturn(curvePoint, bump);
             double valueBump = newModel.ValueLinearRateProduct(product);
-            return (valueNoBump - valueBump); // REMEMBER THIS!!!
+            return (valueBump - valueNoBump)/bump*0.0001; // REMEMBER THIS!!!
         }
 
         // -------- RELATED TO VALUING INSTRUMENTS -------------
@@ -198,7 +198,7 @@ namespace MasterThesis
 
         public double BasisSwapPv(BasisSwap swap)
         {
-            return ValueFloatLeg((FloatLeg)swap.Leg1) - ValueFloatLeg((FloatLeg)swap.Leg2);
+            return ValueFloatLeg(swap.FloatLegNoSpread) - ValueFloatLeg(swap.FloatLegSpread);
         }
 
         public double ParBasisSpread(BasisSwap swap)
