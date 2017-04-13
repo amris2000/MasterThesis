@@ -351,7 +351,7 @@ namespace MasterThesis.ExcelInterface
             ObjectMap.FloatLegs[baseName] = new FloatLeg(AsOf, StartDate, EndDate, Frequency, DayCount, DayRule, Notional, Spread, stub);
         }
 
-        public static void PlainVanillaSwap_Make(string baseName, string floatLegName, string fixedLegName)
+        public static void PlainVanillaSwap_Make(string baseName, string fixedLegName, string floatLegName)
         {
             FixedLeg fixedLeg = ObjectMap.FixedLegs[fixedLegName];
             FloatLeg floatLeg = ObjectMap.FloatLegs[floatLegName];

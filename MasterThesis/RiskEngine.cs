@@ -62,6 +62,12 @@ namespace MasterThesis
             _jacobian = Matrix<double>.Build.Dense(_instruments.Count, _instruments.Count);
         }
 
+        public void AddInstruments(List<CalibrationInstrument> instruments)
+        {
+            _instruments.AddRange(instruments);
+            SortInstruments();
+        }
+
         private void SortInstruments()
         {
 

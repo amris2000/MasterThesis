@@ -31,6 +31,7 @@ namespace MasterThesis.ExcelInterface
         // RiskEngine
         public static IDictionary<string, RiskEngine> RiskEngines = new Dictionary<string, RiskEngine>();
         public static IDictionary<string, RiskOutputContainer> RiskOutputContainers = new Dictionary<string, RiskOutputContainer>();
+        public static IDictionary<string, List<CalibrationInstrument>> CalibrationInstrumentSets = new Dictionary<string, List<CalibrationInstrument>>();
         
 
         public static void CheckExists<T>(IDictionary<string, T> dictionary, string key, string errMessage)
