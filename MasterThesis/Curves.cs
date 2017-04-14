@@ -11,8 +11,8 @@ namespace MasterThesis
     {
         public List<DateTime> Dates;
         public List<double> Values;
-        public int Dimension;
-        public CurveTenor Frequency { get; set; }
+        public int Dimension { get; private set; }
+        public CurveTenor Frequency { get; private set; }
 
         //public Curve(List<DateTime> dates, List<double> values)
         //{
@@ -167,21 +167,21 @@ namespace MasterThesis
 
     public class FwdCurves
     {
-        private IDictionary<CurveTenor, Curve> FwdCurveCollection;
+        public IDictionary<CurveTenor, Curve> Curves { get; private set; }
 
         public FwdCurves()
         {
-            FwdCurveCollection = new Dictionary<CurveTenor, Curve>();
+            Curves = new Dictionary<CurveTenor, Curve>();
         }
         public void AddCurve(Curve curve, CurveTenor curveType)
         {
-            FwdCurveCollection[curveType] = curve;
+            Curves[curveType] = curve;
         }
         public void AddCurve(List<DateTime> dates, List<double> values, CurveTenor tenor)
         {
 
             Curve newCurve = new MasterThesis.Curve(dates, values);
-            FwdCurveCollection[tenor] = newCurve;
+            Curves[tenor] = newCurve;
         }
 
         public FwdCurves(Curve discCurve)
@@ -189,14 +189,19 @@ namespace MasterThesis
             OneCurveToRuleThemAll(discCurve);
         }
 
+        public bool CurveExist(CurveTenor tenor)
+        {
+            return Curves.ContainsKey(tenor);
+        }
+
         public void UpdateCurveValues(List<double> values, CurveTenor tenor)
         {
-            FwdCurveCollection[tenor].Values = values;
+            Curves[tenor].Values = values;
         }
 
         public Curve GetCurve(CurveTenor curveType)
         {
-            return FwdCurveCollection[curveType];
+            return Curves[curveType];
         }
 
         public void OneCurveToRuleThemAll(Curve curve)

@@ -49,21 +49,84 @@ namespace MasterThesis
             return new LinearRateModel(newDiscCurve, FwdCurveCollection.Copy(), Interpolation);
         } 
 
+        /// <summary>
+        /// Risk value of a basis point. 
+        /// </summary>
+        /// <param name="product"></param>
+        /// <param name="fwdCurve"></param>
+        /// <param name="curvePoint"></param>
+        /// <param name="bump"></param>
+        /// <returns></returns>
         public double BumpAndRunFwdRisk(LinearRateProduct product, CurveTenor fwdCurve, int curvePoint, double bump = 0.0001)
         {
             double valueNoBump = ValueLinearRateProduct(product);
             LinearRateModel newModel = BumpFwdCurveAndReturn(fwdCurve, curvePoint, bump);
             double valueBump = newModel.ValueLinearRateProduct(product);
-            return (valueBump - valueNoBump)/bump*0.0001; // REMEMBER THIS!!!
+            return (valueBump - valueNoBump)/bump*0.0001; 
         }
 
+        /// <summary>
+        /// Risk value of a  basis point.
+        /// </summary>
+        /// <param name="product"></param>
+        /// <param name="curvePoint"></param>
+        /// <param name="bump"></param>
+        /// <returns></returns>
         public double BumpAndRunDisc(LinearRateProduct product, int curvePoint, double bump = 0.0001)
         {
             double valueNoBump = ValueLinearRateProduct(product);
             LinearRateModel newModel = BumpDiscCurveAndReturn(curvePoint, bump);
             double valueBump = newModel.ValueLinearRateProduct(product);
-            return (valueBump - valueNoBump)/bump*0.0001; // REMEMBER THIS!!!
+            return (valueBump - valueNoBump)/bump*0.0001; 
         }
+
+        public RiskOutput CalculateZcbRiskBumpAndRun(LinearRateProduct product, CurveTenor tenor, DateTime asOf)
+        {
+            RiskOutput output = new MasterThesis.RiskOutput(asOf);
+
+            if (tenor == CurveTenor.DiscOis || tenor == CurveTenor.DiscLibor)
+            {
+                for (int i = 0; i < DiscCurve.Values.Count; i++)
+                {
+                    DateTime curvePoint = DiscCurve.Dates[i];
+                    double riskValue = BumpAndRunDisc(product, i);
+                    output.AddRiskCalculation(CurveTenor.DiscOis, curvePoint, riskValue);
+                }
+            }
+            else if (EnumHelpers.IsFwdTenor(tenor))
+            {
+                for (int j = 0; j < FwdCurveCollection.GetCurve(tenor).Dates.Count; j++)
+                {
+                    DateTime curvePoint = FwdCurveCollection.GetCurve(tenor).Dates[j];
+                    double riskValue = BumpAndRunFwdRisk(product, tenor, j);
+                    output.AddRiskCalculation(tenor, curvePoint, riskValue);
+                }
+            }
+            else
+                throw new InvalidOperationException("tenor is not valid.");
+
+            return output;
+        }
+
+        public RiskOutputContainer RiskAgainstAllCurvesBumpAndRun(LinearRateProduct product, DateTime asOf)
+        {
+            RiskOutputContainer output = new RiskOutputContainer();
+
+            List<CurveTenor> tenors = new CurveTenor[] { CurveTenor.Fwd1M, CurveTenor.Fwd3M, CurveTenor.Fwd6M, CurveTenor.Fwd1Y }.ToList();
+
+            foreach (CurveTenor tenor in tenors)
+            {
+                if (FwdCurveCollection.CurveExist(tenor) == false)
+                    throw new InvalidOperationException(tenor.ToString() + " does not exist in model.");
+
+                output.AddForwardRisk(tenor, CalculateZcbRiskBumpAndRun(product, tenor, asOf));
+            }
+
+            output.AddDiscRisk(CalculateZcbRiskBumpAndRun(product, CurveTenor.DiscOis, asOf));
+            return output;
+        }
+
+
 
         // -------- RELATED TO VALUING INSTRUMENTS -------------
 

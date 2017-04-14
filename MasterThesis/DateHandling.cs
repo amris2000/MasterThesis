@@ -13,7 +13,6 @@ namespace MasterThesis
     /// </summary>
     public static class DateHandling
     {
-
         public static bool StrIsConvertableToDate(string str)
         {
             try
@@ -25,6 +24,55 @@ namespace MasterThesis
             {
                 return false;
             }
+        }
+
+        public static string ConvertDateToTenorString(DateTime date, DateTime asOf)
+        {
+            double tenor = date.Subtract(asOf).TotalDays / 365;
+            int years = (int)Math.Truncate(tenor);
+            double leftover = tenor - years;
+
+            string tenorLetter;
+            int tenorNumber;
+
+            if (years == 0)
+            {
+                tenorLetter = "M";
+                tenorNumber = (int)Math.Round(leftover * 12.0);
+                if (tenorNumber == 12)
+                {
+                    tenorLetter = "Y";
+                    tenorNumber = 1;
+                }
+            }
+            else if (years == 1)
+            {
+                if (leftover < 0.95)
+                {
+                    tenorNumber = 12 + (int)Math.Round(leftover * 12.0);
+                    tenorLetter = "M";
+                }
+                else
+                {
+                    tenorNumber = 2;
+                    tenorLetter = "Y";
+                }
+            }
+            else if (years >= 2)
+            {
+                tenorLetter = "Y";
+                if (leftover < 0.5)
+                    tenorNumber = years;
+                else
+                    tenorNumber = years + 1;
+            }
+            else
+            {
+                tenorLetter = "?";
+                tenorNumber = 0;
+            }
+
+            return tenorNumber.ToString() + tenorLetter;
         }
 
         /// <summary>

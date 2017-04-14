@@ -42,16 +42,21 @@ namespace MasterThesis
     public class RiskJacobian
     {
         List<CalibrationInstrument> _instruments;
+        IDictionary<string, List<double>> _fullGradients;
         Matrix<double> _jacobian;
+        LinearRateModel _model;
+        DateTime _asOf;
+        int _dimension;
         bool _hasBeenCreated = false;
 
 
-        public RiskJacobian(List<CalibrationInstrument> instruments)
+        public RiskJacobian(LinearRateModel model, DateTime asOf)
         {
-            _instruments = instruments;
+            _model = model;
+            _asOf = asOf;
 
-            SetJacobian();
-            SortInstruments();
+            _instruments = new List<CalibrationInstrument>();
+            _fullGradients = new Dictionary<string, List<double>>();
         }
 
 
@@ -59,7 +64,8 @@ namespace MasterThesis
         {
             // Should set the dimensions of the Jacobian based on number of instruments
             // Remember N = M. Matrix initialized with zeros.
-            _jacobian = Matrix<double>.Build.Dense(_instruments.Count, _instruments.Count);
+            _dimension = _instruments.Count;
+            _jacobian = Matrix<double>.Build.Dense(_dimension, _dimension);
         }
 
         public void AddInstruments(List<CalibrationInstrument> instruments)
@@ -73,27 +79,55 @@ namespace MasterThesis
 
         }
 
-        public void VerifyModelDimension(LinearRateModel model)
+        private void VerifyModelDimension()
         {
-            int n = _instruments.Count;
-
             // Calculate number of curve points in model
             int m = 0;
 
-            if (n != m)
+            // Add disc points
+            m += _model.DiscCurve.Dimension;
+
+            foreach (CurveTenor tenor in _model.FwdCurveCollection.Curves.Keys)
+                m += _model.FwdCurveCollection.Curves[tenor].Dimension;
+
+            if (_dimension != m)
                 throw new InvalidOperationException("Number of curve points and input instruments has to be equal.");
         }
 
-        public void ConstructUsingAD(LinearRateModel model)
+        private void BumpAndRunRiskInstruments()
         {
-            VerifyModelDimension(model);
+            foreach (CalibrationInstrument product in _instruments)
+            {
+                product.RiskInstrumentBumpAndRun(_model, _asOf);
+                _fullGradients[product.Identifier] = product.RiskOutput.FullGradient;
+            }
+        }
+
+        public Matrix<double> Get()
+        {
+            if (_hasBeenCreated)
+                return _jacobian;
+            else
+                throw new InvalidOperationException("Jacobian has not been constructed.");
+        }
+
+        public void ConstructUsingAD()
+        {
+            VerifyModelDimension();
+            SetJacobian();
+            SortInstruments();
 
             _hasBeenCreated = true;
         }
 
-        public void ConstructUsingBumpAndRun(LinearRateModel model)
+        public void ConstructUsingBumpAndRun()
         {
-            VerifyModelDimension(model);
+            VerifyModelDimension();
+            SetJacobian();
+            SortInstruments();
+            BumpAndRunRiskInstruments();
+
+
 
             _hasBeenCreated = true;
         }
@@ -105,69 +139,40 @@ namespace MasterThesis
     public class RiskOutput
     {
         IDictionary<string, double> _riskLookUp;
+        IDictionary<DateTime, string> _identifierToPoint;
         DateTime _asOf;
 
         public RiskOutput(DateTime asOf)
         {
             _riskLookUp = new Dictionary<string, double>();
+            _identifierToPoint = new Dictionary<DateTime, string>();
             _asOf = asOf;
-        }
-
-        private string convertDateToTenor(DateTime date)
-        {
-            double tenor = date.Subtract(_asOf).TotalDays / 365;
-            int years = (int)Math.Truncate(tenor);
-            double leftover = tenor - years;
-
-            string tenorLetter;
-            int tenorNumber;
-
-            if (years == 0)
-            {
-                tenorLetter = "M";
-                tenorNumber = (int)Math.Round(leftover * 12.0);
-                if (tenorNumber == 12)
-                {
-                    tenorLetter = "Y";
-                    tenorNumber = 1;
-                }
-            }
-            else if (years == 1)
-            {
-                if (leftover < 0.95)
-                {
-                    tenorNumber = 12 + (int)Math.Round(leftover * 12.0);
-                    tenorLetter = "M";
-                }
-                else
-                {
-                    tenorNumber = 2;
-                    tenorLetter = "Y";
-                }
-            }
-            else if (years >= 2)
-            {
-                tenorLetter = "Y";
-                if (leftover < 0.5)
-                    tenorNumber = years;
-                else
-                    tenorNumber = years + 1;
-            }
-            else
-            {
-                tenorLetter = "?";
-                tenorNumber = 0;
-            }
-
-            return tenorNumber.ToString() + tenorLetter;
         }
 
         public void AddRiskCalculation(CurveTenor curveTenor, DateTime curvePoint, double number)
         {
-            string tenor = convertDateToTenor(curvePoint);
+            string tenor = DateHandling.ConvertDateToTenorString(curvePoint, _asOf);
             //string riskIdentifier = curveTenor.ToString() + "-" + curvePoint.ToString("dd/MM/yyyy");
             string riskIdentifier = curveTenor.ToString() + "-" + tenor;
-            _riskLookUp[riskIdentifier] = number;
+            _riskLookUp[riskIdentifier] = number; 
+            _identifierToPoint[curvePoint] = riskIdentifier;
+        }
+
+        public List<double> ConstructDeltaVector()
+        {
+            List<double> outputList = new List<double>();
+            List<DateTime> orderedDates = new List<DateTime>();
+
+            foreach (DateTime key in _identifierToPoint.Keys)
+                orderedDates.Add(key);
+
+            orderedDates.OrderBy(x => x.Date).ToList();
+
+            // Fetch number in an ordered matter
+            foreach (DateTime date in orderedDates)
+                outputList.Add(_riskLookUp[_identifierToPoint[date]]);
+
+            return outputList;
         }
 
         public object[,] CreateRiskArray()
@@ -182,7 +187,7 @@ namespace MasterThesis
             foreach (string key in _riskLookUp.Keys)
             {
                 output[i, 0] = key;
-                output[i, 1] = Math.Round(_riskLookUp[key], 6).ToString();
+                output[i, 1] = Math.Round(_riskLookUp[key], 6);
                 i = i + 1;
             }
 
@@ -192,22 +197,38 @@ namespace MasterThesis
 
     public class RiskOutputContainer
     {
-        public IDictionary<CurveTenor, RiskOutput> FwdRiskCollection;
-        public RiskOutput DiscRisk;
+        public IDictionary<CurveTenor, RiskOutput> FwdRiskCollection { get; private set; }
+        public RiskOutput DiscRisk { get; private set; }
+        public IDictionary<CurveTenor, List<double>> DeltaVectors { get; private set; }
+        public List<double> FullGradient { get; private set; }
 
         public RiskOutputContainer()
         {
             FwdRiskCollection = new Dictionary<CurveTenor, RiskOutput>();
+            DeltaVectors = new Dictionary<CurveTenor, List<double>>();
+            FullGradient = new List<double>();
         }
 
         public void AddForwardRisk(CurveTenor tenor, RiskOutput riskOutput)
         {
             FwdRiskCollection[tenor] = riskOutput;
+            DeltaVectors[tenor] = riskOutput.ConstructDeltaVector();
         }
 
         public void AddDiscRisk(RiskOutput riskOutput)
         {
             DiscRisk = riskOutput;
+            DeltaVectors[CurveTenor.DiscOis] = riskOutput.ConstructDeltaVector();
+        }
+
+        public void ConstructFullGradient()
+        {
+            List<CurveTenor> tenors = new CurveTenor[] { CurveTenor.DiscOis, CurveTenor.Fwd1M, CurveTenor.Fwd3M, CurveTenor.Fwd6M, CurveTenor.Fwd1Y }.ToList();
+
+            foreach (CurveTenor tenor in tenors)
+            {
+                FullGradient.AddRange(DeltaVectors[tenor]);
+            }
         }
     }
 

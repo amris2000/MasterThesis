@@ -29,6 +29,25 @@ namespace MasterThesis
     public enum QuoteTypeOld { SwapRate, BasisSpread, Fixing, FraRate, FutureRate, BaseSpread }
     public enum InstrumentType { Swap, Fra, Future, IrSwap, MmBasisSwap, BasisSwap, FxFwd, OisSwap, Deposit, Swaption, Fixing }
 
+    public static class EnumHelpers
+    {
+        public static bool IsFwdTenor(CurveTenor tenor)
+        {
+            switch(tenor)
+            {
+                case CurveTenor.Fwd1M:
+                    return true;
+                case CurveTenor.Fwd3M:
+                    return true;
+                case CurveTenor.Fwd6M:
+                    return true;
+                case CurveTenor.Fwd1Y:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+    }
 
     /// <summary>
     /// Used to inspect instrument in Excel Layer. 
