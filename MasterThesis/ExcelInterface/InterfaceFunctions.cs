@@ -33,6 +33,80 @@ namespace MasterThesis.ExcelInterface
         }
     }
 
+    public static class RiskEngineFunctionsNew
+    {
+        public static void CalibrationInstrumentSet_Make(string baseHandle, string[] linearRateProductHandles, string curveTenor)
+        {
+
+            CurveTenor tenor = StrToEnum.CurveTenorConvert(curveTenor);
+            List<CalibrationInstrument> calibrationInstruments = new List<CalibrationInstrument>();
+
+            for (int i = 0; i < linearRateProductHandles.Length; i++)
+            {
+                LinearRateProduct product = ObjectMap.Products[linearRateProductHandles[i]];
+                calibrationInstruments.Add(new CalibrationInstrument(linearRateProductHandles[i], product, tenor));
+            }
+
+            ObjectMap.CalibrationInstrumentSets[baseHandle] = calibrationInstruments;
+        }
+
+        public static void Portfolio_Make(string baseHandle, string[] linearRateProductHandles)
+        {
+            List<LinearRateProduct> products = new List<LinearRateProduct>();
+
+            for (int i = 0; i < linearRateProductHandles.Length; i++)
+                products.Add(ObjectMap.Products[linearRateProductHandles[i]]);
+
+            ObjectMap.Portfolios[baseHandle] = new Portfolio();
+            ObjectMap.Portfolios[baseHandle].AddProducts(products.ToArray());
+        }
+
+        public static void RiskJacobian_Make(string baseHandle, string linearRateModelHandle, DateTime asOf, string[] calibSetsHandles, string[] curveTenors)
+        {
+            LinearRateModel model = ObjectMap.LinearRateModels[linearRateModelHandle];
+            RiskJacobian jacobian = new RiskJacobian(model, asOf);
+
+            if (calibSetsHandles.Length != curveTenors.Length)
+                throw new InvalidOperationException("CurveTenor and Calibration set handles must have same dimension.");
+
+            for (int i = 0; i < calibSetsHandles.Length; i++)
+                jacobian.AddInstruments(ObjectMap.CalibrationInstrumentSets[calibSetsHandles[i]], StrToEnum.CurveTenorConvert(curveTenors[i]));
+
+            ObjectMap.RiskJacobians[baseHandle] = jacobian;
+        }
+
+        public static void RiskEngineNew_Make(string baseHandle, string portfolioHandle, string riskJacobianHandle)
+        {
+            RiskJacobian jacobian = ObjectMap.RiskJacobians[riskJacobianHandle];
+            LinearRateModel model = jacobian.Model;
+            Portfolio portfolio = ObjectMap.Portfolios[portfolioHandle];
+            ObjectMap.RiskEnginesNew[baseHandle] = new RiskEngineNew(model, portfolio, jacobian);
+        }
+
+        public static void RiskEngineNew_StoreZcbRisk(string baseHandle, string riskEngineHandle)
+        {
+            RiskEngineNew riskEngine = ObjectMap.RiskEnginesNew[riskEngineHandle];
+            riskEngine.CalculateZcbRiskBumpAndRun();
+
+            ObjectMap.RiskOutputContainers[baseHandle] = riskEngine.RiskOutput;
+        }
+
+        public static void RiskOutput_StoreFromRiskOutputContainer(string baseHandle, string riskOutputContainerHandle, string tenor)
+        {
+            CurveTenor tenorEnum = StrToEnum.CurveTenorConvert(tenor);
+
+            if (tenorEnum == CurveTenor.DiscOis)
+                ObjectMap.RiskOutputs[baseHandle] = ObjectMap.RiskOutputContainers[riskOutputContainerHandle].DiscRisk;
+            else
+                ObjectMap.RiskOutputs[baseHandle] = ObjectMap.RiskOutputContainers[riskOutputContainerHandle].FwdRiskCollection[tenorEnum];
+        }
+
+        public static object[,] RiskOutput_Get(string baseHandle)
+        {
+            return ObjectMap.RiskOutputs[baseHandle].CreateRiskArray();
+        }
+    }
+
     public static class RiskEngineFunctions
     {
         public static void RiskEngine_Make(string baseName, string linearRateModel, string instrumentFactory, string product)

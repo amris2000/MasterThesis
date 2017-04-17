@@ -29,10 +29,14 @@ namespace MasterThesis.ExcelInterface
         public static IDictionary<string, CalibrationSpec> CalibrationSettings = new Dictionary<string, CalibrationSpec>();
 
         // RiskEngine
-        public static IDictionary<string, RiskEngine> RiskEngines = new Dictionary<string, RiskEngine>();
-        public static IDictionary<string, RiskOutputContainer> RiskOutputContainers = new Dictionary<string, RiskOutputContainer>();
         public static IDictionary<string, List<CalibrationInstrument>> CalibrationInstrumentSets = new Dictionary<string, List<CalibrationInstrument>>();
-        
+        public static IDictionary<string, RiskEngine> RiskEngines = new Dictionary<string, RiskEngine>();
+        public static IDictionary<string, ZcbRiskOutputContainer> RiskOutputContainers = new Dictionary<string, ZcbRiskOutputContainer>();
+        public static IDictionary<string, RiskEngineNew> RiskEnginesNew = new Dictionary<string, RiskEngineNew>();
+        public static IDictionary<string, Portfolio> Portfolios = new Dictionary<string, Portfolio>();
+        public static IDictionary<string, RiskJacobian> RiskJacobians = new Dictionary<string, RiskJacobian>();
+        public static IDictionary<string, ZcbRiskOutput> RiskOutputs = new Dictionary<string, ZcbRiskOutput>();
+
 
         public static void CheckExists<T>(IDictionary<string, T> dictionary, string key, string errMessage)
         {

@@ -80,9 +80,9 @@ namespace MasterThesis
             return (valueBump - valueNoBump)/bump*0.0001; 
         }
 
-        public RiskOutput CalculateZcbRiskBumpAndRun(LinearRateProduct product, CurveTenor tenor, DateTime asOf)
+        public ZcbRiskOutput CalculateZcbRiskBumpAndRun(LinearRateProduct product, CurveTenor tenor, DateTime asOf)
         {
-            RiskOutput output = new MasterThesis.RiskOutput(asOf);
+            ZcbRiskOutput output = new MasterThesis.ZcbRiskOutput(asOf);
 
             if (tenor == CurveTenor.DiscOis || tenor == CurveTenor.DiscLibor)
             {
@@ -108,9 +108,9 @@ namespace MasterThesis
             return output;
         }
 
-        public RiskOutputContainer RiskAgainstAllCurvesBumpAndRun(LinearRateProduct product, DateTime asOf)
+        public ZcbRiskOutputContainer RiskAgainstAllCurvesBumpAndRun(LinearRateProduct product, DateTime asOf)
         {
-            RiskOutputContainer output = new RiskOutputContainer();
+            ZcbRiskOutputContainer output = new ZcbRiskOutputContainer();
 
             List<CurveTenor> tenors = new CurveTenor[] { CurveTenor.Fwd1M, CurveTenor.Fwd3M, CurveTenor.Fwd6M, CurveTenor.Fwd1Y }.ToList();
 
