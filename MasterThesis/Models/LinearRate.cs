@@ -12,12 +12,14 @@ namespace MasterThesis
         public Curve DiscCurve;
         public FwdCurves FwdCurveCollection;
         public InterpMethod Interpolation;
+        private Random _random;
 
         public LinearRateModel(Curve discCurve, FwdCurves fwdCurveCollection, InterpMethod interpolation = InterpMethod.Linear)
         {
             Interpolation = interpolation;
             DiscCurve = discCurve;
             FwdCurveCollection = fwdCurveCollection;
+            _random = new Random();
         }
 
         // --------- RELATED TO BUMP-AND-RUN RISK -------------
@@ -126,22 +128,25 @@ namespace MasterThesis
             return output;
         }
 
-
+        private double TempRandomNumber(Random random)
+        {
+            return (random.NextDouble() * (0.015 - 0.05) + 0.05)*10000.0;
+        }
 
         // -------- RELATED TO VALUING INSTRUMENTS -------------
 
         public double ValueLinearRateProduct(LinearRateProduct product)
         {
-            switch(product.GetInstrumentType())
+            switch (product.GetInstrumentType())
             {
                 case Instrument.IrSwap:
                     return IrSwapPv((IrSwap)product);
                 case Instrument.Fra:
-                    return 0.0;
+                    return TempRandomNumber(_random);
                 case Instrument.Future:
-                    return 0.0;
+                    return TempRandomNumber(_random);
                 case Instrument.OisSwap:
-                    return 0.0;
+                    return TempRandomNumber(_random);
                 case Instrument.BasisSwap:
                     return BasisSwapPv((BasisSwap)product);
                 default:

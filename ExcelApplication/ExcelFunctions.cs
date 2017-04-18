@@ -432,35 +432,35 @@ namespace ExcelApplication
         }
 
         // --- RELATED TO RISK ENGINE
-        [ExcelFunction(Description = "some description", Name = "mt.RiskEngine.MakeOld", IsVolatile = true)]
-        public static string RiskEngine_MakeOld(string baseHandle, string linearRateModelHandle, string instrumentFactoryHandle, string portfolioHandle)
-        {
-            RiskEngineFunctions.RiskEngine_Make(baseHandle, linearRateModelHandle, instrumentFactoryHandle, portfolioHandle);
-            return baseHandle;
-        }
+        //[ExcelFunction(Description = "some description", Name = "mt.RiskEngine.MakeOld", IsVolatile = true)]
+        //public static string RiskEngine_MakeOld(string baseHandle, string linearRateModelHandle, string instrumentFactoryHandle, string portfolioHandle)
+        //{
+        //    RiskEngineFunctions.RiskEngine_Make(baseHandle, linearRateModelHandle, instrumentFactoryHandle, portfolioHandle);
+        //    return baseHandle;
+        //}
 
-        [ExcelFunction(Description = "seom description", Name = "mt.RiskEngine.RiskPortfolio", IsVolatile = true)]
-        public static string RiskEngine_RiskPortfolio(string riskEngineHandle)
-        {
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
-            RiskEngineFunctions.RiskEngine_RiskSwap(riskEngineHandle);
-            sw.Stop();
-            return  sw.ElapsedMilliseconds + " ms.";
-        }
+        //[ExcelFunction(Description = "seom description", Name = "mt.RiskEngine.RiskPortfolio", IsVolatile = true)]
+        //public static string RiskEngine_RiskPortfolio(string riskEngineHandle)
+        //{
+        //    Stopwatch sw = new Stopwatch();
+        //    sw.Start();
+        //    RiskEngineFunctions.RiskEngine_RiskSwap(riskEngineHandle);
+        //    sw.Stop();
+        //    return  sw.ElapsedMilliseconds + " ms.";
+        //}
 
-        [ExcelFunction(Description = "some description", Name = "mt.RiskEngine.GetFwdRiskOutput", IsVolatile = true)]
-        public static object[,] RiskEngin_GetFwdRiskOutput(string riskEngineHandle, string curveTenor)
-        {
-            CurveTenor tenor = StrToEnum.CurveTenorConvert(curveTenor);
-            return RiskEngineFunctions.RiskEngine_GetFwdRiskOutput(riskEngineHandle, tenor);
-        }
+        //[ExcelFunction(Description = "some description", Name = "mt.RiskEngine.GetFwdRiskOutput", IsVolatile = true)]
+        //public static object[,] RiskEngin_GetFwdRiskOutput(string riskEngineHandle, string curveTenor)
+        //{
+        //    CurveTenor tenor = StrToEnum.CurveTenorConvert(curveTenor);
+        //    return RiskEngineFunctions.RiskEngine_GetFwdRiskOutput(riskEngineHandle, tenor);
+        //}
 
-        [ExcelFunction(Description = "some description", Name = "mt.RiskEngine.GetDiscRiskOutput", IsVolatile = true)]
-        public static object[,] RiskEngin_GetDiscRiskOutput(string riskEngineHandle)
-        {
-            return RiskEngineFunctions.RiskEngine_GetDiscRiskOutput(riskEngineHandle);
-        }
+        //[ExcelFunction(Description = "some description", Name = "mt.RiskEngine.GetDiscRiskOutput", IsVolatile = true)]
+        //public static object[,] RiskEngin_GetDiscRiskOutput(string riskEngineHandle)
+        //{
+        //    return RiskEngineFunctions.RiskEngine_GetDiscRiskOutput(riskEngineHandle);
+        //}
 
     }
 }

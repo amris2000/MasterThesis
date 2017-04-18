@@ -140,11 +140,13 @@ namespace MasterThesis
         List<CalibrationInstrument> _instruments;
         IDictionary<CurveTenor, List<CalibrationInstrument>> _instrumentDictionary;
         IDictionary<string, List<double>> _fullGradients;
-        Matrix<double> _jacobian;
+        public Matrix<double> Jacobian { get; internal set; }
+        public Matrix<double> InvertedJacobian { get; internal set; }
         public LinearRateModel Model { get; private set; }
         public DateTime AsOf { get; private set; }
         int _dimension;
         bool _hasBeenCreated = false;
+        bool _hasBeenInitialized = false;
 
 
         public RiskJacobian(LinearRateModel model, DateTime asOf)
@@ -157,15 +159,6 @@ namespace MasterThesis
             _instrumentDictionary = new Dictionary<CurveTenor, List<CalibrationInstrument>>();
         }
 
-
-        private void SetJacobian()
-        {
-            // Should set the dimensions of the Jacobian based on number of instruments
-            // Remember N = M. Matrix initialized with zeros.
-            _dimension = _instruments.Count;
-            _jacobian = Matrix<double>.Build.Dense(_dimension, _dimension);
-        }
-
         public void AddInstruments(List<CalibrationInstrument> instruments, CurveTenor tenor)
         {
             _instruments.AddRange(instruments);
@@ -173,9 +166,31 @@ namespace MasterThesis
             SortInstruments();
         }
 
+        public void Initialize()
+        {
+            SetDimension();
+            VerifyModelDimension();
+            SetJacobian();
+
+            _hasBeenInitialized = true;
+        }
+
+        private void SetJacobian()
+        {
+            // Should set the dimensions of the Jacobian based on number of instruments
+            // Remember N = M. Matrix initialized with zeros.
+            Jacobian = Matrix<double>.Build.Dense(_dimension, _dimension);
+            InvertedJacobian = Matrix<double>.Build.Dense(_dimension, _dimension);
+        }
+
+        public void SetDimension()
+        {
+            _dimension = _instruments.Count;
+        }
+
         private void SortInstruments()
         {
-
+            // Idea, create dictionary<int, identififer>
         }
 
         private void VerifyModelDimension()
@@ -193,6 +208,14 @@ namespace MasterThesis
                 throw new InvalidOperationException("Number of curve points and input instruments has to be equal.");
         }
 
+        public Matrix<double> Get()
+        {
+            if (_hasBeenCreated)
+                return Jacobian;
+            else
+                throw new InvalidOperationException("Jacobian has not been constructed.");
+        }
+
         private void BumpAndRunRiskInstruments()
         {
             foreach (CalibrationInstrument product in _instruments)
@@ -202,29 +225,59 @@ namespace MasterThesis
             }
         }
 
-        public Matrix<double> Get()
+        private void ConstructMatrixFromFullGradients()
         {
-            if (_hasBeenCreated)
-                return _jacobian;
+            for (int i = 0; i < _dimension; i++)
+            {
+                for (int j = 0; j < _dimension; j++)
+                {
+                    // Columns of _jacobian are the delta vector of each asset.
+                    // Rows of _jacobian are delta risk to the same curve point.
+                    Jacobian[j, i] = _fullGradients[_instruments[i].Identifier][j];
+
+                    // The opposite
+                    //Jacobian[i, j] = _fullGradients[_instruments[i].Identifier][j];
+                }
+            }
+        }
+
+        public bool AlmostEqual(double a, double b)
+        {
+            if (Math.Abs(a - b) < 0.000001)
+                return true;
             else
-                throw new InvalidOperationException("Jacobian has not been constructed.");
+                return false;
+        }
+
+        private void InvertJacobian()
+        {
+            // It's probably never exactly equal to zero
+            //if (AlmostEqual(Jacobian.Determinant(), 0.0))
+            //    throw new InvalidOperationException("Jacobian is not invertible. Determinant is 0.0");
+
+            InvertedJacobian = Jacobian.Inverse();
         }
 
         public void ConstructUsingAD()
         {
-            VerifyModelDimension();
-            SetJacobian();
-            SortInstruments();
+            if (!_hasBeenInitialized)
+                throw new InvalidOperationException("Cannot construct Jacobian - it has not been initialized");
+
+            // Insert calculate gradients from AD risk
+            ConstructMatrixFromFullGradients();
+            InvertJacobian();
 
             _hasBeenCreated = true;
         }
 
         public void ConstructUsingBumpAndRun()
         {
-            VerifyModelDimension();
-            SetJacobian();
-            SortInstruments();
+            if (!_hasBeenInitialized)
+                throw new InvalidOperationException("Cannot construct Jacobian - it has not been initialized");
+
             BumpAndRunRiskInstruments();
+            ConstructMatrixFromFullGradients();
+            InvertJacobian();
 
             _hasBeenCreated = true;
         }
@@ -332,7 +385,7 @@ namespace MasterThesis
         }
     }
 
-    public class RiskEngineNew
+    public class RiskEngine
     {
         private LinearRateModel _linearRateModel;
         private Portfolio _portfolio;
@@ -362,7 +415,7 @@ namespace MasterThesis
             return true;
         }
 
-        public RiskEngineNew(LinearRateModel model, Portfolio portfolio, RiskJacobian jacobian)
+        public RiskEngine(LinearRateModel model, Portfolio portfolio, RiskJacobian jacobian)
         {
             _linearRateModel = model;
             _portfolio = portfolio;
@@ -382,64 +435,64 @@ namespace MasterThesis
         }
     }
 
-    public class RiskEngine
-    {
-        private LinearRateModel _linearRateModel;
-        private InstrumentFactory _factory;
-        private Portfolio _portfolio;
-        public ZcbRiskOutputContainer RiskOutput;
-        private LinearRateProduct _tempProduct;
+    //public class RiskEngine
+    //{
+    //    private LinearRateModel _linearRateModel;
+    //    private InstrumentFactory _factory;
+    //    private Portfolio _portfolio;
+    //    public ZcbRiskOutputContainer RiskOutput;
+    //    private LinearRateProduct _tempProduct;
 
-        public RiskEngine(LinearRateModel model, InstrumentFactory factory, Portfolio portfolio)
-        {
-            _linearRateModel = model;
-            _factory = factory;
-            _portfolio = portfolio;
-            RiskOutput = new ZcbRiskOutputContainer();
-        }
+    //    public RiskEngine(LinearRateModel model, InstrumentFactory factory, Portfolio portfolio)
+    //    {
+    //        _linearRateModel = model;
+    //        _factory = factory;
+    //        _portfolio = portfolio;
+    //        RiskOutput = new ZcbRiskOutputContainer();
+    //    }
 
-        public RiskEngine(LinearRateModel model, InstrumentFactory factory, LinearRateProduct product)
-        {
-            _linearRateModel = model;
-            _factory = factory;
-            _tempProduct = product;
-            RiskOutput = new ZcbRiskOutputContainer();
-        }
+    //    public RiskEngine(LinearRateModel model, InstrumentFactory factory, LinearRateProduct product)
+    //    {
+    //        _linearRateModel = model;
+    //        _factory = factory;
+    //        _tempProduct = product;
+    //        RiskOutput = new ZcbRiskOutputContainer();
+    //    }
 
-        public void AddTradeTradeToPortfolio(LinearRateProduct product)
-        {
-            _portfolio.AddProducts(product);
-        }
+    //    public void AddTradeTradeToPortfolio(LinearRateProduct product)
+    //    {
+    //        _portfolio.AddProducts(product);
+    //    }
 
-        public void CurveRiskSwap()
-        {
-            CurveTenor[] tenors = new CurveTenor[] { CurveTenor.Fwd1M, CurveTenor.Fwd3M, CurveTenor.Fwd6M, CurveTenor.Fwd1Y };
+    //    public void CurveRiskSwap()
+    //    {
+    //        CurveTenor[] tenors = new CurveTenor[] { CurveTenor.Fwd1M, CurveTenor.Fwd3M, CurveTenor.Fwd6M, CurveTenor.Fwd1Y };
 
-            // Forward risk
-            for (int i = 0; i < tenors.Length; i++)
-            {
-                ZcbRiskOutput fwdRiskOutput = new MasterThesis.ZcbRiskOutput(_factory.AsOf);
+    //        // Forward risk
+    //        for (int i = 0; i < tenors.Length; i++)
+    //        {
+    //            ZcbRiskOutput fwdRiskOutput = new MasterThesis.ZcbRiskOutput(_factory.AsOf);
 
-                for (int j = 0; j<_linearRateModel.FwdCurveCollection.GetCurve(tenors[i]).Dates.Count; j++)
-                {
-                    DateTime curvePoint = _linearRateModel.FwdCurveCollection.GetCurve(tenors[i]).Dates[j];
-                    double riskValue = _linearRateModel.BumpAndRunFwdRisk(_tempProduct, tenors[i], j);
-                    fwdRiskOutput.AddRiskCalculation(tenors[i], curvePoint, riskValue);
-                }
+    //            for (int j = 0; j<_linearRateModel.FwdCurveCollection.GetCurve(tenors[i]).Dates.Count; j++)
+    //            {
+    //                DateTime curvePoint = _linearRateModel.FwdCurveCollection.GetCurve(tenors[i]).Dates[j];
+    //                double riskValue = _linearRateModel.BumpAndRunFwdRisk(_tempProduct, tenors[i], j);
+    //                fwdRiskOutput.AddRiskCalculation(tenors[i], curvePoint, riskValue);
+    //            }
 
-                RiskOutput.AddForwardRisk(tenors[i], fwdRiskOutput);
-            }
+    //            RiskOutput.AddForwardRisk(tenors[i], fwdRiskOutput);
+    //        }
 
-            ZcbRiskOutput discRiskOutput = new MasterThesis.ZcbRiskOutput(_factory.AsOf);
+    //        ZcbRiskOutput discRiskOutput = new MasterThesis.ZcbRiskOutput(_factory.AsOf);
 
-            for (int i = 0; i<_linearRateModel.DiscCurve.Values.Count; i++)
-            {
-                DateTime curvePoint = _linearRateModel.DiscCurve.Dates[i];
-                double riskValue = _linearRateModel.BumpAndRunDisc(_tempProduct, i);
-                discRiskOutput.AddRiskCalculation(CurveTenor.DiscOis, curvePoint, riskValue);
-            }
+    //        for (int i = 0; i<_linearRateModel.DiscCurve.Values.Count; i++)
+    //        {
+    //            DateTime curvePoint = _linearRateModel.DiscCurve.Dates[i];
+    //            double riskValue = _linearRateModel.BumpAndRunDisc(_tempProduct, i);
+    //            discRiskOutput.AddRiskCalculation(CurveTenor.DiscOis, curvePoint, riskValue);
+    //        }
 
-            RiskOutput.AddDiscRisk(discRiskOutput);
-        }
-    }
+    //        RiskOutput.AddDiscRisk(discRiskOutput);
+    //    }
+    //}
 }

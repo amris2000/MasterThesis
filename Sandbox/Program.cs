@@ -8,6 +8,7 @@ using MasterThesis;
 using System.Threading;
 using MasterThesis.Extensions;
 using MasterThesis.ExcelInterface;
+using MathNet.Numerics.LinearAlgebra;
 
 namespace Sandbox
 {
@@ -64,6 +65,14 @@ namespace Sandbox
 
             //Schedule123();
             //testInstrumentOutput();       
+
+            // Matrix test
+            Matrix<double> myMat = Matrix<double>.Build.Dense(2, 2);
+            myMat[0, 0] = 3;
+            myMat[0, 1] = 1;
+            myMat[1, 0] = 2;
+            myMat[1, 1] = 4;
+            Matrix<double> inverse = myMat.Inverse();
 
             //MiscTests.TestIt();
             //MultiThreadingTests.SimpleTest();
