@@ -17,10 +17,12 @@ namespace MasterThesis
     public enum StubPlacement { Beginning, End, NullStub };
     public enum DayCount { ACT360, ACT365, ACT36525, THIRTY360 }
     public enum InterpMethod { Constant, Linear, LogLinear, Hermite, Catrom }
-    public enum Instrument { IrSwap, BasisSwap, Fra, Future, OisSwap };
+    public enum Instrument { IrSwap, BasisSwap, Fra, Futures, OisSwap };
     public enum QuoteType { ParSwapRate, ParBasisSpread, OisRate, FraRate, FuturesRate, Deposit };
     public enum InstrumentFormatType { Swaps, Fras, Futures, BasisSpreads, FwdStartingSwaps };
     public enum Tenor { D, B, W, M, Y };
+    public enum Direction { Pay, Rec };
+
 
     // OLD / UNUSED
     public enum MarketDataInstrument { IrSwapRate, OisRate, BaseSpread, Fra, Future, BasisSwap, Cash, Fixing }
@@ -31,6 +33,14 @@ namespace MasterThesis
 
     public static class EnumHelpers
     {
+        public static double TradeSignToDouble(Direction tradeSign)
+        {
+            if (tradeSign == Direction.Pay)
+                return 1.0;
+            else
+                return -1.0;
+        }
+
         public static bool IsFwdTenor(CurveTenor tenor)
         {
             switch(tenor)
@@ -65,8 +75,8 @@ namespace MasterThesis
             switch(quoteType)
             {
                 case QuoteType.ParSwapRate:
-                    schedule1 = factory.IrSwaps[identifier].Leg1.Schedule;
-                    schedule2 = factory.IrSwaps[identifier].Leg2.Schedule;
+                    schedule1 = factory.IrSwaps[identifier].FloatLeg.Schedule;
+                    schedule2 = factory.IrSwaps[identifier].FixedLeg.Schedule;
                     instrumentHasSchedule = true;
                     break;
                 case QuoteType.ParBasisSpread:
@@ -162,12 +172,12 @@ namespace MasterThesis
             switch (quoteType)
             {
                 case QuoteType.ParSwapRate:
-                    output[1, 0] = factory.IrSwaps[identifier].Leg1.StartDate.ToString("dd/MM/yyyy");
-                    output[1, 1] = factory.IrSwaps[identifier].Leg2.StartDate.ToString("dd/MM/yyyy");
-                    output[2, 0] = factory.IrSwaps[identifier].Leg1.EndDate.ToString("dd/MM/yyyy");
-                    output[2, 1] = factory.IrSwaps[identifier].Leg2.EndDate.ToString("dd/MM/yyyy");
-                    output[3, 0] = factory.IrSwaps[identifier].Leg1.Tenor.ToString();
-                    output[3, 1] = factory.IrSwaps[identifier].Leg2.Tenor.ToString();
+                    output[1, 0] = factory.IrSwaps[identifier].FloatLeg.StartDate.ToString("dd/MM/yyyy");
+                    output[1, 1] = factory.IrSwaps[identifier].FixedLeg.StartDate.ToString("dd/MM/yyyy");
+                    output[2, 0] = factory.IrSwaps[identifier].FloatLeg.EndDate.ToString("dd/MM/yyyy");
+                    output[2, 1] = factory.IrSwaps[identifier].FixedLeg.EndDate.ToString("dd/MM/yyyy");
+                    output[3, 0] = factory.IrSwaps[identifier].FloatLeg.Tenor.ToString();
+                    output[3, 1] = factory.IrSwaps[identifier].FixedLeg.Tenor.ToString();
 
                     break;
                 case QuoteType.OisRate:
@@ -597,7 +607,7 @@ namespace MasterThesis
                 j = j + 1;
             }
 
-            FwdCurves MyCurves = new MasterThesis.FwdCurves();
+            FwdCurveContainer MyCurves = new MasterThesis.FwdCurveContainer();
             MyCurves.AddCurve(new Curve(Fwd1d, Fwd1dVal), CurveTenor.Fwd1D);
             MyCurves.AddCurve(new Curve(Fwd1m, Fwd1mVal), CurveTenor.Fwd1M);
             MyCurves.AddCurve(new Curve(Fwd3m, Fwd3mVal), CurveTenor.Fwd3M);

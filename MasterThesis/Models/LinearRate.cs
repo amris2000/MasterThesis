@@ -10,11 +10,11 @@ namespace MasterThesis
     public class LinearRateModel
     {
         public Curve DiscCurve;
-        public FwdCurves FwdCurveCollection;
+        public FwdCurveContainer FwdCurveCollection;
         public InterpMethod Interpolation;
         private Random _random;
 
-        public LinearRateModel(Curve discCurve, FwdCurves fwdCurveCollection, InterpMethod interpolation = InterpMethod.Linear)
+        public LinearRateModel(Curve discCurve, FwdCurveContainer fwdCurveCollection, InterpMethod interpolation = InterpMethod.Linear)
         {
             Interpolation = interpolation;
             DiscCurve = discCurve;
@@ -34,7 +34,7 @@ namespace MasterThesis
 
         private LinearRateModel ReturnModelWithReplacedFwdCurve(CurveTenor tenor, Curve newCurve)
         {
-            FwdCurves newCollection = FwdCurveCollection.Copy();
+            FwdCurveContainer newCollection = FwdCurveCollection.Copy();
             newCollection.AddCurve(newCurve, tenor);
             return new LinearRateModel(DiscCurve.Copy(), newCollection, Interpolation);
         }
@@ -140,15 +140,15 @@ namespace MasterThesis
             switch (product.GetInstrumentType())
             {
                 case Instrument.IrSwap:
-                    return IrSwapPv((IrSwap)product);
+                    return IrSwapNpv((IrSwap)product);
                 case Instrument.Fra:
-                    return TempRandomNumber(_random);
-                case Instrument.Future:
-                    return TempRandomNumber(_random);
+                    return FraNpv((Fra)product);
+                case Instrument.Futures:
+                    return FuturesNpv((Futures)product);
                 case Instrument.OisSwap:
-                    return TempRandomNumber(_random);
+                    return DiscCurve.OisSwapNpv((OisSwap)product, Interpolation);
                 case Instrument.BasisSwap:
-                    return BasisSwapPv((BasisSwap)product);
+                    return BasisSwapNpv((BasisSwap)product);
                 default:
                     throw new InvalidOperationException("product instrument type is not valid.");
             }
@@ -197,8 +197,22 @@ namespace MasterThesis
         public double ParFraRate(Fra fra)
         {
             Curve fwdCurve = this.FwdCurveCollection.GetCurve(fra.ReferenceIndex);
-            double rate = fwdCurve.FwdRate(fra.AsOf, fra.StartDate, fra.EndDate, fra.FloatDayRule, fra.FloatDayCount, Interpolation);
+            double rate = fwdCurve.FwdRate(fra.AsOf, fra.StartDate, fra.EndDate, fra.DayRule, fra.DayCount, Interpolation);
             return rate;
+        }
+
+        /// <summary>
+        /// NPV of a FRA 
+        /// </summary>
+        /// <param name="fra"></param>
+        /// <returns></returns>
+        public double FraNpv(Fra fra)
+        {
+            double fraRate = FwdCurveCollection.GetCurve(fra.ReferenceIndex).FwdRate(fra.AsOf, fra.StartDate, fra.EndDate, fra.DayRule, fra.DayCount, Interpolation);
+            double notional = fra.Notional;
+            double discFactor = DiscCurve.DiscFactor(fra.AsOf, fra.EndDate, Interpolation);
+            double coverage = DateHandling.Cvg(fra.StartDate, fra.EndDate, fra.DayCount);
+            return fra.TradeSign * notional * discFactor * (fraRate - fra.FixedRate) * coverage;
         }
 
         /// <summary>
@@ -207,9 +221,19 @@ namespace MasterThesis
         /// </summary>
         /// <param name="future"></param>
         /// <returns></returns>
-        public double ParFutureRate(Future future)
+        public double ParFutureRate(Futures future)
         {
             return ParFraRate(future.FraSameSpec) + future.Convexity;
+        }
+
+        public double FuturesNpv(Futures future)
+        {
+            Fra fra = future.FraSameSpec;
+            double fraRate = ParFraRate(fra);
+            double notional = fra.Notional;
+            double convexity = future.Convexity;
+            double futuresRate = fraRate + convexity;
+            return notional * (1 - futuresRate);
         }
 
         public double ValueFloatLeg(FloatLeg floatLeg)
@@ -253,18 +277,20 @@ namespace MasterThesis
             double FixedAnnuity = Annuity(FixedLeg.Schedule, Interpolation);
             return FixedLeg.FixedRate * FixedAnnuity * FixedLeg.Notional;
         }
-        public double IrSwapPv(IrSwap Swap)
+
+        public double IrSwapNpv(IrSwap Swap)
         {
-            return ValueFloatLeg((FloatLeg) Swap.Leg1) - ValueFixedLeg((FixedLeg) Swap.Leg2);
+            return ValueFloatLeg(Swap.FloatLeg) - ValueFixedLeg(Swap.FixedLeg);
         }
+
         public double IrParSwapRate(IrSwap Swap)
         {
-            double FloatPv = ValueFloatLeg((FloatLeg)Swap.Leg1)/Swap.Leg1.Notional;
-            double FixedAnnuity = Annuity(Swap.Leg2.Schedule, Interpolation);
+            double FloatPv = ValueFloatLeg(Swap.FloatLeg)/Swap.FloatLeg.Notional;
+            double FixedAnnuity = Annuity(Swap.FixedLeg.Schedule, Interpolation);
             return FloatPv / FixedAnnuity;
         }
 
-        public double BasisSwapPv(BasisSwap swap)
+        public double BasisSwapNpv(BasisSwap swap)
         {
             return ValueFloatLeg(swap.FloatLegNoSpread) - ValueFloatLeg(swap.FloatLegSpread);
         }
@@ -277,57 +303,11 @@ namespace MasterThesis
             return (PvNoSpread - PvSpread) / AnnuityNoSpread;
         }
 
-        // Not used
-        public double SwapFixedPv(SwapSimple MySwap)
-        {
-            int FixedPeriods = MySwap.FixedSchedule.AdjStartDates.Count;
-            double FixedAnnuity = Annuity(MySwap.AsOf, MySwap.StartDate, MySwap.EndDate, MySwap.FixedFreq, MySwap.FixedSchedule.DayCount, MySwap.FixedSchedule.DayRule, Interpolation);
-            return MySwap.FixedRate * FixedAnnuity;
-        }
-
-        // Not used
-        public double SwapRate(SwapSimple MySwap)
-        {
-            double FloatPv = SwapFloatPv(MySwap);
-            double FixedAnnuity = Annuity(MySwap.AsOf, MySwap.StartDate, MySwap.EndDate, MySwap.FixedFreq, MySwap.FixedSchedule.DayCount, MySwap.FixedSchedule.DayRule, Interpolation);
-            return FloatPv / FixedAnnuity;
-        }
-
-        public double SwapFloatPv(SwapSimple MySwap)
-        {
-            int FloatPeriods = MySwap.FloatSchedule.AdjStartDates.Count;
-            double FloatValue = 0.0;
-
-            for (int i = 0; i < FloatPeriods; i++)
-            {
-                DateTime startDate = MySwap.FloatSchedule.AdjStartDates[i];
-                DateTime endDate = MySwap.FloatSchedule.AdjEndDates[i];
-                double cvg = MySwap.FloatSchedule.Coverages[i];
-                double fwdRate = FwdCurveCollection.GetCurve(MySwap.FloatFreq).FwdRate(MySwap.AsOf, startDate, endDate, MySwap.FloatSchedule.DayRule, MySwap.FloatSchedule.DayCount, Interpolation);
-                double discFactor = DiscCurve.DiscFactor(MySwap.AsOf, endDate, Interpolation);
-                FloatValue += fwdRate * cvg * discFactor;
-            }
-
-            return FloatValue;
-        }
-
         public double OisRateSimple(OisSwap swap)
         {
             return DiscCurve.OisRateSimple(swap, Interpolation);
         }
 
-        public double OisRate(OisSwap swap)
-        {
-            return DiscCurve.OisRate(swap, Interpolation);
-        }
-
     }
-
-    // Not used
-    public class LinearRateModelSimple : LinearRateModel
-    {
-        public LinearRateModelSimple(Curve discCurve) : base (discCurve, new FwdCurves(discCurve)) { }
-    }
-
 
 }

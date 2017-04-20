@@ -10,7 +10,7 @@ namespace MasterThesis.ExcelInterface
     {
         // Curves and models
         public static IDictionary<string, Curve> DiscCurves = new Dictionary<string, Curve>();
-        public static IDictionary<string, FwdCurves> FwdCurveCollections = new Dictionary<string, FwdCurves>();
+        public static IDictionary<string, FwdCurveContainer> FwdCurveCollections = new Dictionary<string, FwdCurveContainer>();
         public static IDictionary<string, Curve> FwdCurves = new Dictionary<string, Curve>();
         public static IDictionary<string, LinearRateModel> LinearRateModels = new Dictionary<string, LinearRateModel>();
 

@@ -14,13 +14,6 @@ namespace MasterThesis
         public int Dimension { get; private set; }
         public CurveTenor Frequency { get; private set; }
 
-        //public Curve(List<DateTime> dates, List<double> values)
-        //{
-        //    this.Dates = dates;
-        //    this.values = values;
-        //    this.Frequency = curveType;
-        //    this.Dimension = values.Count;
-        //}
         public Curve(List<DateTime> Dates, List<double> Values)
         {
             this.Dates = Dates;
@@ -74,7 +67,12 @@ namespace MasterThesis
             }
         }
 
-        #region OIS SWAPS
+        /// <summary>
+        /// Calculate annuity of an OIS schedule.
+        /// </summary>
+        /// <param name="schedule"></param>
+        /// <param name="interpolation"></param>
+        /// <returns></returns>
         public double OisAnnuity(OisSchedule schedule, InterpMethod interpolation)
         {
             double output = 0.0;
@@ -87,6 +85,15 @@ namespace MasterThesis
                 output += schedule.Coverages[i] * discFactor;
             }
             return output;
+        }
+
+
+        public double OisSwapNpv(OisSwap swap, InterpMethod interpolation)
+        {
+            double oisAnnuity = OisAnnuity(swap.FloatSchedule, interpolation);
+            double notional = swap.Notional;
+            double OisRate = OisRateSimple(swap, interpolation);
+            return swap.TradeSign * notional * (OisRate - swap.FixedRate) * oisAnnuity;
         }
 
         /// <summary>
@@ -123,6 +130,13 @@ namespace MasterThesis
             double coverage = DateHandling.Cvg(startDate, endDate, dayCount);
             return (CompoundedRate2 - 1) / coverage;
         }
+
+        /// <summary>
+        /// Calculate the par OIS rate by compounding. Slow.
+        /// </summary>
+        /// <param name="swap"></param>
+        /// <param name="interpolation"></param>
+        /// <returns></returns>
         public double OisRate(OisSwap swap, InterpMethod interpolation)
         {
             double FloatContribution = 0.0;
@@ -142,34 +156,28 @@ namespace MasterThesis
             return FloatContribution / Annuity;
         }
 
+        /// <summary>
+        /// Simple calculation of par OIS rate. Holds only under the assumption
+        /// that FRA's can perfecetly hedge something.
+        /// </summary>
+        /// <param name="swap"></param>
+        /// <param name="interpolation"></param>
+        /// <returns></returns>
         public double OisRateSimple(OisSwap swap, InterpMethod interpolation)
         {
             double Annuity = OisAnnuity(swap.FixedSchedule, interpolation);
             DateTime asOf = swap.AsOf;
-            //double FloatContribution = 0.0;
-            //for (int i = 0; i < swap.FloatSchedule.AdjEndDates.Count; i++)
-            //{
-            //    DateTime Start = swap.FloatSchedule.AdjStartDates[i];
-            //    DateTime End = swap.FloatSchedule.AdjEndDates[i];
-            //    double cvg = Functions.Cvg(Start, End, swap.FloatSchedule.DayCount);
-            //    double disc1 = DiscFactor(asOf, Start, interpolation);
-            //    double disc2 = DiscFactor(asOf, End, interpolation);
-            //    FloatContribution += (disc1 - disc2);
-            //}
 
             return (DiscFactor(asOf, swap.StartDate, interpolation) - DiscFactor(asOf, swap.EndDate, interpolation)) / Annuity;
-
-            //return FloatContribution / Annuity;
         }
-        #endregion
 
     }
 
-    public class FwdCurves
+    public class FwdCurveContainer
     {
         public IDictionary<CurveTenor, Curve> Curves { get; private set; }
 
-        public FwdCurves()
+        public FwdCurveContainer()
         {
             Curves = new Dictionary<CurveTenor, Curve>();
         }
@@ -184,7 +192,7 @@ namespace MasterThesis
             Curves[tenor] = newCurve;
         }
 
-        public FwdCurves(Curve discCurve)
+        public FwdCurveContainer(Curve discCurve)
         {
             OneCurveToRuleThemAll(discCurve);
         }

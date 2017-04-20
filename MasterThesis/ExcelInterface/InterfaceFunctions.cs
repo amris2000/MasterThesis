@@ -117,33 +117,6 @@ namespace MasterThesis.ExcelInterface
         }
     }
 
-    //public static class RiskEngineFunctions
-    //{
-    //    public static void RiskEngine_Make(string baseName, string linearRateModel, string instrumentFactory, string product)
-    //    {
-    //        LinearRateModel model = ObjectMap.LinearRateModels[linearRateModel];
-    //        InstrumentFactory factory = ObjectMap.InstrumentFactories[instrumentFactory];
-    //        LinearRateProduct swap = ObjectMap.Products[product];
-    //        ObjectMap.RiskEngines[baseName] = new RiskEngine(model, factory, swap);
-    //    }
-
-    //    public static void RiskEngine_RiskSwap(string baseName)
-    //    {
-    //        ObjectMap.RiskEngines[baseName].CurveRiskSwap();
-    //    }
-
-    //    public static object[,] RiskEngine_GetFwdRiskOutput(string baseName, CurveTenor tenor)
-    //    {
-    //        return ObjectMap.RiskEngines[baseName].RiskOutput.FwdRiskCollection[tenor].CreateRiskArray();
-    //    }
-
-    //    public static object[,] RiskEngine_GetDiscRiskOutput(string baseName)
-    //    {
-    //        return ObjectMap.RiskEngines[baseName].RiskOutput.DiscRisk.CreateRiskArray();
-    //    }
-    //}
-
-
     public static class CalibrationFunctions
     {
         public static void CalibrationSpec_Make(string baseName, double precision, double scaling, double diffStep, InterpMethod interpolation, int maxIterations, double startingValues, int bfgs_m, bool useAd, int[] calibrationOrder = null)
@@ -292,7 +265,7 @@ namespace MasterThesis.ExcelInterface
 
         public static double InstrumentFactory_ParFutureRate(string instrumentFactory, string model, string instrument)
         {
-            Future future = ObjectMap.InstrumentFactories[instrumentFactory].Futures[instrument];
+            Futures future = ObjectMap.InstrumentFactories[instrumentFactory].Futures[instrument];
             return ObjectMap.LinearRateModels[model].ParFutureRate(future);
         }
     }
@@ -331,7 +304,7 @@ namespace MasterThesis.ExcelInterface
         {
             try
             {
-                FwdCurves fwdCurves = new FwdCurves();
+                FwdCurveContainer fwdCurves = new FwdCurveContainer();
 
                 for (int i = 0; i < fwdCurveNames.Length; i++)
                     fwdCurves.AddCurve(ObjectMap.FwdCurves[fwdCurveNames[i]], tenors[i]);
@@ -365,9 +338,17 @@ namespace MasterThesis.ExcelInterface
         }
 
         // ------- LINEAR RATE MODEL FUNTIONS
+        public static double LinearRateModel_Value(string linearRateModelHandle, string productHandle)
+        {
+            LinearRateProduct product = ObjectMap.LinearRateProducts[productHandle];
+            LinearRateModel model = ObjectMap.LinearRateModels[linearRateModelHandle];
+            return model.ValueLinearRateProduct(product);
+        }
+
+
         public static void LinearRateModel_Make(string baseName, string fwdCurveCollectionName, string discCurveName, InterpMethod interpolation)
         {
-            FwdCurves fwdCurves = ObjectMap.FwdCurveCollections[fwdCurveCollectionName];
+            FwdCurveContainer fwdCurves = ObjectMap.FwdCurveCollections[fwdCurveCollectionName];
             Curve discCurve = ObjectMap.DiscCurves[discCurveName];
             LinearRateModel model = new LinearRateModel(discCurve, fwdCurves, interpolation);
             ObjectMap.LinearRateModels[baseName] = model;
@@ -378,7 +359,7 @@ namespace MasterThesis.ExcelInterface
             LinearRateModel model = ObjectMap.LinearRateModels[baseName];
             IrSwap swap = (IrSwap) ObjectMap.LinearRateProducts[swapName];
             //IrSwap swap = ObjectMap.IrSwaps[swapName];
-            return model.IrSwapPv(swap);
+            return model.IrSwapNpv(swap);
         }
 
         public static double LinearRateModel_FixedLegValue(string baseName, string fixedLegName)
@@ -408,7 +389,7 @@ namespace MasterThesis.ExcelInterface
             LinearRateModel model = ObjectMap.LinearRateModels[baseName];
             BasisSwap swap = (BasisSwap) ObjectMap.LinearRateProducts[swapName];
             //BasisSwap swap = ObjectMap.BasisSwaps[swapName];
-            return model.BasisSwapPv(swap);
+            return model.BasisSwapNpv(swap);
         }
 
         public static double LinearRateModel_BasisParSpread(string modelName, string basisSwapName)

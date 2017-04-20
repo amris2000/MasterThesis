@@ -31,7 +31,7 @@ namespace MasterThesis
     public class InstrumentFactory
     {
         public IDictionary<string, Fra> Fras;
-        public IDictionary<string, Future> Futures;
+        public IDictionary<string, Futures> Futures;
         public IDictionary<string, IrSwap> IrSwaps;
         public IDictionary<string, BasisSwap> BasisSwaps;
         public IDictionary<string, OisSwap> OisSwaps;
@@ -46,7 +46,7 @@ namespace MasterThesis
         public InstrumentFactory(DateTime asOf)
         {
             Fras = new Dictionary<string, Fra>();
-            Futures = new Dictionary<string, Future>();
+            Futures = new Dictionary<string, Futures>();
             IrSwaps = new Dictionary<string, IrSwap>();
             OisSwaps = new Dictionary<string, OisSwap>();
             BasisSwaps = new Dictionary<string, BasisSwap>();
@@ -76,16 +76,6 @@ namespace MasterThesis
                 default:
                     throw new InvalidOperationException("Instrument QuoteType not supported...");
             }
-        }
-
-        public void AddQuotes(string[] identifiers, double[] quotes)
-        {
-
-        }
-
-        public void AddQuote(string identifier, double quote)
-        {
-
         }
 
         public void AddFwdStartingSwaps(string[] swapString)
@@ -147,7 +137,6 @@ namespace MasterThesis
             {
                 // Ignore instrument
             }
-
         }
 
         private void InterpretFuturesString(string instrumentString)
@@ -173,20 +162,18 @@ namespace MasterThesis
 
             DateTime startDate, endDate;
 
-
             try
             {
                 startDate = Convert.ToDateTime(fwdTenor);
                 endDate = DateHandling.AddTenorAdjust(startDate, floatPayFreq, dayRule);
 
                 curveTenor = StrToEnum.CurveTenorFromSimpleTenor(floatPayFreq);
-                Fra fra = new MasterThesis.Fra(AsOf, startDate, endDate, curveTenor, dayCount, dayRule, fixedRate);
-                Futures[identifier] = new MasterThesis.Future(fra, null);
+                Fra fra = new MasterThesis.Fra(AsOf, startDate, endDate, curveTenor, dayCount, dayRule, fixedRate, _notional);
+                Futures[identifier] = new MasterThesis.Futures(fra, null);
                 CurvePointMap[identifier] = fra.GetCurvePoint();
                 InstrumentTypeMap[identifier] = QuoteType.FuturesRate;
                 InstrumentFormatTypeMap[identifier] = InstrumentFormatType.Futures;
                 IdentifierStringMap[identifier] = instrumentString;
-
             }
             catch
             {
@@ -218,7 +205,7 @@ namespace MasterThesis
 
             if (type == "DEPOSIT")
             {
-                // handle deposits
+                // handle deposits - only used for LIBOR discounting.
                 //curveTenor = StrToEnum.CurveTenorFromSimpleTenor(floatPayFreq);
                 //Fra fra = new MasterThesis.Fra(AsOf, fwdTenor, endTenor, curveTenor, dayCount, dayRule, fixedRate);
                 //Fras[identifier] = fra;

@@ -115,6 +115,12 @@ namespace ExcelApplication
             return baseHandle;
         }
 
+        [ExcelFunction(Description = "Some description", Name = "mt.LinearRateModel.Value", IsVolatile = true)]
+        public static double LinearRate_LinearRateModel_Value(string linearRateModelHandle, string productHandle)
+        {
+            return LinearRateFunctions.LinearRateModel_Value(linearRateModelHandle, productHandle);
+        }
+
         // Swap functions
         [ExcelFunction(Description = "Some description.", Name = "mt.LinearRateModel.SwapValue", IsVolatile =true)]
         public static double LinearRate_LinearRateModel_ValueSwap(string linearRateModelHandle, string swapHandle)

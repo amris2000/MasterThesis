@@ -119,7 +119,7 @@ namespace MasterThesis
     public class FwdCurveConstructor
     {
         private CurveTenor[] _tenors;
-        private FwdCurves _fwdCurveCollection;
+        private FwdCurveContainer _fwdCurveCollection;
         private Curve _discCurve;
         IDictionary<CurveTenor, CurveCalibrationProblem> _problemMap;
         private int[] _curvePoints;
@@ -190,7 +190,7 @@ namespace MasterThesis
             _discCurve = discCurve;
             _tenors = tenors;
             _settings = settings;
-            _fwdCurveCollection = new FwdCurves();
+            _fwdCurveCollection = new FwdCurveContainer();
 
             for (int i = 0; i < problems.Length; i++)
             {
@@ -201,7 +201,7 @@ namespace MasterThesis
             _internalState = 0;
         }
 
-        public FwdCurves GetFwdCurves()
+        public FwdCurveContainer GetFwdCurves()
         {
             if (_fwdCurveCollection == null)
                 throw new NullReferenceException("FwdCurves has not been calibrated...");
@@ -355,8 +355,8 @@ namespace MasterThesis
         {
             Curve tempDiscCurve = new Curve(_problem.CurvePoints, x.ToList());
 
-            FwdCurves tempFwdCurves = new FwdCurves();
-            LinearRateModel tempModel = new LinearRateModel(tempDiscCurve, new FwdCurves(), _settings.Interpolation);
+            FwdCurveContainer tempFwdCurves = new FwdCurveContainer();
+            LinearRateModel tempModel = new LinearRateModel(tempDiscCurve, new FwdCurveContainer(), _settings.Interpolation);
 
             _internalState += 1;
 
