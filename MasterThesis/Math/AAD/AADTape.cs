@@ -74,8 +74,8 @@ namespace MasterThesis
 
         public static void Initialize()
         {
-            if (IsRunning)
-                throw new InvalidOperationException("Cannot initialize. Tape is already running.");
+            //if (IsRunning)
+            //    throw new InvalidOperationException("Cannot initialize. Tape is already running.");
 
             IsRunning = true;
             TapeHasBeenInterpreted = false;
@@ -84,8 +84,8 @@ namespace MasterThesis
         //public static void Initialize(List<Ref<ADouble>> inputs, string[] identifiers = null)
         public static void Initialize(ADouble[] inputs, string[] identifiers = null)
         {
-            if (IsRunning)
-                throw new InvalidOperationException("Cannot initialize. Tape is already running.");
+            //if (IsRunning)
+            //    throw new InvalidOperationException("Cannot initialize. Tape is already running.");
 
             IsRunning = true;
             TapeHasBeenInterpreted = false;
@@ -127,7 +127,7 @@ namespace MasterThesis
             Initialize(inputs, identifiers.ToArray());
         }
 
-        public static void SetGradients()
+        public static void SetGradient()
         {
             if (TapeHasBeenInterpreted == false)
                 throw new InvalidOperationException("Tape has not been intepreted. Cannot extract derivatives.");
@@ -142,6 +142,15 @@ namespace MasterThesis
                 // Wonder if this works?
                 _AADResultSets[i].SetDerivative();
             }
+        }
+
+        public static double[] GetGradient()
+        {
+            List<double> output = new List<double>();
+            for (int i = 0; i < _AADResultSets.Count; i++)
+                output.Add(_AADResultSets[i].GetDerivative());
+
+            return output.ToArray();
         }
 
         public static void PrintResultSet()
@@ -260,7 +269,8 @@ namespace MasterThesis
             }
 
             TapeHasBeenInterpreted = true;
-            SetGradients();
+            IsRunning = false;
+            SetGradient();
             
         }
 

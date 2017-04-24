@@ -137,13 +137,14 @@ namespace MasterThesis
     /// </summary>
     public class RiskJacobian
     {
-        List<CalibrationInstrument> _instruments;
-        IDictionary<CurveTenor, List<CalibrationInstrument>> _instrumentDictionary;
+        public List<CalibrationInstrument> Instruments { get; private set; }
+        public IDictionary<CurveTenor, List<CalibrationInstrument>> InstrumentDictionary { get; private set; }
         IDictionary<string, List<double>> _fullGradients;
-        public Matrix<double> Jacobian { get; internal set; }
-        public Matrix<double> InvertedJacobian { get; internal set; }
+        public Matrix<double> Jacobian { get; private set; }
+        public Matrix<double> InvertedJacobian { get; private set; }
         public LinearRateModel Model { get; private set; }
         public DateTime AsOf { get; private set; }
+        public IDictionary<CurveTenor, int> CurveDimensions { get; private set; }
         int _dimension;
         bool _hasBeenCreated = false;
         bool _hasBeenInitialized = false;
@@ -154,15 +155,26 @@ namespace MasterThesis
             Model = model;
             AsOf = asOf;
 
-            _instruments = new List<CalibrationInstrument>();
+            SetCurveDimensions(model);
+
+            Instruments = new List<CalibrationInstrument>();
             _fullGradients = new Dictionary<string, List<double>>();
-            _instrumentDictionary = new Dictionary<CurveTenor, List<CalibrationInstrument>>();
+            InstrumentDictionary = new Dictionary<CurveTenor, List<CalibrationInstrument>>();
+        }
+
+        private void SetCurveDimensions(LinearRateModel model)
+        {
+            CurveDimensions = new Dictionary<CurveTenor, int>();
+            foreach (CurveTenor key in model.FwdCurveCollection.Curves.Keys)
+                CurveDimensions[key] = model.FwdCurveCollection.Curves[key].Dimension;
+
+            CurveDimensions[CurveTenor.DiscOis] = model.DiscCurve.Dimension;
         }
 
         public void AddInstruments(List<CalibrationInstrument> instruments, CurveTenor tenor)
         {
-            _instruments.AddRange(instruments);
-            _instrumentDictionary[tenor] = instruments;
+            Instruments.AddRange(instruments);
+            InstrumentDictionary[tenor] = instruments;
             SortInstruments();
         }
 
@@ -185,7 +197,7 @@ namespace MasterThesis
 
         public void SetDimension()
         {
-            _dimension = _instruments.Count;
+            _dimension = Instruments.Count;
         }
 
         private void SortInstruments()
@@ -218,11 +230,17 @@ namespace MasterThesis
 
         private void BumpAndRunRiskInstruments()
         {
-            foreach (CalibrationInstrument product in _instruments)
+            foreach (CalibrationInstrument product in Instruments)
             {
                 product.RiskInstrumentBumpAndRun(Model, AsOf);
                 _fullGradients[product.Identifier] = product.RiskOutput.FullGradient;
             }
+        }
+
+        private void ADRiskInstruments()
+        {
+            foreach (CalibrationInstrument product in Instruments)
+                _fullGradients[product.Identifier] = Model.ZcbRiskProductAD(product.Instrument).ToList();
         }
 
         private void ConstructMatrixFromFullGradients()
@@ -233,10 +251,10 @@ namespace MasterThesis
                 {
                     // Columns of _jacobian are the delta vector of each asset.
                     // Rows of _jacobian are delta risk to the same curve point.
-                    //Jacobian[j, i] = _fullGradients[_instruments[i].Identifier][j];
+                    Jacobian[j, i] = _fullGradients[Instruments[i].Identifier][j];
 
                     // The opposite
-                    Jacobian[i, j] = _fullGradients[_instruments[i].Identifier][j];
+                    //Jacobian[i, j] = _fullGradients[_instruments[i].Identifier][j];
                 }
             }
         }
@@ -263,7 +281,7 @@ namespace MasterThesis
             if (!_hasBeenInitialized)
                 throw new InvalidOperationException("Cannot construct Jacobian - it has not been initialized");
 
-            // Insert calculate gradients from AD risk
+            ADRiskInstruments();
             ConstructMatrixFromFullGradients();
             InvertJacobian();
 
@@ -280,6 +298,45 @@ namespace MasterThesis
             InvertJacobian();
 
             _hasBeenCreated = true;
+        }
+
+    }
+
+    public class OutrightRiskOutput
+    {
+        public IDictionary<string, double> RiskLookUp { get; private set; }
+        public CurveTenor Tenor { get; private set; }
+        DateTime _asOf;
+
+        public OutrightRiskOutput(DateTime asOf, CurveTenor tenor)
+        {
+            _asOf = asOf;
+            Tenor = tenor;
+            RiskLookUp = new Dictionary<string, double>();
+        }
+
+        public void AddRiskCalculation(string ident, double number)
+        {
+            RiskLookUp[ident] = number;
+        }
+
+        public object[,] CreateRiskArray()
+        {
+            object[,] output = new object[RiskLookUp.Count + 1, 2];
+
+            output[0, 0] = "Point";
+            output[0, 1] = "Value";
+
+            int i = 1;
+
+            foreach (string key in RiskLookUp.Keys)
+            {
+                output[i, 0] = key;
+                output[i, 1] = Math.Round(RiskLookUp[key], 6);
+                i = i + 1;
+            }
+
+            return output;
         }
 
     }
@@ -307,8 +364,8 @@ namespace MasterThesis
         public void AddRiskCalculation(CurveTenor curveTenor, DateTime curvePoint, double number)
         {
             string tenor = DateHandling.ConvertDateToTenorString(curvePoint, _asOf);
-            //string riskIdentifier = curveTenor.ToString() + "-" + curvePoint.ToString("dd/MM/yyyy");
-            string riskIdentifier = curveTenor.ToString() + "-" + tenor;
+            string riskIdentifier = curveTenor.ToString() + "-" + curvePoint.ToString("dd/MM/yyyy");
+            //string riskIdentifier = curveTenor.ToString() + "-" + tenor;
             RiskLookUp[riskIdentifier] = number; 
             IdentifierToPoint[curvePoint] = riskIdentifier;
         }
@@ -347,6 +404,28 @@ namespace MasterThesis
             }
 
             return output;
+        }
+    }
+    public class OutrightRiskContainer
+    {
+        public IDictionary<CurveTenor, OutrightRiskOutput> FwdRiskCollection { get; private set; }
+        public OutrightRiskOutput DiscRisk { get; private set; }
+        public IDictionary<CurveTenor, List<double>> DeltaVectors { get; private set; }
+
+        public OutrightRiskContainer()
+        {
+            FwdRiskCollection = new Dictionary<CurveTenor, OutrightRiskOutput>();
+            DeltaVectors = new Dictionary<CurveTenor, List<double>>();
+        }
+
+        public void AddForwardRisk(CurveTenor tenor, OutrightRiskOutput riskOutput)
+        {
+            FwdRiskCollection[tenor] = riskOutput;
+        }
+
+        public void AddDiscRisk(OutrightRiskOutput riskOutput)
+        {
+            DiscRisk = riskOutput;
         }
     }
 
@@ -389,9 +468,11 @@ namespace MasterThesis
     {
         private LinearRateModel _linearRateModel;
         private Portfolio _portfolio;
-        public ZcbRiskOutputContainer RiskOutput { get; private set; }
+        public ZcbRiskOutputContainer ZcbRiskOutput { get; private set; }
+        public OutrightRiskContainer OutrightRiskOutput { get; private set; }
         private RiskJacobian _jacobian;
         private List<double> _fullGradient;
+        private List<double> _outrightRisk;
         DateTime _asOf;
 
         // NEED METHOD TO DETERMINE OUTRIGHT DELTA VECTORS
@@ -420,18 +501,74 @@ namespace MasterThesis
             _linearRateModel = model;
             _portfolio = portfolio;
             _jacobian = jacobian;
-            RiskOutput = new ZcbRiskOutputContainer();
+            ZcbRiskOutput = new ZcbRiskOutputContainer();
+            OutrightRiskOutput = new OutrightRiskContainer();
             _asOf = jacobian.AsOf;
+        }
+
+        public void CalculateOutRightRiskDeltaVector()
+        {
+            _outrightRisk = new List<double>();
+            Matrix<double> outrightRiskCalculations = _jacobian.InvertedJacobian.Multiply(ConvertGradientToMatrix());
+            for (int i = 0; i < outrightRiskCalculations.RowCount; i++)
+                _outrightRisk.Add(outrightRiskCalculations[i, 0]);
+        }
+
+        public void ConvertOutrightRiskToRiskOutputObject()
+        {
+            // This is sensitive to the order of instruments ..
+            CurveTenor[] tenors = { CurveTenor.DiscOis, CurveTenor.Fwd1M, CurveTenor.Fwd3M, CurveTenor.Fwd6M, CurveTenor.Fwd1Y };
+
+            int j = 0;
+            foreach (CurveTenor tenor in tenors)
+            {
+                OutrightRiskOutput tempRiskOutput = new OutrightRiskOutput(_asOf, tenor);
+
+                if (tenor == CurveTenor.DiscOis)
+                {
+                    for (int i = 0; i < _jacobian.CurveDimensions[tenor]; i++)
+                    {
+                        string ident = _jacobian.Instruments[j].Identifier;
+                        tempRiskOutput.AddRiskCalculation(ident, _outrightRisk[j]);
+                        j += 1;
+                    }
+
+                    OutrightRiskOutput.AddDiscRisk(tempRiskOutput);
+                }
+                else
+                {
+                    for (int i = 0; i < _jacobian.CurveDimensions[tenor]; i++)
+                    {
+                        string ident = _jacobian.Instruments[j].Identifier;
+                        tempRiskOutput.AddRiskCalculation(ident,_outrightRisk[j]);
+                        j += 1;
+                    }
+
+                    OutrightRiskOutput.AddForwardRisk(tenor, tempRiskOutput);
+                }
+            }
+
+        }
+
+        public Matrix<double> ConvertGradientToMatrix()
+        {
+            Matrix<double> output = Matrix<double>.Build.Dense(_fullGradient.Count, 1);
+            for (int i = 0; i < _fullGradient.Count; i++)
+                output[i, 0] = _fullGradient[i];
+
+            return output;
         }
 
         public void CalculateZcbRiskBumpAndRun()
         {
             _portfolio.RiskAllInstruments(_linearRateModel, _asOf);
-            RiskOutput = _portfolio.AggregateRisk(_asOf);
-            RiskOutput.ConstructFullGradient();
+            ZcbRiskOutput = _portfolio.AggregateRisk(_asOf);
+            ZcbRiskOutput.ConstructFullGradient();
 
             // Assumes numbers are aligned from disc curve to fwd1y curve.
-            _fullGradient = RiskOutput.FullGradient;
+            _fullGradient = ZcbRiskOutput.FullGradient;
+            CalculateOutRightRiskDeltaVector();
+            ConvertOutrightRiskToRiskOutputObject();
         }
     }
 }

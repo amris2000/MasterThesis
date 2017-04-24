@@ -26,8 +26,6 @@ namespace MasterThesis
         }
     }
 
-    // TO DO: ADD AUTOMATIC FETCHING OF QUOTE TYPE BASED ON SOMETHING
-    // Not really sure InstrumentFactory should know anything about quotes. Think abut it.
     public class InstrumentFactory
     {
         public IDictionary<string, Fra> Fras;
@@ -41,7 +39,7 @@ namespace MasterThesis
         public IDictionary<string, InstrumentFormatType> InstrumentFormatTypeMap;
         public IDictionary<string, string> IdentifierStringMap;
         public IDictionary<string, DateTime> CurvePointMap;
-        private double _notional = 10000000.0;
+        private double _notional = 1.0;
 
         public InstrumentFactory(DateTime asOf)
         {
@@ -118,7 +116,6 @@ namespace MasterThesis
             currency = infoArray[2];
             swapNoSpreadIdent = infoArray[3];
             swapSpreadIdent = infoArray[4];
-
 
             try
             {

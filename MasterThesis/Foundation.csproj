@@ -58,6 +58,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ADCurve.cs" />
     <Compile Include="ExcelInterface\ObjectMap.cs" />
     <Compile Include="DateHandling.cs" />
     <Compile Include="Extensions\ObjectExtensions.cs" />

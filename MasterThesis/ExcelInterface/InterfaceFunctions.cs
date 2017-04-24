@@ -7,8 +7,6 @@ using MasterThesis;
 
 namespace MasterThesis.ExcelInterface
 {
-
-
     public static class ExcelUtilities
     {
         public static object[,] BuildObjectArrayFromCurve(Curve curve, string header)
@@ -33,11 +31,20 @@ namespace MasterThesis.ExcelInterface
         }
     }
 
-    public static class RiskEngineFunctionsNew
+    public static class ADFunctions
+    {
+        public static object[,] ZcbRiskAD(string linearRateModelHandle, string productHandle)
+        {
+            LinearRateModel model = ObjectMap.LinearRateModels[linearRateModelHandle];
+            LinearRateProduct product = ObjectMap.LinearRateProducts[productHandle];
+            return model.CreateTestOutputAD(product);
+        }
+    }
+
+    public static class RiskEngineFunctions
     {
         public static void CalibrationInstrumentSet_Make(string baseHandle, string[] linearRateProductHandles, string curveTenor)
         {
-
             CurveTenor tenor = StrToEnum.CurveTenorConvert(curveTenor);
             List<CalibrationInstrument> calibrationInstruments = new List<CalibrationInstrument>();
 
@@ -98,7 +105,28 @@ namespace MasterThesis.ExcelInterface
             RiskEngine riskEngine = ObjectMap.RiskEngines[riskEngineHandle];
             riskEngine.CalculateZcbRiskBumpAndRun();
 
-            ObjectMap.RiskOutputContainers[baseHandle] = riskEngine.RiskOutput;
+            ObjectMap.ZcbRiskOutputContainers[baseHandle] = riskEngine.ZcbRiskOutput;
+        }
+
+        public static void RiskEngineNew_StoreOutrightRisk(string baseHandle, string riskEngineHandle)
+        {
+            RiskEngine riskEngine = ObjectMap.RiskEngines[riskEngineHandle];
+            ObjectMap.OutrightRiskContainers[baseHandle] = riskEngine.OutrightRiskOutput;
+        }
+
+        public static void OutrightRiskOutput_StoreFromRiskOutContainer(string baseHandle, string riskOutputContainerHandle, string tenor)
+        {
+            CurveTenor tenorEnum = StrToEnum.CurveTenorConvert(tenor);
+
+            if (tenorEnum == CurveTenor.DiscOis)
+                ObjectMap.OutrightRiskOutputs[baseHandle] = ObjectMap.OutrightRiskContainers[riskOutputContainerHandle].DiscRisk;
+            else
+                ObjectMap.OutrightRiskOutputs[baseHandle] = ObjectMap.OutrightRiskContainers[riskOutputContainerHandle].FwdRiskCollection[tenorEnum];
+        }
+
+        public static object[,] OutrightRiskOutput_Get(string outrightRiskOutputHandle)
+        {
+            return ObjectMap.OutrightRiskOutputs[outrightRiskOutputHandle].CreateRiskArray();
         }
 
         public static void RiskOutput_StoreFromRiskOutputContainer(string baseHandle, string riskOutputContainerHandle, string tenor)
@@ -106,14 +134,14 @@ namespace MasterThesis.ExcelInterface
             CurveTenor tenorEnum = StrToEnum.CurveTenorConvert(tenor);
 
             if (tenorEnum == CurveTenor.DiscOis)
-                ObjectMap.RiskOutputs[baseHandle] = ObjectMap.RiskOutputContainers[riskOutputContainerHandle].DiscRisk;
+                ObjectMap.ZcbRiskOutputs[baseHandle] = ObjectMap.ZcbRiskOutputContainers[riskOutputContainerHandle].DiscRisk;
             else
-                ObjectMap.RiskOutputs[baseHandle] = ObjectMap.RiskOutputContainers[riskOutputContainerHandle].FwdRiskCollection[tenorEnum];
+                ObjectMap.ZcbRiskOutputs[baseHandle] = ObjectMap.ZcbRiskOutputContainers[riskOutputContainerHandle].FwdRiskCollection[tenorEnum];
         }
 
-        public static object[,] RiskOutput_Get(string baseHandle)
+        public static object[,] ZcbRiskOutput_Get(string zcbRiskoutputHandle)
         {
-            return ObjectMap.RiskOutputs[baseHandle].CreateRiskArray();
+            return ObjectMap.ZcbRiskOutputs[zcbRiskoutputHandle].CreateRiskArray();
         }
     }
 
