@@ -8,7 +8,7 @@ namespace MasterThesis
 {
     public static class Constants
     {
-        public static uint TAPE_SIZE = 10000;
+        public static uint TAPE_SIZE = 100000;
         public enum AADType
         {
             Undef = -1,
