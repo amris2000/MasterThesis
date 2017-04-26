@@ -109,6 +109,42 @@ namespace MasterThesis
             return toBeScaled;
         }
 
+        public ZcbRiskOutputContainer ZcbRiskProductOutputContainer(LinearRateProduct product, DateTime asOf)
+        {
+            double[] risk = ZcbRiskProductAD(product);
+
+            ZcbRiskOutputContainer output = new ZcbRiskOutputContainer();
+            ZcbRiskOutput discRisk = new MasterThesis.ZcbRiskOutput(asOf);
+
+            int j = 0;
+            for (int i = 0; i < DiscCurve.Dimension; i++)
+            {
+                discRisk.AddRiskCalculation(CurveTenor.DiscOis, DiscCurve.Dates[i], risk[j]);
+                j++;
+            }
+
+            output.AddDiscRisk(discRisk);
+
+            CurveTenor[] tenors = new CurveTenor[] { CurveTenor.Fwd1M, CurveTenor.Fwd3M, CurveTenor.Fwd6M, CurveTenor.Fwd1Y };
+
+            foreach (CurveTenor tenor in tenors.ToList())
+            {
+                ZcbRiskOutput tempFwdRisk = new ZcbRiskOutput(asOf);
+
+                for (int i = 0; i < FwdCurveCollection.GetCurve(tenor).Dimension; i++)
+                {
+                    DateTime curvePoint = FwdCurveCollection.GetCurve(tenor).Dates[i];
+                    tempFwdRisk.AddRiskCalculation(tenor, curvePoint, risk[j]);
+                    j++;
+                }
+
+                output.AddForwardRisk(tenor,tempFwdRisk);
+            }
+
+            return output;
+
+        }
+
         public ADouble[] CreateAdVariableArray()
         {
             List<ADouble> output = new List<ADouble>();

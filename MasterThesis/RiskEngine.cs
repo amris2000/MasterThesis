@@ -34,21 +34,24 @@ namespace MasterThesis
             }
         }
 
-        public void RiskInstrument(int instrumentNumber, LinearRateModel model, DateTime asOf)
+        public void RiskInstrument(int instrumentNumber, LinearRateModel model, DateTime asOf, bool useAd = false)
         {
             if (Products.ContainsKey(instrumentNumber) == false)
                 throw new InvalidOperationException("Portfolio does not contain " + instrumentNumber + " as an identififer for a linearRateProduct.");
 
-            RiskOutputs[instrumentNumber] = model.RiskAgainstAllCurvesBumpAndRun(Products[instrumentNumber], asOf);
+            if (useAd)
+                RiskOutputs[instrumentNumber] = model.ZcbRiskProductOutputContainer(Products[instrumentNumber], asOf);
+            else
+                RiskOutputs[instrumentNumber] = model.RiskAgainstAllCurvesBumpAndRun(Products[instrumentNumber], asOf);
         }
 
-        public void RiskAllInstruments(LinearRateModel model, DateTime asOf)
+        public void RiskAllInstruments(LinearRateModel model, DateTime asOf, bool useAd = false)
         {
             if (Products.Count == 0)
                 throw new InvalidOperationException("Portfolio does not contain any instruments to risk");
 
             foreach (int key in Products.Keys)
-                RiskInstrument(key, model, asOf);
+                RiskInstrument(key, model, asOf, useAd);
         }
 
         /// <summary>
@@ -473,30 +476,10 @@ namespace MasterThesis
         private RiskJacobian _jacobian;
         private List<double> _fullGradient;
         private List<double> _outrightRisk;
+        bool _useAd;
         DateTime _asOf;
 
-        // NEED METHOD TO DETERMINE OUTRIGHT DELTA VECTORS
-
-        /// <summary>
-        /// Checks that the riskOutputs have the same dimension for all the 
-        /// instruments in the portfolio before risking.
-        /// </summary>
-        /// <returns></returns>
-        public bool IsPreconditionSatisfied()
-        {
-            int currentDimension = _portfolio.RiskOutputs[0].FwdRiskCollection.Count;
-            
-            // Check that each instrument has risk calculated against same number of fwdCurves
-            foreach (int key in _portfolio.RiskOutputs.Keys)
-            {
-                if (currentDimension != _portfolio.RiskOutputs[0].FwdRiskCollection.Count)
-                    return false;
-            }
-
-            return true;
-        }
-
-        public RiskEngine(LinearRateModel model, Portfolio portfolio, RiskJacobian jacobian)
+        public RiskEngine(LinearRateModel model, Portfolio portfolio, RiskJacobian jacobian, bool useAd = false)
         {
             _linearRateModel = model;
             _portfolio = portfolio;
@@ -504,6 +487,7 @@ namespace MasterThesis
             ZcbRiskOutput = new ZcbRiskOutputContainer();
             OutrightRiskOutput = new OutrightRiskContainer();
             _asOf = jacobian.AsOf;
+            _useAd = useAd;
         }
 
         public void CalculateOutRightRiskDeltaVector()
@@ -561,7 +545,7 @@ namespace MasterThesis
 
         public void CalculateZcbRiskBumpAndRun()
         {
-            _portfolio.RiskAllInstruments(_linearRateModel, _asOf);
+            _portfolio.RiskAllInstruments(_linearRateModel, _asOf, _useAd);
             ZcbRiskOutput = _portfolio.AggregateRisk(_asOf);
             ZcbRiskOutput.ConstructFullGradient();
 

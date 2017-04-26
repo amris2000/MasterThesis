@@ -419,9 +419,9 @@ namespace ExcelApplication
         }
 
         [ExcelFunction(Description = "Some description", Name = "mt.RiskEngine.Make", IsVolatile = true)]
-        public static string RiskEngine_Make(string baseHandle, string portfolioHandle, string jacobianHandle)
+        public static string RiskEngine_Make(string baseHandle, string portfolioHandle, string jacobianHandle, bool useAd)
         {
-            RiskEngineFunctions.RiskEngineNew_Make(baseHandle, portfolioHandle, jacobianHandle);
+            RiskEngineFunctions.RiskEngineNew_Make(baseHandle, portfolioHandle, jacobianHandle, useAd);
             return baseHandle;
         }
 

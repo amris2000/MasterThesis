@@ -93,7 +93,7 @@ namespace MasterThesis
 
                             bk = (xArr[k + 1] - xArr[k]) * (yArr[k] - yArr[k - 1]) / (xArr[k] - xArr[k - 1]);
                             bk += (xArr[k] - xArr[k - 1]) * (yArr[k + 1] - yArr[k]) / (xArr[k + 1] - xArr[k]);
-                            bk *= ADouble.Pow(xArr[k + 1] - xArr[k - 1], -1);
+                            bk *= ADouble.Pow(xArr[k + 1] - xArr[k - 1], -1.0);
 
                         }
                         else if (j == n - 2)

@@ -342,7 +342,7 @@ namespace MasterThesis
             return base.Equals(obj);
         }
 
-        // To make th ecompiler happy
+        // To make the compiler happy
         public override int GetHashCode()
         {
             return base.GetHashCode();

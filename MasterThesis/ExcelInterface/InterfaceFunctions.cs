@@ -91,13 +91,13 @@ namespace MasterThesis.ExcelInterface
             ObjectMap.RiskJacobians[baseHandle] = jacobian;
         }
 
-        public static void RiskEngineNew_Make(string baseHandle, string portfolioHandle, string riskJacobianHandle)
+        public static void RiskEngineNew_Make(string baseHandle, string portfolioHandle, string riskJacobianHandle, bool useAd)
         {
             RiskJacobian jacobian = ObjectMap.RiskJacobians[riskJacobianHandle];
             double determinant = jacobian.Jacobian.Determinant();
             LinearRateModel model = jacobian.Model;
             Portfolio portfolio = ObjectMap.Portfolios[portfolioHandle];
-            ObjectMap.RiskEngines[baseHandle] = new RiskEngine(model, portfolio, jacobian);
+            ObjectMap.RiskEngines[baseHandle] = new RiskEngine(model, portfolio, jacobian, useAd);
         }
 
         public static void RiskEngineNew_StoreZcbRisk(string baseHandle, string riskEngineHandle)
