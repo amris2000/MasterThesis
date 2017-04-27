@@ -76,6 +76,27 @@ namespace MasterThesis
             }
         }
 
+        public ADouble ValueInstrumentFromFactoryAD(LinearRateModel model, string instrument)
+        {
+            QuoteType type = InstrumentTypeMap[instrument];
+
+            switch (type)
+            {
+                case QuoteType.ParSwapRate:
+                    return model.IrParSwapRateAD(IrSwaps[instrument]);
+                case QuoteType.ParBasisSpread:
+                    return model.ParBasisSpreadAD(BasisSwaps[instrument]);
+                case QuoteType.OisRate:
+                    return model.OisRateSimpleAD(OisSwaps[instrument]);
+                case QuoteType.FraRate:
+                    return model.ParFraRateAD(Fras[instrument]);
+                case QuoteType.FuturesRate:
+                    return model.ParFutureRateAD(Futures[instrument]);
+                default:
+                    throw new InvalidOperationException("Instrument QuoteType not supported...");
+            }
+        }
+
         public void AddFwdStartingSwaps(string[] swapString)
         {
             for (int i = 0; i < swapString.Length; i++)

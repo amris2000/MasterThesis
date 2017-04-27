@@ -111,21 +111,21 @@ namespace MasterThesis
             }
         }
 
-        // Overloads of initialize for convenience.
-        public static void Initialize(List<ADouble> inputs, List<string> identifiers = null)
-        {
-            Initialize(inputs.ToArray(), identifiers.ToArray());
-        }
+        //// Overloads of initialize for convenience.
+        //public static void Initialize(List<ADouble> inputs, List<string> identifiers = null)
+        //{
+        //    Initialize(inputs.ToArray(), identifiers.ToArray());
+        //}
 
         public static void Initialize(List<ADouble> inputs, string[] identifiers)
         {
             Initialize(inputs.ToArray(), identifiers);
         }
 
-        public static void Initialize(ADouble[] inputs, List<string> identifiers = null)
-        {
-            Initialize(inputs, identifiers.ToArray());
-        }
+        //public static void Initialize(ADouble[] inputs, List<string> identifiers = null)
+        //{
+        //    Initialize(inputs, identifiers.ToArray());
+        //}
 
         public static void SetGradient()
         {

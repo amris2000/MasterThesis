@@ -234,12 +234,12 @@ namespace ExcelApplication
         }
 
         [ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.DiscCurve.MakeFromCalibrationProblem")]
-        public static string Calibration_DiscCurve_MakeFromCalibrationProblem(string baseHandle, string curveCalibProblemHandle, string calibSpecHandle)
+        public static string Calibration_DiscCurve_MakeFromCalibrationProblem(string baseHandle, string curveCalibProblemHandle, string calibSpecHandle, bool useAd)
         {
             if (ExcelDnaUtil.IsInFunctionWizard())
                 return "No calulation in wizard.";
 
-            CalibrationFunctions.DiscCurve_MakeFromCalibrationProblem(baseHandle, curveCalibProblemHandle, calibSpecHandle);
+            CalibrationFunctions.DiscCurve_MakeFromCalibrationProblem(baseHandle, curveCalibProblemHandle, calibSpecHandle, useAd);
             return baseHandle;
         }
 
