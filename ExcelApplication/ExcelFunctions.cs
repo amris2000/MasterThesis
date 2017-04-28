@@ -259,12 +259,12 @@ namespace ExcelApplication
         }
 
         [ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.FwdCurveCollection.MakeFromCalibrationProblem")]
-        public static string Calibration_FwdCurveCollection_MakeFromCalibrationProblem(string baseHandle, string fwdCurveConstructorHandle)
+        public static string Calibration_FwdCurveCollection_MakeFromCalibrationProblem(string baseHandle, string fwdCurveConstructorHandle, bool useAd)
         {
             if (ExcelDnaUtil.IsInFunctionWizard())
                 return "No calulation in wizard.";
 
-            CalibrationFunctions.FwdCurveCollection_MakeFromCalibrationProblem(baseHandle, fwdCurveConstructorHandle);
+            CalibrationFunctions.FwdCurveCollection_MakeFromCalibrationProblem(baseHandle, fwdCurveConstructorHandle, useAd);
             return baseHandle;
 
         }

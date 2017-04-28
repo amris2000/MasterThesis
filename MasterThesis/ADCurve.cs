@@ -7,14 +7,14 @@ using MasterThesis.Extensions;
 
 namespace MasterThesis
 {
-    public class ADCurve
+    public class Curve_AD
     {
         public List<DateTime> Dates;
         public List<ADouble> Values;
         public int Dimension { get; private set; }
         public CurveTenor Frequency { get; private set; }
 
-        public ADCurve(List<DateTime> Dates, List<ADouble> Values)
+        public Curve_AD(List<DateTime> Dates, List<ADouble> Values)
         {
             this.Dates = Dates;
             this.Values = Values;
@@ -157,20 +157,20 @@ namespace MasterThesis
 
     public class ADFwdCurveContainer
     {
-        public IDictionary<CurveTenor, ADCurve> Curves { get; private set; }
+        public IDictionary<CurveTenor, Curve_AD> Curves { get; private set; }
 
         public ADFwdCurveContainer()
         {
-            Curves = new Dictionary<CurveTenor, ADCurve>();
+            Curves = new Dictionary<CurveTenor, Curve_AD>();
         }
-        public void AddCurve(ADCurve curve, CurveTenor curveType)
+        public void AddCurve(Curve_AD curve, CurveTenor curveType)
         {
             Curves[curveType] = curve;
         }
         public void AddCurve(List<DateTime> dates, List<ADouble> values, CurveTenor tenor)
         {
 
-            ADCurve newCurve = new MasterThesis.ADCurve(dates, values);
+            Curve_AD newCurve = new MasterThesis.Curve_AD(dates, values);
             Curves[tenor] = newCurve;
         }
 
@@ -184,7 +184,7 @@ namespace MasterThesis
             Curves[tenor].Values = values;
         }
 
-        public ADCurve GetCurve(CurveTenor curveType)
+        public Curve_AD GetCurve(CurveTenor curveType)
         {
             return Curves[curveType];
         }

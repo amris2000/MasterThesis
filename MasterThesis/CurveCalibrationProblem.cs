@@ -119,7 +119,7 @@ namespace MasterThesis
             return quadraticSum;
         }
 
-        public double GoalFunctionAD(LinearRateModel model, double scaling = 1.0)
+        public ADouble GoalFunction_AD(LinearRateModel model, double scaling = 1.0)
         {
             ADouble quadraticSum = 0.0;
 
@@ -169,6 +169,7 @@ namespace MasterThesis
             SetEverything(discCurve, new CurveCalibrationProblem[] { problem }, new CurveTenor[] { tenor }, settings, new int[] { 0 });
         }
 
+
         public void SetCurrentCalibrationProblems(int order)
         {
             _problemDimension = 0;
@@ -207,13 +208,18 @@ namespace MasterThesis
             _settings = settings;
             _fwdCurveCollection = new FwdCurveContainer();
 
+            List<int> curvePoints = new List<int>();
+
             for (int i = 0; i < problems.Length; i++)
             {
                 _problemMap[tenors[i]] = problems[i];
                 _fwdCurveCollection.AddCurve(problems[i].CurveToBeCalibrated, tenors[i]);
+                curvePoints.Add(_fwdCurveCollection.GetCurve(tenors[i]).Dimension);
             }
 
+            _curvePoints = curvePoints.ToArray();
             _internalState = 0;
+
         }
 
         public FwdCurveContainer GetFwdCurves()
@@ -281,6 +287,67 @@ namespace MasterThesis
             func = GoalFunction(_currentTenors, tempModel);
         }
 
+        // -------- FOR AD!!!!!!!!!!!
+        private void OptimizationFunction_AD(double[] curveValues, ref double func, double[] grad, object obj)
+        {
+            _internalState += 1;
+
+            if (_internalState > _internalStateMax)
+                return;
+
+            List<List<double>> curveValueCollection = new List<List<double>>();
+
+            List<ADouble> curveValuesAd = new List<ADouble>();
+
+            int n = 0;
+            for (int i = 0; i < _curvePoints.Length; i++)
+            {
+                List<double> temp = new List<double>();
+                for (int j = 0; j < _curvePoints[i]; j++)
+                {
+                    temp.Add(curveValues[n]);
+                    curveValuesAd.Add(new ADouble(curveValues[n]));
+                    n += 1;
+                }
+                curveValueCollection.Add(temp);
+            }
+
+            for (int i = 0; i < _curvePoints.Length; i++)
+            {
+                _fwdCurveCollection.UpdateCurveValues(curveValueCollection[i], _tenors[i]);
+            }
+
+            AADTape.ResetTape();
+
+            LinearRateModel tempModel = new LinearRateModel(_discCurve, _fwdCurveCollection, _settings.Interpolation);
+            tempModel.ADFwdCurveCollection = new ADFwdCurveContainer();
+            AADTape.Initialize(curveValuesAd.ToArray());
+            tempModel.SetAdDiscCurveFromOrdinaryCurve();
+
+
+            n = 0;
+            for (int i = 0; i < _curvePoints.Length; i++)
+            {
+                List<ADouble> tempADouble = new List<ADouble>();
+                for (int j = 0; j < _curvePoints[i]; j++)
+                {
+                    tempADouble.Add(curveValuesAd[n]);
+                    n += 1;
+                }
+
+                tempModel.ADFwdCurveCollection.AddCurve(new Curve_AD(_fwdCurveCollection.GetCurve(_tenors[i]).Dates, tempADouble), _tenors[i]);
+            }
+
+            func = GoalFunction_AD(_tenors, tempModel);
+            AADTape.InterpretTape();
+            double[] gradient = AADTape.GetGradient();
+            for (int i = 0; i < gradient.Length; i++)
+                grad[i] = gradient[i];
+
+            AADTape.ResetTape();
+
+        }
+
         /// <summary>
         /// Sets starting values for the curve calibration problem. Here, i'm exploiting the fact
         /// that i know that curves on longer maturity fixings are above the disc curve.
@@ -294,6 +361,18 @@ namespace MasterThesis
             {
                 for(int j = 0; j < _currentCurvePoints[i]; j++)
                     output.Add(_discCurve.Interp(_problemMap[_currentTenors[i]].CurvePoints[j], _settings.Interpolation) + (i + 1) * 3 / 10000.0);
+            }
+
+            return output.ToArray();
+        }
+
+        public double[] ConstructStartingValues_AD()
+        {
+            List<double> output = new List<double>();
+            for (int i = 0; i < _tenors.Length; i++)
+            {
+                for (int j = 0; j < _curvePoints[i]; j++)
+                    output.Add(-0.0035);
             }
 
             return output.ToArray();
@@ -339,6 +418,26 @@ namespace MasterThesis
             
         }
 
+        public void CalibrateCurves_AD()
+        {
+            double[] curveValues = ConstructStartingValues_AD();
+            _internalState = 0;
+            _internalStateMax = _settings.MaxIterations;
+
+            double epsg = _settings.Precision;
+            double epsf = 0.0; // Related to stopping when increment is small
+            double epsx = 0.0;
+
+            alglib.minlbfgsstate state;
+            alglib.minlbfgsreport rep;
+
+            alglib.minlbfgscreate(_settings.M, curveValues, out state);
+            alglib.minlbfgssetcond(state, epsg, epsf, epsx, _settings.MaxIterations);
+            alglib.minlbfgsoptimize(state, OptimizationFunction_AD, null, null);
+            alglib.minlbfgsresults(state, out curveValues, out rep);
+
+        }
+
         // This is used to solve for multiple curves simultanously
         private double GoalFunction(CurveTenor[] tenors, LinearRateModel model)
         {
@@ -348,6 +447,16 @@ namespace MasterThesis
                 goalSum += _problemMap[tenors[i]].GoalFunction(model, _settings.Scaling);
 
             return goalSum;
+        }
+
+        private double GoalFunction_AD(CurveTenor[] tenors, LinearRateModel model)
+        {
+            ADouble goalSum = 0.0;
+
+            for (int i = 0; i < tenors.Length; i++)
+                goalSum = goalSum + _problemMap[tenors[i]].GoalFunction_AD(model, _settings.Scaling);
+
+            return goalSum.Value;
         }
     }
 
@@ -378,11 +487,10 @@ namespace MasterThesis
             if (_internalState > _internalStateMax)
                 return;
 
-
             func = _problem.GoalFunction(tempModel, _settings.Scaling);
         }
 
-        private void OptimizationFunctionAd_grad(double[] x, ref double func, double[] grad, object obj)
+        public void OptimizationFunction_AD_grad(double[] x, ref double func, double[] grad, object obj)
         {
             Curve tempDiscCurve = new Curve(_problem.CurvePoints, x.ToList());
 
@@ -390,58 +498,59 @@ namespace MasterThesis
             LinearRateModel tempModel = new LinearRateModel(tempDiscCurve, new FwdCurveContainer(), _settings.Interpolation);
 
             _internalState += 1;
-
+             
             if (_internalState > _internalStateMax)
                 return;
+
+
+            // Initialize AADTape with curve values
+            AADTape.ResetTape();
+            List<ADouble> adCurveValues = new List<ADouble>();
+
+            for (int i = 0; i < tempDiscCurve.Dimension; i++)
+                adCurveValues.Add(new ADouble(x[i]));
+
+            // Initialize the tape with curve values defined above
+            AADTape.Initialize(adCurveValues.ToArray());
+            Curve_AD adCurve = new Curve_AD(tempDiscCurve.Dates, adCurveValues);
+            tempModel.ADDiscCurve = adCurve;
+            
+            func = _problem.GoalFunction_AD(tempModel, _settings.Scaling);
+            AADTape.InterpretTape();
+            double[] gradient = AADTape.GetGradient();
+            for (int i = 0; i < gradient.Length; i++)
+                grad[i] = -1.0*gradient[i];
+
+            AADTape.ResetTape();
+        }
+
+        private double[] CalculateInitialGradient(double[] x)
+        {
+            Curve tempDiscCurve = new Curve(_problem.CurvePoints, x.ToList());
+
+            FwdCurveContainer tempFwdCurves = new FwdCurveContainer();
+            LinearRateModel tempModel = new LinearRateModel(tempDiscCurve, new FwdCurveContainer(), _settings.Interpolation);
 
             // Initialize AADTape with curve values
             AADTape.ResetTape();
             List<ADouble> aDoubles = new List<ADouble>();
 
-            for (int i = 0; i < tempDiscCurve.Dimension; i++)
+            for (int i = 0; i < x.Length; i++)
                 aDoubles.Add(new ADouble(x[i]));
 
-
             AADTape.Initialize(aDoubles.ToArray());
-            ADCurve curve = new ADCurve(tempDiscCurve.Dates, aDoubles);
-            tempModel.ADDiscCurve = curve;
-            
-            func = _problem.GoalFunctionAD(tempModel, _settings.Scaling);
-            AADTape.InterpretTape();
-            grad = AADTape.GetGradient();
 
+            Curve_AD curve = new Curve_AD(tempDiscCurve.Dates, aDoubles);
+            tempModel.ADDiscCurve = curve;
+
+            _problem.GoalFunction_AD(tempModel, _settings.Scaling);
+            AADTape.InterpretTape();
+            double[] output = AADTape.GetGradient();
 
             AADTape.ResetTape();
+
+            return output;
         }
-
-        //private double[] CalculateInitialGradient(double[] x)
-        //{
-        //    Curve tempDiscCurve = new Curve(_problem.CurvePoints, x.ToList());
-
-        //    FwdCurveContainer tempFwdCurves = new FwdCurveContainer();
-        //    LinearRateModel tempModel = new LinearRateModel(tempDiscCurve, new FwdCurveContainer(), _settings.Interpolation);
-
-        //    // Initialize AADTape with curve values
-        //    AADTape.ResetTape();
-        //    List<ADouble> aDoubles = new List<ADouble>();
-
-        //    for (int i = 0; i < x.Length; i++)
-        //        aDoubles.Add(new ADouble(x[i]));
-
-        //    AADTape.Initialize(aDoubles.ToArray());
-
-        //    ADCurve curve = new ADCurve(tempDiscCurve.Dates, aDoubles);
-        //    tempModel.ADDiscCurve = curve;
-
-        //    _problem.GoalFunctionAD(tempModel, _settings.Scaling);
-        //    AADTape.InterpretTape();
-        //    double[] output = AADTape.GetGradient();
-
-        //    AADTape.ResetTape();
-
-        //    return output;
-
-        //}
 
         public void CalibrateCurveAd()
         {
@@ -459,11 +568,11 @@ namespace MasterThesis
             alglib.minlbfgsreport rep;
 
             // Calculate initial gradient.
-            //double[] grad = CalculateInitialGradient(x);
+            //double[] _initialGrad = CalculateInitialGradient(x);
 
             alglib.minlbfgscreate(_settings.M, x, out state);
             alglib.minlbfgssetcond(state, epsg, epsf, epsx, 0);
-            alglib.minlbfgsoptimize(state, OptimizationFunctionAd_grad, null, null);
+            alglib.minlbfgsoptimize(state, OptimizationFunction_AD_grad, null, null);
             alglib.minlbfgsresults(state, out x, out rep);
 
             _discCurve = new Curve(_problem.CurvePoints, x.ToList());
@@ -491,7 +600,6 @@ namespace MasterThesis
 
             _discCurve = new Curve(_problem.CurvePoints, x.ToList());
         }
-
 
         public Curve GetCurve()
         {

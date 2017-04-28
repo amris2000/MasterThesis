@@ -185,10 +185,15 @@ namespace MasterThesis.ExcelInterface
             ObjectMap.FwdCurveConstructors[baseName] = new FwdCurveConstructor(ObjectMap.DiscCurves[discCurveName], problems, tenors, ObjectMap.CalibrationSettings[settingsName]);
         }
 
-        public static void FwdCurveCollection_MakeFromCalibrationProblem(string baseName, string calibrationProblem)
+        public static void FwdCurveCollection_MakeFromCalibrationProblem(string baseName, string calibrationProblem, bool useAD)
         {
             FwdCurveConstructor constructor = ObjectMap.FwdCurveConstructors[calibrationProblem];
-            constructor.CalibrateAllCurves();
+
+            if (useAD)
+                constructor.CalibrateCurves_AD();
+            else
+                constructor.CalibrateAllCurves();
+
             ObjectMap.FwdCurveCollections[baseName] = constructor.GetFwdCurves();
         }
 

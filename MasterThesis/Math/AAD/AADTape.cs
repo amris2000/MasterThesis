@@ -62,6 +62,7 @@ namespace MasterThesis
             _tapeCounter = 0;
             IsRunning = false;
             TapeHasBeenInterpreted = false;
+            _AADResultSets.Clear();
         }
 
         // Static constructor.

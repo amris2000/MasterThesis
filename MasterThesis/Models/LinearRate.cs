@@ -13,11 +13,11 @@ namespace MasterThesis
     /// </summary>
     public partial class LinearRateModel
     {
-        public ADCurve ADDiscCurve;
+        public Curve_AD ADDiscCurve;
         public ADFwdCurveContainer ADFwdCurveCollection;
         bool ADCurvesHasBeenSet = false;
 
-        public LinearRateModel(ADCurve discCurve, ADFwdCurveContainer fwdCurveCollection, InterpMethod interpolation = InterpMethod.Linear)
+        public LinearRateModel(Curve_AD discCurve, ADFwdCurveContainer fwdCurveCollection, InterpMethod interpolation = InterpMethod.Linear)
         {
             ADDiscCurve = discCurve;
             ADFwdCurveCollection = fwdCurveCollection;
@@ -67,7 +67,12 @@ namespace MasterThesis
             ADouble[] variables = CreateAdVariableArray();
 
             AADTape.Initialize(variables, identifiers);
+        }
 
+        public void InitiateTapeFromModelFwdCurvesOnly()
+        {
+            ADouble[] variables = CreateAdVariableArrayFwdCurvesOnly();
+            AADTape.Initialize(variables);
         }
 
         public object[,] CreateTestOutputAD(LinearRateProduct product)
@@ -157,13 +162,23 @@ namespace MasterThesis
             return output.ToArray();
         }
 
+        public ADouble[] CreateAdVariableArrayFwdCurvesOnly()
+        {
+            List<ADouble> output = new List<ADouble>();
+
+            foreach (CurveTenor tenor in ADFwdCurveCollection.Curves.Keys)
+                output.AddRange(ADFwdCurveCollection.Curves[tenor].Values);
+
+            return output.ToArray();
+        }
+
         public void SetAdCurvesFromOrdinaryCurve()
         {
             List<ADouble> discValues = new List<ADouble>();
             for (int i = 0; i < DiscCurve.Values.Count; i++)
                 discValues.Add(new MasterThesis.ADouble(DiscCurve.Values[i]));
 
-            ADDiscCurve = new MasterThesis.ADCurve(DiscCurve.Dates, discValues);
+            ADDiscCurve = new MasterThesis.Curve_AD(DiscCurve.Dates, discValues);
             ADFwdCurveCollection = new ADFwdCurveContainer();
 
             foreach (CurveTenor tenor in FwdCurveCollection.Curves.Keys)
@@ -173,11 +188,19 @@ namespace MasterThesis
                 for (int i = 0; i < FwdCurveCollection.GetCurve(tenor).Values.Count; i++)
                     tempValues.Add(new ADouble(FwdCurveCollection.GetCurve(tenor).Values[i]));
 
-                ADCurve tempCurve = new ADCurve(FwdCurveCollection.GetCurve(tenor).Dates, tempValues);
+                Curve_AD tempCurve = new Curve_AD(FwdCurveCollection.GetCurve(tenor).Dates, tempValues);
                 ADFwdCurveCollection.AddCurve(tempCurve, tenor);
             }
 
             ADCurvesHasBeenSet = true;
+        }
+
+        public void SetAdDiscCurveFromOrdinaryCurve()
+        {
+            List<ADouble> discValues = new List<ADouble>();
+            for (int i = 0; i < DiscCurve.Values.Count; i++)
+                discValues.Add(new MasterThesis.ADouble(DiscCurve.Values[i]));
+            ADDiscCurve = new MasterThesis.Curve_AD(DiscCurve.Dates, discValues);
         }
 
         /// <summary>
@@ -222,7 +245,7 @@ namespace MasterThesis
         /// <returns></returns>
         public ADouble ParFraRateAD(Fra fra)
         {
-            ADCurve fwdCurve = this.ADFwdCurveCollection.GetCurve(fra.ReferenceIndex);
+            Curve_AD fwdCurve = this.ADFwdCurveCollection.GetCurve(fra.ReferenceIndex);
             ADouble rate = fwdCurve.FwdRate(fra.AsOf, fra.StartDate, fra.EndDate, fra.DayRule, fra.DayCount, Interpolation);
             return rate;
         }
@@ -320,7 +343,7 @@ namespace MasterThesis
             return ValueFloatLegAD(swap.FloatLegNoSpread) - ValueFloatLegAD(swap.FloatLegSpread);
         }
 
-        public double ParBasisSpreadAD(BasisSwap swap)
+        public ADouble ParBasisSpreadAD(BasisSwap swap)
         {
             ADouble pvNoSpread = ValueFloatLegNoSpreadAD(swap.FloatLegNoSpread) / swap.FloatLegNoSpread.Notional;
             ADouble pvSpread = ValueFloatLegNoSpreadAD(swap.FloatLegSpread) / swap.FloatLegNoSpread.Notional;
