@@ -372,7 +372,8 @@ namespace MasterThesis
             for (int i = 0; i < _tenors.Length; i++)
             {
                 for (int j = 0; j < _curvePoints[i]; j++)
-                    output.Add(-0.0035);
+                    //output.Add(-0.0035);
+                    output.Add(_discCurve.Interp(_problemMap[_tenors[i]].CurvePoints[j], _settings.Interpolation) + (i + 1) * 3 / 10000.0);
             }
 
             return output.ToArray();
