@@ -59,11 +59,9 @@ namespace MasterThesis
         public ADouble OisAnnuityAD(OisSchedule schedule, InterpMethod interpolation)
         {
             ADouble output = 0.0;
-            DateTime payDate;
             ADouble discFactor;
             for (int i = 0; i < schedule.AdjEndDates.Count; i++)
             {
-                payDate = schedule.AdjEndDates[i];
                 discFactor = DiscFactor(schedule.AsOf, schedule.AdjEndDates[i], interpolation);
                 output += schedule.Coverages[i] * discFactor;
             }
@@ -141,7 +139,7 @@ namespace MasterThesis
 
         /// <summary>
         /// Simple calculation of par OIS rate. Holds only under the assumption
-        /// that FRA's can perfecetly hedge something.
+        /// that FRA's can be perfectly hedged by OIS zero coupon bonds.
         /// </summary>
         /// <param name="swap"></param>
         /// <param name="interpolation"></param>

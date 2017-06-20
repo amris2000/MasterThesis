@@ -66,6 +66,7 @@
     <Compile Include="Math\AAD\AADTestFunctions.cs" />
     <Compile Include="Math\AAD\AADTape.cs" />
     <Compile Include="Math\AAD\AADTypes.cs" />
+    <Compile Include="Models\LinearRateADD.cs" />
     <Compile Include="Models\NonLinearRate.cs" />
     <Compile Include="Old\Conventions.cs" />
     <Compile Include="Old\CurveConstruction.cs" />

@@ -163,16 +163,16 @@ namespace ExcelApplication
         // ------- SWAP FUNCTIONS
 
         [ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.IrSwap.Make", IsVolatile = true)]
-        public static string LinearRate_PlainVanillaSwap_Make(string baseHandle, string fixedLegHandle, string floatLegHandle)
+        public static string LinearRate_PlainVanillaSwap_Make(string baseHandle, string fixedLegHandle, string floatLegHandle, int tradeSign)
         {
-            LinearRateFunctions.PlainVanillaSwap_Make(baseHandle, fixedLegHandle, floatLegHandle);
+            LinearRateFunctions.PlainVanillaSwap_Make(baseHandle, fixedLegHandle, floatLegHandle, tradeSign);
             return baseHandle;
         }
 
         [ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.BasisSwap.Make", IsVolatile = true)]
-        public static string LinearRate_BasisSwap_Make(string baseHandle, string floatLegSpreadHandle, string floatLegNoSpreadHandle)
+        public static string LinearRate_BasisSwap_Make(string baseHandle, string floatLegSpreadHandle, string floatLegNoSpreadHandle, int tradeSign)
         {
-            LinearRateFunctions.BasisSwap_Make(baseHandle, floatLegNoSpreadHandle, floatLegSpreadHandle);
+            LinearRateFunctions.BasisSwap_Make(baseHandle, floatLegNoSpreadHandle, floatLegSpreadHandle, tradeSign);
             return baseHandle;
         }
 

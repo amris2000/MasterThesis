@@ -10,12 +10,12 @@ namespace MasterThesis
     public class CalibrationInstrument
     {
         public CurveTenor Tenor { get; private set; }
-        public LinearRateProduct Instrument { get; private set; }
+        public LinearRateInstrument Instrument { get; private set; }
         public DateTime CurvePoint { get; private set; }
         public ZcbRiskOutputContainer RiskOutput { get; private set; }
         public string Identifier { get; private set; }
 
-        public CalibrationInstrument(string identifier, LinearRateProduct instrument, CurveTenor tenor)
+        public CalibrationInstrument(string identifier, LinearRateInstrument instrument, CurveTenor tenor)
         {
             Tenor = tenor;
             Instrument = instrument;

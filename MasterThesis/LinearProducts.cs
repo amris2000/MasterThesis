@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MasterThesis
 {
-    public interface LinearRateProduct
+    public interface LinearRateInstrument
     {
         DateTime GetCurvePoint();
         Instrument GetInstrumentType();
@@ -57,7 +57,7 @@ namespace MasterThesis
     }
 
     // CONSIDER IF WE REALLY NEED AN "OIS SCHEDULE". Really just schedule with a stub
-    public class OisSwap : LinearRateProduct
+    public class OisSwap : LinearRateInstrument
     {
         public OisSchedule FloatSchedule, FixedSchedule;
         public DateTime AsOf, StartDate, EndDate;
@@ -93,23 +93,34 @@ namespace MasterThesis
         }
     }
 
-    public class IrSwap : LinearRateProduct
+    public class IrSwap : LinearRateInstrument
     {
         public FloatLeg FloatLeg { get; private set; }
         public FixedLeg FixedLeg { get; private set; }
+        public int TradeSign { get; private set; }
 
-        public IrSwap(FloatLeg floatLeg, FixedLeg fixedLeg) 
+        public IrSwap(FloatLeg floatLeg, FixedLeg fixedLeg, int tradeSign) 
         {
             FloatLeg = floatLeg;
             FixedLeg = fixedLeg;
+
+            if (tradeSign == 1 || tradeSign == -1)
+                TradeSign = tradeSign;
+            else
+                throw new InvalidOperationException("TradeSign has to be 1 (pay fixed) or -1 (pay float)");
         }
 
         public IrSwap(DateTime asOf, DateTime startDate, DateTime endDate, double fixedRate,
                         CurveTenor fixedFreq, CurveTenor floatFreq, DayCount fixedDayCount, DayCount floatDayCount,
-                        DayRule fixedDayRule, DayRule floatDayRule, double notional, double spread = 0.0)
+                        DayRule fixedDayRule, DayRule floatDayRule, double notional, int tradeSign, double spread = 0.0)
         {
             FloatLeg = new FloatLeg(asOf, startDate, endDate, floatFreq, floatDayCount, floatDayRule, notional, spread);
             FixedLeg = new FixedLeg(asOf, startDate, endDate, fixedRate, fixedFreq, fixedDayCount, fixedDayRule, notional);
+
+            if (tradeSign == 1 || tradeSign == -1)
+                TradeSign = tradeSign;
+            else
+                throw new InvalidOperationException("TradeSign has to be 1 (pay fixed) or -1 (pay float)");
         }
 
         public  DateTime GetCurvePoint()
@@ -123,21 +134,37 @@ namespace MasterThesis
         }
     }
 
-    public class BasisSwap : LinearRateProduct
+    public class BasisSwap : LinearRateInstrument
     {
         public FloatLeg FloatLegNoSpread;
         public FloatLeg FloatLegSpread;
+        public int TradeSign;             // TradeSign = 1: Receive spread
 
-        public BasisSwap(FloatLeg floatLegSpread, FloatLeg floatLegNoSpread) 
+        private void CheckTradeSign()
+        {
+            if (!(TradeSign == 1 || TradeSign == -1))
+                throw new InvalidOperationException("TradeSign of basis swap need to be =1 (rec spread) or =-1 (pay spread)");
+        }
+
+        public BasisSwap(FloatLeg floatLegSpread, FloatLeg floatLegNoSpread, int tradeSign) 
         {
             this.FloatLegNoSpread = floatLegNoSpread;
             this.FloatLegSpread = floatLegSpread;
+
+            TradeSign = tradeSign;
+
+            CheckTradeSign();
         }
 
-        public BasisSwap(IrSwap swapSpread, IrSwap swapNoSpread)
+        public BasisSwap(IrSwap swapSpread, IrSwap swapNoSpread, int tradeSign)
         {
             this.FloatLegNoSpread = swapNoSpread.FloatLeg;
             this.FloatLegSpread = swapSpread.FloatLeg;
+
+            TradeSign = tradeSign;
+
+            CheckTradeSign();
+
         }
 
         public DateTime GetCurvePoint()
@@ -154,7 +181,7 @@ namespace MasterThesis
         }
     }
 
-    public class Fra : LinearRateProduct
+    public class Fra : LinearRateInstrument
     {
         public DateTime StartDate, EndDate, AsOf;
         public DayCount DayCount;
@@ -204,7 +231,7 @@ namespace MasterThesis
 
     }
 
-    public class Futures : LinearRateProduct
+    public class Futures : LinearRateInstrument
     {
         public double Convexity;
         public Fra FraSameSpec;

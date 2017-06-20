@@ -266,20 +266,20 @@ namespace MasterThesis
 
         public static ADouble Log(ADouble x1)
         {
-            ADouble Temp = new ADouble();
-            Temp.Value = Math.Log(x1.Value);
-            Temp.Count = AADTape._tapeCounter;
-            AADTape.AddEntry((int)Constants.AADType.Log, x1.Count, 0, 0, Temp.Value);
-            return Temp;
+            ADouble temp = new ADouble();
+            temp.Value = Math.Log(x1.Value);
+            temp.Count = AADTape._tapeCounter;
+            AADTape.AddEntry((int)Constants.AADType.Log, x1.Count, 0, 0, temp.Value);
+            return temp;
         }
 
-        public static ADouble Pow(ADouble x1, double K)
+        public static ADouble Pow(ADouble x1, double exponent)
         {
-            ADouble Temp = new ADouble();
-            Temp.Value = Math.Pow(x1.Value, K);
-            Temp.Count = AADTape._tapeCounter;
-            AADTape.AddEntry((int)Constants.AADType.Pow, x1.Count, 0, 0, Temp.Value, K);
-            return Temp;
+            ADouble temp = new ADouble();
+            temp.Value = Math.Pow(x1.Value, exponent);
+            temp.Count = AADTape._tapeCounter;
+            AADTape.AddEntry((int)Constants.AADType.Pow, x1.Count, 0, 0, temp.Value, exponent);
+            return temp;
         }
 
         public static ADouble Sqrt(ADouble x1)

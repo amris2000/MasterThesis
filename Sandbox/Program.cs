@@ -36,7 +36,34 @@ namespace Sandbox
 
             object[,] output = ConstructInstrumentInspector.MakeExcelOutput(factory, "EURAB6E29Y");
             Console.Write("");
+        }
 
+        public static ADouble f(ADouble x1, ADouble x2)
+        {
+            return 2.0 * x1 * x2 + ADouble.Log(x1 - 4.0 * x2);
+        }
+
+        public static void CalculateDerivativesByAd()
+        {
+            ADouble x1 = 10.0;
+            ADouble x2 = 2.0;
+            List<ADouble> activeVariables = new List<ADouble>();
+            activeVariables.Add(x1);
+            activeVariables.Add(x2);
+
+            string[] identifiers = new string[] { "x1", "x2" };
+
+            // Initialize tape with x1 and x2
+            AADTape.Initialize(activeVariables.ToArray(), identifiers);
+
+            // Compute the function value of f. Tape is now running
+            ADouble result = f(x1, x2);
+
+            // Once complete, interpret the tape
+            AADTape.InterpretTape();
+            AADTape.PrintTape();
+
+            var gradient = AADTape.GetGradient();
         }
 
       static void Main(string[] args)
@@ -66,13 +93,15 @@ namespace Sandbox
             //Schedule123();
             //testInstrumentOutput();       
 
-            // Matrix test
-            Matrix<double> myMat = Matrix<double>.Build.Dense(2, 2);
-            myMat[0, 0] = 3;
-            myMat[0, 1] = 1;
-            myMat[1, 0] = 2;
-            myMat[1, 1] = 4;
-            Matrix<double> inverse = myMat.Inverse();
+            //// Matrix test
+            //Matrix<double> myMat = Matrix<double>.Build.Dense(2, 2);
+            //myMat[0, 0] = 3;
+            //myMat[0, 1] = 1;
+            //myMat[1, 0] = 2;
+            //myMat[1, 1] = 4;
+            //Matrix<double> inverse = myMat.Inverse();
+
+            CalculateDerivativesByAd();
 
             //MiscTests.TestIt();
             //MultiThreadingTests.SimpleTest();

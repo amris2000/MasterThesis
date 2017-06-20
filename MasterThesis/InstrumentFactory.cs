@@ -138,11 +138,13 @@ namespace MasterThesis
             swapNoSpreadIdent = infoArray[3];
             swapSpreadIdent = infoArray[4];
 
+            int defaultTradeSign = 1;
+
             try
             {
                 IrSwap swapNoSpread = IrSwaps[swapNoSpreadIdent];
                 IrSwap swapSpread = IrSwaps[swapSpreadIdent];
-                BasisSwap swap = new BasisSwap(swapNoSpread, swapSpread);
+                BasisSwap swap = new BasisSwap(swapNoSpread, swapSpread, defaultTradeSign);
                 BasisSwaps[identifier] = swap;
                 DateTime curvePoint = swap.GetCurvePoint();
                 CurvePointMap[identifier] = swap.GetCurvePoint();
@@ -283,6 +285,7 @@ namespace MasterThesis
                 endDate = DateHandling.AddTenorAdjust(startDate, endTenor, dayRule);
 
             double fixedRate = 0.01;
+            int defaultTradeSign = 1; // Pay fixed
 
             try
             {
@@ -301,7 +304,7 @@ namespace MasterThesis
                 else
                 {
                     // Handle non-OIS case
-                    IrSwap swap = new IrSwap(AsOf, startDate, endDate, fixedRate, fixedTenor, floatTenor, fixedDayCount, floatDayCount, dayRule, dayRule, _notional, 0.0);
+                    IrSwap swap = new IrSwap(AsOf, startDate, endDate, fixedRate, fixedTenor, floatTenor, fixedDayCount, floatDayCount, dayRule, dayRule, _notional, defaultTradeSign, 0.0);
                     IrSwaps[identifier] = swap;
                     CurvePointMap[identifier] = swap.GetCurvePoint();
                     InstrumentTypeMap[identifier] = QuoteType.ParSwapRate;

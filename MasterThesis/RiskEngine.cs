@@ -14,18 +14,18 @@ namespace MasterThesis
     /// </summary>
     public class Portfolio
     {
-        public IDictionary<int, LinearRateProduct> Products { get; private set; }
+        public IDictionary<int, LinearRateInstrument> Products { get; private set; }
         public IDictionary<int, ZcbRiskOutputContainer> RiskOutputs { get; private set; }
         int _productCounter;
 
         public Portfolio()
         {
-            Products = new Dictionary<int, LinearRateProduct>();
+            Products = new Dictionary<int, LinearRateInstrument>();
             RiskOutputs = new Dictionary<int, ZcbRiskOutputContainer>();
             _productCounter = 0;
         }
 
-        public void AddProducts(params LinearRateProduct[] products)
+        public void AddProducts(params LinearRateInstrument[] products)
         {
             for (int i = 0; i < products.Length; i++)
             {
@@ -490,7 +490,7 @@ namespace MasterThesis
             _useAd = useAd;
         }
 
-        public void CalculateOutRightRiskDeltaVector()
+        public void CalculateOutrightRiskDeltaVector()
         {
             _outrightRisk = new List<double>();
             Matrix<double> outrightRiskCalculations = _jacobian.InvertedJacobian.Multiply(ConvertGradientToMatrix());
@@ -551,7 +551,7 @@ namespace MasterThesis
 
             // Assumes numbers are aligned from disc curve to fwd1y curve.
             _fullGradient = ZcbRiskOutput.FullGradient;
-            CalculateOutRightRiskDeltaVector();
+            CalculateOutrightRiskDeltaVector();
             ConvertOutrightRiskToRiskOutputObject();
         }
     }

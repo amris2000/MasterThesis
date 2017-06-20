@@ -36,7 +36,7 @@ namespace MasterThesis.ExcelInterface
         public static object[,] ZcbRiskAD(string linearRateModelHandle, string productHandle)
         {
             LinearRateModel model = ObjectMap.LinearRateModels[linearRateModelHandle];
-            LinearRateProduct product = ObjectMap.LinearRateProducts[productHandle];
+            LinearRateInstrument product = ObjectMap.LinearRateProducts[productHandle];
             return model.CreateTestOutputAD(product);
         }
     }
@@ -50,7 +50,7 @@ namespace MasterThesis.ExcelInterface
 
             for (int i = 0; i < linearRateProductHandles.Length; i++)
             {
-                LinearRateProduct product = ObjectMap.LinearRateProducts[linearRateProductHandles[i]];
+                LinearRateInstrument product = ObjectMap.LinearRateProducts[linearRateProductHandles[i]];
                 calibrationInstruments.Add(new CalibrationInstrument(linearRateProductHandles[i], product, tenor));
             }
 
@@ -59,7 +59,7 @@ namespace MasterThesis.ExcelInterface
 
         public static void Portfolio_Make(string baseHandle, string[] linearRateProductHandles)
         {
-            List<LinearRateProduct> products = new List<LinearRateProduct>();
+            List<LinearRateInstrument> products = new List<LinearRateInstrument>();
 
             for (int i = 0; i < linearRateProductHandles.Length; i++)
                 products.Add(ObjectMap.LinearRateProducts[linearRateProductHandles[i]]);
@@ -392,7 +392,7 @@ namespace MasterThesis.ExcelInterface
         // ------- LINEAR RATE MODEL FUNTIONS
         public static double LinearRateModel_Value(string linearRateModelHandle, string productHandle)
         {
-            LinearRateProduct product = ObjectMap.LinearRateProducts[productHandle];
+            LinearRateInstrument product = ObjectMap.LinearRateProducts[productHandle];
             LinearRateModel model = ObjectMap.LinearRateModels[linearRateModelHandle];
             return model.ValueLinearRateProduct(product);
         }
@@ -468,22 +468,22 @@ namespace MasterThesis.ExcelInterface
             ObjectMap.FloatLegs[baseName] = new FloatLeg(AsOf, StartDate, EndDate, Frequency, DayCount, DayRule, Notional, Spread, stub);
         }
 
-        public static void PlainVanillaSwap_Make(string baseName, string fixedLegName, string floatLegName)
+        public static void PlainVanillaSwap_Make(string baseName, string fixedLegName, string floatLegName, int tradeSign)
         {
             FixedLeg fixedLeg = ObjectMap.FixedLegs[fixedLegName];
             FloatLeg floatLeg = ObjectMap.FloatLegs[floatLegName];
-            IrSwap swap = new MasterThesis.IrSwap(floatLeg, fixedLeg);
+            IrSwap swap = new MasterThesis.IrSwap(floatLeg, fixedLeg, tradeSign);
 
             ObjectMap.LinearRateProducts[baseName] = swap;
             ObjectMap.IrSwaps[baseName] = swap;
         }
 
         // -------- BASIS SWAP FUNTIONS
-        public static void BasisSwap_Make(string baseName, string floatLegNoSpreadName, string floatLegSpreadName)
+        public static void BasisSwap_Make(string baseName, string floatLegNoSpreadName, string floatLegSpreadName, int tradeSign)
         {
             FloatLeg floatLegNoSpread = ObjectMap.FloatLegs[floatLegNoSpreadName];
             FloatLeg floatLegSpread = ObjectMap.FloatLegs[floatLegSpreadName];
-            BasisSwap swap = new MasterThesis.BasisSwap(floatLegNoSpread, floatLegSpread);
+            BasisSwap swap = new MasterThesis.BasisSwap(floatLegNoSpread, floatLegSpread, tradeSign);
 
             ObjectMap.LinearRateProducts[baseName] = swap;
             ObjectMap.BasisSwaps[baseName] = swap;

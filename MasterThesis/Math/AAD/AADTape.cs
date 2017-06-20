@@ -44,7 +44,7 @@ namespace MasterThesis
         public static int _tapeCounter { get; private set; }
         public static int[] Arg1 = new int[Constants.TAPE_SIZE];
         public static int[] Arg2 = new int[Constants.TAPE_SIZE];
-        public static int[] Oc = new int[Constants.TAPE_SIZE];
+        public static int[] OperationIdentifier = new int[Constants.TAPE_SIZE];
         public static double[] Value = new double[Constants.TAPE_SIZE];
         public static double[] Adjoint = new double[Constants.TAPE_SIZE];
         public static double[] Consts = new double[Constants.TAPE_SIZE];
@@ -172,26 +172,26 @@ namespace MasterThesis
         }
         
         // Tape can only be incremented internally.
-        private static void IncrTape()
+        private static void IncrementTape()
         {
             _tapeCounter += 1;
         }
 
         // Adds entry to the tape. This method is called whenever an AD operation 
         // is being made (see ADouble class)
-        public static void AddEntry(int OcV, int Arg1V, int Arg2V, double A, double V, double? K = null)
+        public static void AddEntry(int operationIdentifier, int arg1Index, int arg2Index, double adjoint, double value, double? constant = null)
         {
             // Ensures that we can run AD stuff without filling up the memory.
             // The tape has to be initialized first
             if (IsRunning)
             {
-                Arg1[_tapeCounter] = Arg1V;
-                Arg2[_tapeCounter] = Arg2V;
-                Oc[_tapeCounter] = OcV;
-                Value[_tapeCounter] = V;
-                if (K.HasValue)
-                    Consts[_tapeCounter] = (double)K;
-                IncrTape();
+                Arg1[_tapeCounter] = arg1Index;
+                Arg2[_tapeCounter] = arg2Index;
+                OperationIdentifier[_tapeCounter] = operationIdentifier;
+                Value[_tapeCounter] = value;
+                if (constant.HasValue)
+                    Consts[_tapeCounter] = (double)constant;
+                IncrementTape();
             }
         }
 
@@ -215,7 +215,7 @@ namespace MasterThesis
             // Interpret tape by backwards propagation
             for (int i = _tapeCounter - 1; i >= 1; i--)
             {
-                switch (Oc[i])
+                switch (OperationIdentifier[i])
                 {
                     case 1: // Assign
                         Adjoint[Arg1[i]] += Adjoint[i];
@@ -272,7 +272,6 @@ namespace MasterThesis
             TapeHasBeenInterpreted = true;
             IsRunning = false;
             SetGradient();
-            
         }
 
         public static void PrintTape()
@@ -288,7 +287,7 @@ namespace MasterThesis
                 Out.Add(new string[] {
                     "     ",
                     i.ToString(),
-                    Constants.GetTypeName(AADTape.Oc[i]),
+                    Constants.GetTypeName(AADTape.OperationIdentifier[i]),
                     AADTape.Arg1[i].ToString(),
                     AADTape.Arg2[i].ToString(),
                     Math.Round(AADTape.Value[i], 3).ToString(),
