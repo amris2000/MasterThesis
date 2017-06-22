@@ -26,18 +26,18 @@ namespace MasterThesis
         {
             return Maths.InterpolateCurve(Dates, date, Values, interpolation);
         }
-        public ADouble ZeroRate(DateTime maturityDate, InterpMethod interpolation)
+        public ADouble ZeroRate(DateTime date, InterpMethod interpolation)
         {
-            return this.Interp(maturityDate, interpolation);
+            return this.Interp(date, interpolation);
         }
-        public ADouble DiscFactor(DateTime asOf, DateTime date, InterpMethod Method)
+        public ADouble DiscFactor(DateTime asOf, DateTime date, DayCount dayCount, InterpMethod interpolation)
         {
-            return ADouble.Exp(-ZeroRate(date, Method) * DateHandling.Cvg(asOf, date, DayCount.ACT360));
+            return ADouble.Exp(-ZeroRate(date, interpolation) * DateHandling.Cvg(asOf, date, dayCount));
         }
         public ADouble FwdRate(DateTime asOf, DateTime startDate, DateTime endDate, DayRule dayRule, DayCount dayCount, InterpMethod interpolation)
         {
-            ADouble ps = DiscFactor(asOf, startDate, interpolation);
-            ADouble pe = DiscFactor(asOf, endDate, interpolation);
+            ADouble ps = DiscFactor(asOf, startDate, dayCount, interpolation);
+            ADouble pe = DiscFactor(asOf, endDate, dayCount, interpolation);
             ADouble cvg = DateHandling.Cvg(startDate, endDate, dayCount);
 
             return (ps / pe - 1.0) / cvg;
@@ -62,7 +62,7 @@ namespace MasterThesis
             ADouble discFactor;
             for (int i = 0; i < schedule.AdjEndDates.Count; i++)
             {
-                discFactor = DiscFactor(schedule.AsOf, schedule.AdjEndDates[i], interpolation);
+                discFactor = DiscFactor(schedule.AsOf, schedule.AdjEndDates[i], schedule.DayCount, interpolation);
                 output += schedule.Coverages[i] * discFactor;
             }
             return output;
@@ -72,9 +72,9 @@ namespace MasterThesis
         public ADouble OisSwapNpvAD(OisSwap swap, InterpMethod interpolation)
         {
             ADouble oisAnnuity = OisAnnuityAD(swap.FloatSchedule, interpolation);
-            double notional = swap.Notional;
-            ADouble OisRate = OisRateSimpleAD(swap, interpolation);
-            return swap.TradeSign * notional * (OisRate - swap.FixedRate) * oisAnnuity;
+            double notional = swap.TradeSign*swap.Notional;
+            ADouble oisRate = OisRateSimpleAD(swap, interpolation);
+            return notional * (swap.FixedRate - oisRate) * oisAnnuity;
         }
 
         /// <summary>
@@ -99,8 +99,8 @@ namespace MasterThesis
                 double Rate = ZeroRate(NextBusinessDay, interpolation);
                 double fwdOisRate = FwdRate(asOf, RollDate, NextBusinessDay, DayRule.F, dayCount, interpolation);
 
-                double disc1 = DiscFactor(asOf, RollDate, interpolation);
-                double disc2 = DiscFactor(asOf, NextBusinessDay, interpolation);
+                double disc1 = DiscFactor(asOf, RollDate, dayCount, interpolation);
+                double disc2 = DiscFactor(asOf, NextBusinessDay, dayCount, interpolation);
 
                 double Days = NextBusinessDay.Subtract(RollDate).TotalDays;
                 double shortCvg = DateHandling.Cvg(RollDate, NextBusinessDay, dayCount);
@@ -113,28 +113,28 @@ namespace MasterThesis
         }
 
         /// <summary>
-        /// Calculate the par OIS rate by compounding. Slow.
+        /// Calculate the par OIS rate by compounding. Slow and probably not entirely correct (although close)
         /// </summary>
         /// <param name="swap"></param>
         /// <param name="interpolation"></param>
         /// <returns></returns>
         public ADouble OisRateAD(OisSwap swap, InterpMethod interpolation)
         {
-            ADouble FloatContribution = 0.0;
-            ADouble Annuity = OisAnnuityAD(swap.FixedSchedule, interpolation);
+            ADouble floatContribution = 0.0;
+            ADouble annuity = OisAnnuityAD(swap.FixedSchedule, interpolation);
 
             DateTime asOf = swap.FloatSchedule.AsOf;
 
             for (int i = 0; i < swap.FloatSchedule.AdjEndDates.Count; i++)
             {
-                DateTime Start = swap.FloatSchedule.AdjStartDates[i];
-                DateTime End = swap.FloatSchedule.AdjEndDates[i];
-                ADouble CompoundedRate = OisCompoundedRateAD(asOf, Start, End, swap.FloatSchedule.DayRule, swap.FloatSchedule.DayCount, interpolation);
-                ADouble DiscountFactor = DiscFactor(asOf, End, interpolation);
-                ADouble coverage = DateHandling.Cvg(Start, End, swap.FloatSchedule.DayCount);
-                FloatContribution += DiscountFactor * CompoundedRate * coverage;
+                DateTime startDate = swap.FloatSchedule.AdjStartDates[i];
+                DateTime endDate = swap.FloatSchedule.AdjEndDates[i];
+                ADouble compoundedRate = OisCompoundedRateAD(asOf, startDate, endDate, swap.FloatSchedule.DayRule, swap.FloatSchedule.DayCount, interpolation);
+                ADouble discFactor = DiscFactor(asOf, endDate, swap.FixedSchedule.DayCount, interpolation);
+                ADouble coverage = DateHandling.Cvg(startDate, endDate, swap.FloatSchedule.DayCount);
+                floatContribution += discFactor * compoundedRate * coverage;
             }
-            return FloatContribution / Annuity;
+            return floatContribution / annuity;
         }
 
         /// <summary>
@@ -146,10 +146,9 @@ namespace MasterThesis
         /// <returns></returns>
         public ADouble OisRateSimpleAD(OisSwap swap, InterpMethod interpolation)
         {
-            ADouble Annuity = OisAnnuityAD(swap.FixedSchedule, interpolation);
-            DateTime asOf = swap.AsOf;
+            ADouble annuity = OisAnnuityAD(swap.FixedSchedule, interpolation);
 
-            return (DiscFactor(asOf, swap.StartDate, interpolation) - DiscFactor(asOf, swap.EndDate, interpolation)) / Annuity;
+            return (DiscFactor(swap.AsOf, swap.StartDate, swap.FixedSchedule.DayCount, interpolation) - DiscFactor(swap.AsOf, swap.EndDate, swap.FixedSchedule.DayCount, interpolation)) / annuity;
         }
     }
 

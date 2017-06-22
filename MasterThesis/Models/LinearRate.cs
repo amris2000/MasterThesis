@@ -16,7 +16,6 @@ namespace MasterThesis
         public FwdCurveContainer FwdCurveCollection;
         public InterpMethod Interpolation;
 
-
         public LinearRateModel(Curve discCurve, FwdCurveContainer fwdCurveCollection, InterpMethod interpolation = InterpMethod.Linear)
         {
             Interpolation = interpolation;
@@ -25,7 +24,6 @@ namespace MasterThesis
         }
 
         // --------- RELATED TO BUMP-AND-RUN RISK -------------
-        // ... Remember to make sure that deep copy actually works.
 
         private LinearRateModel BumpFwdCurveAndReturn(CurveTenor fwdCurve, int curvePoint, double bump = 0.0001)
         {
@@ -154,25 +152,23 @@ namespace MasterThesis
         /// <summary>
         /// Calculate the value of an annuity
         /// </summary>
-        /// <param name="AsOf"></param>
-        /// <param name="StartDate"></param>
-        /// <param name="EndDate"></param>
-        /// <param name="Tenor"></param>
-        /// <param name="DayCount"></param>
-        /// <param name="DayRule"></param>
-        /// <param name="Method"></param>
+        /// <param name="asOf"></param>
+        /// <param name="startDate"></param>
+        /// <param name="endDate"></param>
+        /// <param name="tenor"></param>
+        /// <param name="dayCount"></param>
+        /// <param name="dayRule"></param>
+        /// <param name="interpolation"></param>
         /// <returns></returns>
-        public double Annuity(DateTime AsOf, DateTime StartDate, DateTime EndDate, CurveTenor Tenor, DayCount DayCount, DayRule DayRule, InterpMethod Method)
+        public double Annuity(DateTime asOf, DateTime startDate, DateTime endDate, CurveTenor tenor, DayCount dayCount, DayRule dayRule, InterpMethod interpolation)
         {
-            SwapSchedule AnnuitySchedule = new SwapSchedule(AsOf, StartDate, EndDate, DayCount, DayRule, Tenor);
-            double Out = 0.0;
-            DateTime PayDate;
-            for (int i = 0; i<AnnuitySchedule.AdjEndDates.Count; i++)
+            SwapSchedule annuitySchedule = new SwapSchedule(asOf, startDate, endDate, dayCount, dayRule, tenor);
+            double result = 0.0;
+            for (int i = 0; i<annuitySchedule.AdjEndDates.Count; i++)
             {
-                PayDate = AnnuitySchedule.AdjEndDates[i]; 
-                Out += AnnuitySchedule.Coverages[i] * DiscCurve.DiscFactor(AsOf, PayDate, Method);
+                result += annuitySchedule.Coverages[i] * DiscCurve.DiscFactor(asOf, annuitySchedule.AdjEndDates[i], dayCount, interpolation);
             }
-            return Out;
+            return result;
         }
 
         /// <summary>
@@ -207,9 +203,9 @@ namespace MasterThesis
         {
             double fraRate = FwdCurveCollection.GetCurve(fra.ReferenceIndex).FwdRate(fra.AsOf, fra.StartDate, fra.EndDate, fra.DayRule, fra.DayCount, Interpolation);
             double notional = fra.Notional;
-            double discFactor = DiscCurve.DiscFactor(fra.AsOf, fra.StartDate, Interpolation); // Note from today and to startDate => Market FRA
+            double discFactor = DiscCurve.DiscFactor(fra.AsOf, fra.StartDate, fra.DayCount, Interpolation); // Note from today and to startDate => Market FRA
             double coverage = DateHandling.Cvg(fra.StartDate, fra.EndDate, fra.DayCount);
-            return fra.TradeSign * notional * discFactor * (fraRate - fra.FixedRate) * coverage;
+            return fra.TradeSign * notional * discFactor * coverage * (fra.FixedRate - fraRate);
         }
 
         /// <summary>
@@ -245,7 +241,7 @@ namespace MasterThesis
                 DateTime endDate = floatLeg.Schedule.AdjEndDates[i];
                 double cvg = floatLeg.Schedule.Coverages[i];
                 double fwdRate = FwdCurveCollection.GetCurve(floatLeg.Tenor).FwdRate(floatLeg.AsOf, startDate, endDate, floatLeg.Schedule.DayRule, floatLeg.Schedule.DayCount, Interpolation);
-                double discFactor = DiscCurve.DiscFactor(floatLeg.AsOf, endDate, Interpolation);
+                double discFactor = DiscCurve.DiscFactor(floatLeg.AsOf, endDate, floatLeg.Schedule.DayCount, Interpolation);
                 floatValue += (fwdRate + spread) * cvg * discFactor;
             }
 
@@ -263,7 +259,7 @@ namespace MasterThesis
                 DateTime endDate = floatLeg.Schedule.AdjEndDates[i];
                 double cvg = floatLeg.Schedule.Coverages[i];
                 double fwdRate = FwdCurveCollection.GetCurve(floatLeg.Tenor).FwdRate(floatLeg.AsOf, startDate, endDate, floatLeg.Schedule.DayRule, floatLeg.Schedule.DayCount, Interpolation);
-                double discFactor = DiscCurve.DiscFactor(floatLeg.AsOf, endDate, Interpolation);
+                double discFactor = DiscCurve.DiscFactor(floatLeg.AsOf, endDate, floatLeg.Schedule.DayCount, Interpolation);
                 floatValue += (fwdRate + spread) * cvg * discFactor;
             }
             return floatValue * floatLeg.Notional;
@@ -297,7 +293,7 @@ namespace MasterThesis
             double PvNoSpread = ValueFloatLegNoSpread(swap.FloatLegNoSpread)/swap.FloatLegNoSpread.Notional;
             double PvSpread = ValueFloatLegNoSpread(swap.FloatLegSpread)/swap.FloatLegNoSpread.Notional;
             double AnnuityNoSpread = Annuity(swap.FloatLegSpread.Schedule, Interpolation);
-            return (PvNoSpread - PvSpread) / AnnuityNoSpread;
+            return (PvSpread - PvNoSpread) / AnnuityNoSpread;
         }
 
         public double OisRateSimple(OisSwap swap)

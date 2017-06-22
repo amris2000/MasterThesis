@@ -128,7 +128,6 @@ namespace MasterThesis
 
             return quadraticSum;
         }
-
     }
 
     public class FwdCurveConstructor

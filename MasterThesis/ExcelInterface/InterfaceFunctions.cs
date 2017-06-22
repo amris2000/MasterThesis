@@ -36,7 +36,7 @@ namespace MasterThesis.ExcelInterface
         public static object[,] ZcbRiskAD(string linearRateModelHandle, string productHandle)
         {
             LinearRateModel model = ObjectMap.LinearRateModels[linearRateModelHandle];
-            LinearRateInstrument product = ObjectMap.LinearRateProducts[productHandle];
+            LinearRateInstrument product = ObjectMap.LinearRateInstruments[productHandle];
             return model.CreateTestOutputAD(product);
         }
     }
@@ -50,7 +50,7 @@ namespace MasterThesis.ExcelInterface
 
             for (int i = 0; i < linearRateProductHandles.Length; i++)
             {
-                LinearRateInstrument product = ObjectMap.LinearRateProducts[linearRateProductHandles[i]];
+                LinearRateInstrument product = ObjectMap.LinearRateInstruments[linearRateProductHandles[i]];
                 calibrationInstruments.Add(new CalibrationInstrument(linearRateProductHandles[i], product, tenor));
             }
 
@@ -62,7 +62,7 @@ namespace MasterThesis.ExcelInterface
             List<LinearRateInstrument> products = new List<LinearRateInstrument>();
 
             for (int i = 0; i < linearRateProductHandles.Length; i++)
-                products.Add(ObjectMap.LinearRateProducts[linearRateProductHandles[i]]);
+                products.Add(ObjectMap.LinearRateInstruments[linearRateProductHandles[i]]);
 
             ObjectMap.Portfolios[baseHandle] = new Portfolio();
             ObjectMap.Portfolios[baseHandle].AddProducts(products.ToArray());
@@ -153,7 +153,6 @@ namespace MasterThesis.ExcelInterface
             ObjectMap.CalibrationSettings[baseName] = spec;
         }
 
-
         public static List<InstrumentQuote> CreateInstrumentList(string instrumentFactoryName, string[] identifiers, double[] quotes)
         {
             List<InstrumentQuote> instrumentQuotes = new List<InstrumentQuote>();
@@ -226,6 +225,13 @@ namespace MasterThesis.ExcelInterface
 
     public static class InstrumentFactoryFunctions
     {
+        public static void InstrumentFactory_UpdateAllInstrumentsToPar(string baseName, string modelHandle)
+        {
+            LinearRateModel model = ObjectMap.LinearRateModels[modelHandle];
+            InstrumentFactory factory = ObjectMap.InstrumentFactories[baseName];
+            factory.UpdateAllInstrumentsToParGivenModel(model);
+        }
+
         public static object[,] InstrumentFactory_GetInstrumentInfo(string baseName, string identifier)
         {
             return ConstructInstrumentInspector.MakeExcelOutput(ObjectMap.InstrumentFactories[baseName], identifier);
@@ -236,19 +242,19 @@ namespace MasterThesis.ExcelInterface
             InstrumentFactory factory = ObjectMap.InstrumentFactories[baseName];
 
             foreach (string key in factory.IrSwaps.Keys)
-                ObjectMap.LinearRateProducts[key] = factory.IrSwaps[key];
+                ObjectMap.LinearRateInstruments[key] = factory.IrSwaps[key];
 
             foreach (string key in factory.OisSwaps.Keys)
-                ObjectMap.LinearRateProducts[key] = factory.OisSwaps[key];
+                ObjectMap.LinearRateInstruments[key] = factory.OisSwaps[key];
 
             foreach (string key in factory.BasisSwaps.Keys)
-                ObjectMap.LinearRateProducts[key] = factory.BasisSwaps[key];
+                ObjectMap.LinearRateInstruments[key] = factory.BasisSwaps[key];
 
             foreach (string key in factory.Futures.Keys)
-                ObjectMap.LinearRateProducts[key] = factory.Futures[key];
+                ObjectMap.LinearRateInstruments[key] = factory.Futures[key];
 
             foreach (string key in factory.Fras.Keys)
-                ObjectMap.LinearRateProducts[key] = factory.Fras[key];
+                ObjectMap.LinearRateInstruments[key] = factory.Fras[key];
         }
 
         public static void InstrumentFactory_Make(string baseName, DateTime asOf)
@@ -261,7 +267,7 @@ namespace MasterThesis.ExcelInterface
             return ObjectMap.InstrumentFactories[instrumentFactory].ValueInstrumentFromFactory(ObjectMap.LinearRateModels[linearRateModel], instrument);
         }
         
-        // ADD functions
+        // Functions to add instruments to instrumentfactory
         public static void InstrumentFactory_AddSwaps(string baseName, string[] swapStrings)
         {
             ObjectMap.InstrumentFactories[baseName].AddSwaps(swapStrings);
@@ -325,23 +331,85 @@ namespace MasterThesis.ExcelInterface
     public static class LinearRateFunctions
     {
         // ------- General Curve functionality
-        public static double DiscCurve_GetValue(string baseName, DateTime date, InterpMethod interpolation)
+
+        public static double Curve_GetValue(string baseHandle, DateTime date, InterpMethod interpolation)
         {
-            return ObjectMap.DiscCurves[baseName].Interp(date, interpolation);
+            if (ObjectMap.DiscCurves.ContainsKey(baseHandle))
+            {
+                return ObjectMap.DiscCurves[baseHandle].Interp(date, interpolation);
+            }
+            else if (ObjectMap.FwdCurves.ContainsKey(baseHandle))
+            {
+                return ObjectMap.FwdCurves[baseHandle].Interp(date, interpolation);
+            }
+            else
+                throw new InvalidOperationException("Curve " + baseHandle + " does not exist in the ObjectMap.");
         }
 
-        public static double FwdCurve_GetValue(string baseName, DateTime date, InterpMethod interpolation)
+        public static double Curve_GetDiscFactor(string baseHandle, DateTime asOf, DateTime date, DayCount dayCount, InterpMethod interpolation)
         {
-            return ObjectMap.FwdCurves[baseName].Interp(date, interpolation);
+            if (ObjectMap.DiscCurves.ContainsKey(baseHandle))
+            {
+                return ObjectMap.DiscCurves[baseHandle].DiscFactor(asOf, date, dayCount, interpolation);
+            }
+            else if (ObjectMap.FwdCurves.ContainsKey(baseHandle))
+            {
+                return ObjectMap.DiscCurves[baseHandle].DiscFactor(asOf, date, dayCount, interpolation);
+            }
+            else
+                throw new InvalidOperationException("Curve " + baseHandle + " does not exist in the ObjectMap.");
         }
 
+        public static double Curve_GetFwdRate(string curveHandle, DateTime asOf, DateTime date, CurveTenor tenor, DayCount dayCount, DayRule dayRule, InterpMethod interpolation)
+        {
+            DateTime endDate = DateHandling.AddTenorAdjust(date, EnumToStr.CurveTenor(tenor), dayRule);
+
+            if (ObjectMap.DiscCurves.ContainsKey(curveHandle))
+            {
+                Curve curve = ObjectMap.DiscCurves[curveHandle];
+                return curve.FwdRate(asOf, date, endDate, dayRule, dayCount, interpolation);
+            }
+            else if (ObjectMap.FwdCurves.ContainsKey(curveHandle))
+            {
+                Curve curve = ObjectMap.FwdCurves[curveHandle];
+                return curve.FwdRate(asOf, date, endDate, dayRule, dayCount, interpolation);
+            }
+            else
+                throw new InvalidOperationException(curveHandle + " does not exist in the objectMap.");
+        }
+
+        public static void Curve_BumpCurveAndStore(string baseHandle, string originalCurveHandle, int curvePoint, double bumpSize)
+        {
+            Curve originalCurve, bumpedCurve;
+
+            if (ObjectMap.DiscCurves.ContainsKey(originalCurveHandle))
+            {
+                originalCurve = ObjectMap.DiscCurves[originalCurveHandle];
+                bumpedCurve = originalCurve.Copy();
+                bumpedCurve.Values[curvePoint] += bumpSize;
+                ObjectMap.DiscCurves[baseHandle] = bumpedCurve;
+            }
+            else if (ObjectMap.FwdCurves.ContainsKey(originalCurveHandle))
+            {
+                originalCurve = ObjectMap.FwdCurves[originalCurveHandle];
+                bumpedCurve = originalCurve.Copy();
+                bumpedCurve.Values[curvePoint] += bumpSize;
+                ObjectMap.FwdCurves[baseHandle] = bumpedCurve;
+            }
+            else
+                throw new InvalidOperationException("Curve " + originalCurveHandle + " does not exist in the ObjectMap.");
+        }
 
         // ------- DISC CURVE FUNCTIONS
-
         public static void DiscCurve_Make(string baseName, List<DateTime> dates, List<double> values)
         {
                 Curve output = new MasterThesis.Curve(dates, values);
                 ObjectMap.DiscCurves[baseName] = output;
+        }
+
+        public static double DiscCurve_GetValue(string baseName, DateTime date, InterpMethod interpolation)
+        {
+            return ObjectMap.DiscCurves[baseName].Interp(date, interpolation);
         }
 
         public static object[,] DiscCurve_Get(string name)
@@ -371,6 +439,30 @@ namespace MasterThesis.ExcelInterface
 
         }
 
+        public static void FwdCurveRepresentation_MakeFromFwdCurve(string baseName, string fwdCurveHandle, CurveTenor tenor, DateTime asOf, DayCount dayCount, DayRule dayRule, InterpMethod interpolation)
+        {
+            Curve fwdCurve = ObjectMap.FwdCurves[fwdCurveHandle];
+            ObjectMap.FwdCurveRepresentations[baseName] = new FwdCurveRepresentation(fwdCurve, tenor, asOf, dayCount, dayRule, interpolation);
+        }
+
+        public static void FwdCurveRepresentation_MakeFromDiscCurve(string baseName, string discCurveHandle, CurveTenor tenor, DateTime asOf, DayCount dayCount, DayRule dayRule, InterpMethod interpolation)
+        {
+            Curve discCurve = ObjectMap.DiscCurves[discCurveHandle];
+            ObjectMap.FwdCurveRepresentations[baseName] = new FwdCurveRepresentation(discCurve, tenor, asOf, dayCount, dayRule, interpolation);
+        }
+
+        public static object[,] FwdCurveRepresentation_Get(string handle)
+        {
+            ObjectMap.CheckExists(ObjectMap.DiscCurves, handle, "Disc Curve does not exist");
+
+            return ExcelUtilities.BuildObjectArrayFromCurve(ObjectMap.FwdCurveRepresentations[handle].FwdCurve, handle);
+        }
+
+        public static double FwdCurve_GetValue(string baseName, DateTime date, InterpMethod interpolation)
+        {
+            return ObjectMap.FwdCurves[baseName].Interp(date, interpolation);
+        }
+
         public static void FwdCurve_Make(string baseName, List<DateTime> dates, List<double> values)
         {
             Curve fwdCurve = new MasterThesis.Curve(dates, values);
@@ -392,11 +484,10 @@ namespace MasterThesis.ExcelInterface
         // ------- LINEAR RATE MODEL FUNTIONS
         public static double LinearRateModel_Value(string linearRateModelHandle, string productHandle)
         {
-            LinearRateInstrument product = ObjectMap.LinearRateProducts[productHandle];
+            LinearRateInstrument product = ObjectMap.LinearRateInstruments[productHandle];
             LinearRateModel model = ObjectMap.LinearRateModels[linearRateModelHandle];
             return model.ValueLinearRateProduct(product);
         }
-
 
         public static void LinearRateModel_Make(string baseName, string fwdCurveCollectionName, string discCurveName, InterpMethod interpolation)
         {
@@ -409,11 +500,12 @@ namespace MasterThesis.ExcelInterface
         public static double LinearRateModel_SwapValue(string baseName, string swapName)
         {
             LinearRateModel model = ObjectMap.LinearRateModels[baseName];
-            IrSwap swap = (IrSwap) ObjectMap.LinearRateProducts[swapName];
+            IrSwap swap = (IrSwap) ObjectMap.LinearRateInstruments[swapName];
             //IrSwap swap = ObjectMap.IrSwaps[swapName];
             return model.IrSwapNpv(swap);
         }
 
+        // .. Value functions
         public static double LinearRateModel_FixedLegValue(string baseName, string fixedLegName)
         {
             LinearRateModel model = ObjectMap.LinearRateModels[baseName];
@@ -431,7 +523,7 @@ namespace MasterThesis.ExcelInterface
         public static double LinearRateModel_SwapParRate(string baseName, string swapName)
         {
             LinearRateModel model = ObjectMap.LinearRateModels[baseName];
-            IrSwap swap = (IrSwap) ObjectMap.LinearRateProducts[swapName];
+            IrSwap swap = (IrSwap) ObjectMap.LinearRateInstruments[swapName];
             //IrSwap swap = ObjectMap.IrSwaps[swapName];
             return model.IrParSwapRate(swap);
         }
@@ -439,7 +531,7 @@ namespace MasterThesis.ExcelInterface
         public static double LinearRateModel_BasisSwapValue(string baseName, string swapName)
         {
             LinearRateModel model = ObjectMap.LinearRateModels[baseName];
-            BasisSwap swap = (BasisSwap) ObjectMap.LinearRateProducts[swapName];
+            BasisSwap swap = (BasisSwap) ObjectMap.LinearRateInstruments[swapName];
             //BasisSwap swap = ObjectMap.BasisSwaps[swapName];
             return model.BasisSwapNpv(swap);
         }
@@ -447,25 +539,43 @@ namespace MasterThesis.ExcelInterface
         public static double LinearRateModel_BasisParSpread(string modelName, string basisSwapName)
         {
             LinearRateModel model = ObjectMap.LinearRateModels[modelName];
-            BasisSwap swap = (BasisSwap)ObjectMap.LinearRateProducts[basisSwapName];
+            BasisSwap swap = (BasisSwap)ObjectMap.LinearRateInstruments[basisSwapName];
             //BasisSwap swap = ObjectMap.BasisSwaps[basisSwapName];
             return model.ParBasisSpread(swap);
         }
 
-
-        // ------- Swap functions
-        public static void FixedLeg_Make(string baseName, DateTime AsOf, DateTime StartDate, DateTime EndDate, double FixedRate,
-                        CurveTenor Frequency, DayCount DayCount, DayRule DayRule, double Notional, StubPlacement stub = StubPlacement.NullStub)
+        public static double LinearRateModel_OisSwapNpv(string modelName, string oisSwapName)
         {
-            ObjectMap.FixedLegs[baseName] = new FixedLeg(AsOf, StartDate, EndDate, FixedRate, Frequency, DayCount, DayRule, Notional);
+            LinearRateModel model = ObjectMap.LinearRateModels[modelName];
+            OisSwap swap = (OisSwap)ObjectMap.LinearRateInstruments[oisSwapName];
+            return model.DiscCurve.OisSwapNpv(swap, InterpMethod.Hermite);
         }
 
-
-
-        public static void FloatLeg_Make(string baseName, DateTime AsOf, DateTime StartDate, DateTime EndDate,
-                        CurveTenor Frequency, DayCount DayCount, DayRule DayRule, double Notional, double Spread, StubPlacement stub = StubPlacement.NullStub)
+        public static double LinearRateModel_OisRate(string modelName, string oisSwapName)
         {
-            ObjectMap.FloatLegs[baseName] = new FloatLeg(AsOf, StartDate, EndDate, Frequency, DayCount, DayRule, Notional, Spread, stub);
+            LinearRateModel model = ObjectMap.LinearRateModels[modelName];
+            OisSwap swap = (OisSwap)ObjectMap.LinearRateInstruments[oisSwapName];
+            return model.DiscCurve.OisRateSimple(swap, InterpMethod.Hermite);
+        }
+
+        public static double LinearRateModel_OisRateComplex(string modelName, string oisSwapName)
+        {
+            LinearRateModel model = ObjectMap.LinearRateModels[modelName];
+            OisSwap swap = (OisSwap)ObjectMap.LinearRateInstruments[oisSwapName];
+            return model.DiscCurve.OisRate(swap, InterpMethod.Hermite);
+        }
+
+        // .. Constructors
+        public static void FixedLeg_Make(string baseName, DateTime asOf, DateTime startDate, DateTime endDate, double fixedRate,
+                        CurveTenor frequency, DayCount dayCount, DayRule dayRule, double notional, StubPlacement stub = StubPlacement.NullStub)
+        {
+            ObjectMap.FixedLegs[baseName] = new FixedLeg(asOf, startDate, endDate, fixedRate, frequency, dayCount, dayRule, notional);
+        }
+
+        public static void FloatLeg_Make(string baseName, DateTime asOf, DateTime startDate, DateTime endDate,
+                        CurveTenor frequency, DayCount dayCount, DayRule dayRule, double notional, double spread, StubPlacement stub = StubPlacement.NullStub)
+        {
+            ObjectMap.FloatLegs[baseName] = new FloatLeg(asOf, startDate, endDate, frequency, dayCount, dayRule, notional, spread, stub);
         }
 
         public static void PlainVanillaSwap_Make(string baseName, string fixedLegName, string floatLegName, int tradeSign)
@@ -474,18 +584,23 @@ namespace MasterThesis.ExcelInterface
             FloatLeg floatLeg = ObjectMap.FloatLegs[floatLegName];
             IrSwap swap = new MasterThesis.IrSwap(floatLeg, fixedLeg, tradeSign);
 
-            ObjectMap.LinearRateProducts[baseName] = swap;
+            ObjectMap.LinearRateInstruments[baseName] = swap;
             ObjectMap.IrSwaps[baseName] = swap;
         }
 
-        // -------- BASIS SWAP FUNTIONS
+        public static void OisSwap_Make(string baseName, DateTime asOf, string startTenor, string endTenor, string settlementLag, DayCount dayCountFixed,
+                DayCount dayCountFloat, DayRule dayRule, double notional, double fixedRate, int tradeSign)
+        {
+            ObjectMap.LinearRateInstruments[baseName] = new OisSwap(asOf, startTenor, endTenor, settlementLag, dayCountFixed, dayCountFloat, dayRule, notional, fixedRate, tradeSign);
+        }
+
         public static void BasisSwap_Make(string baseName, string floatLegNoSpreadName, string floatLegSpreadName, int tradeSign)
         {
             FloatLeg floatLegNoSpread = ObjectMap.FloatLegs[floatLegNoSpreadName];
             FloatLeg floatLegSpread = ObjectMap.FloatLegs[floatLegSpreadName];
             BasisSwap swap = new MasterThesis.BasisSwap(floatLegNoSpread, floatLegSpread, tradeSign);
 
-            ObjectMap.LinearRateProducts[baseName] = swap;
+            ObjectMap.LinearRateInstruments[baseName] = swap;
             ObjectMap.BasisSwaps[baseName] = swap;
         }
 

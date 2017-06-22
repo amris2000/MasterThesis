@@ -205,25 +205,23 @@ namespace MasterThesis
         /// <summary>
         /// Calculate the value of an annuity
         /// </summary>
-        /// <param name="AsOf"></param>
-        /// <param name="StartDate"></param>
-        /// <param name="EndDate"></param>
-        /// <param name="Tenor"></param>
-        /// <param name="DayCount"></param>
-        /// <param name="DayRule"></param>
-        /// <param name="Method"></param>
+        /// <param name="asOf"></param>
+        /// <param name="startDate"></param>
+        /// <param name="endDate"></param>
+        /// <param name="tenor"></param>
+        /// <param name="dayCount"></param>
+        /// <param name="dayRule"></param>
+        /// <param name="interpolation"></param>
         /// <returns></returns>
-        public ADouble AnnuityAD(DateTime AsOf, DateTime StartDate, DateTime EndDate, CurveTenor Tenor, DayCount DayCount, DayRule DayRule, InterpMethod Method)
+        public ADouble AnnuityAD(DateTime asOf, DateTime startDate, DateTime endDate, CurveTenor tenor, DayCount dayCount, DayRule dayRule, InterpMethod interpolation)
         {
-            SwapSchedule AnnuitySchedule = new SwapSchedule(AsOf, StartDate, EndDate, DayCount, DayRule, Tenor);
-            ADouble Out = 0.0;
-            DateTime PayDate;
-            for (int i = 0; i < AnnuitySchedule.AdjEndDates.Count; i++)
+            SwapSchedule annuitySchedule = new SwapSchedule(asOf, startDate, endDate, dayCount, dayRule, tenor);
+            ADouble result = 0.0;
+            for (int i = 0; i < annuitySchedule.AdjEndDates.Count; i++)
             {
-                PayDate = AnnuitySchedule.AdjEndDates[i];
-                Out += AnnuitySchedule.Coverages[i] * ADDiscCurve.DiscFactor(AsOf, PayDate, Method);
+                result += annuitySchedule.Coverages[i] * ADDiscCurve.DiscFactor(asOf, annuitySchedule.AdjEndDates[i], dayCount, interpolation);
             }
-            return Out;
+            return result;
         }
 
         /// <summary>
@@ -257,10 +255,10 @@ namespace MasterThesis
         public ADouble FraNpvAD(Fra fra)
         {
             ADouble fraRate = ADFwdCurveCollection.GetCurve(fra.ReferenceIndex).FwdRate(fra.AsOf, fra.StartDate, fra.EndDate, fra.DayRule, fra.DayCount, Interpolation);
-            double notional = fra.Notional;
-            ADouble discFactor = ADDiscCurve.DiscFactor(fra.AsOf, fra.EndDate, Interpolation);
-            double coverage = DateHandling.Cvg(fra.StartDate, fra.EndDate, fra.DayCount);
-            return fra.TradeSign * notional * discFactor * (fraRate - fra.FixedRate) * coverage;
+            ADouble notional = fra.Notional;
+            ADouble discFactor = ADDiscCurve.DiscFactor(fra.AsOf, fra.EndDate, fra.DayCount, Interpolation);
+            ADouble coverage = DateHandling.Cvg(fra.StartDate, fra.EndDate, fra.DayCount);
+            return fra.TradeSign * notional * discFactor * coverage * (fra.FixedRate - fraRate);
         }
 
         /// <summary>
@@ -295,7 +293,7 @@ namespace MasterThesis
                 DateTime endDate = floatLeg.Schedule.AdjEndDates[i];
                 ADouble cvg = floatLeg.Schedule.Coverages[i];
                 ADouble fwdRate = ADFwdCurveCollection.GetCurve(floatLeg.Tenor).FwdRate(floatLeg.AsOf, startDate, endDate, floatLeg.Schedule.DayRule, floatLeg.Schedule.DayCount, Interpolation);
-                ADouble discFactor = ADDiscCurve.DiscFactor(floatLeg.AsOf, endDate, Interpolation);
+                ADouble discFactor = ADDiscCurve.DiscFactor(floatLeg.AsOf, endDate, floatLeg.DayCount, Interpolation);
                 floatValue += (fwdRate + spread) * cvg * discFactor;
             }
 
@@ -313,7 +311,7 @@ namespace MasterThesis
                 DateTime endDate = floatLeg.Schedule.AdjEndDates[i];
                 ADouble cvg = floatLeg.Schedule.Coverages[i];
                 ADouble fwdRate = ADFwdCurveCollection.GetCurve(floatLeg.Tenor).FwdRate(floatLeg.AsOf, startDate, endDate, floatLeg.Schedule.DayRule, floatLeg.Schedule.DayCount, Interpolation);
-                ADouble discFactor = ADDiscCurve.DiscFactor(floatLeg.AsOf, endDate, Interpolation);
+                ADouble discFactor = ADDiscCurve.DiscFactor(floatLeg.AsOf, endDate, floatLeg.DayCount, Interpolation);
                 floatValue += (fwdRate + spread) * cvg * discFactor;
             }
             return floatValue * floatLeg.Notional;
@@ -347,7 +345,7 @@ namespace MasterThesis
             ADouble pvNoSpread = ValueFloatLegNoSpreadAD(swap.FloatLegNoSpread) / swap.FloatLegNoSpread.Notional;
             ADouble pvSpread = ValueFloatLegNoSpreadAD(swap.FloatLegSpread) / swap.FloatLegNoSpread.Notional;
             ADouble annuityNoSpread = AnnuityAD(swap.FloatLegSpread.Schedule, Interpolation);
-            return (pvNoSpread - pvSpread) / annuityNoSpread;
+            return (pvSpread - pvNoSpread) / annuityNoSpread;
         }
 
         public ADouble OisRateSimpleAD(OisSwap swap)

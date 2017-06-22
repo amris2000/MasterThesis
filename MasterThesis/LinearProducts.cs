@@ -9,6 +9,7 @@ namespace MasterThesis
     public interface LinearRateInstrument
     {
         DateTime GetCurvePoint();
+        void UpdateFixedRateToPar(LinearRateModel model);
         Instrument GetInstrumentType();
     }
 
@@ -63,11 +64,13 @@ namespace MasterThesis
         public DateTime AsOf, StartDate, EndDate;
         public double Notional;
         public double FixedRate;
-        public double TradeSign;
+        public int TradeSign;
 
-        public OisSwap(DateTime asOf, string startTenor, string endTenor, string settlementLag, DayCount dayCountFixed, DayCount dayCountFloat, DayRule dayRule, double notional, double fixedRate, Direction direction = Direction.Pay)
+        public OisSwap(DateTime asOf, string startTenor, string endTenor, string settlementLag, DayCount dayCountFixed, 
+                DayCount dayCountFloat, DayRule dayRule, double notional, double fixedRate, int tradeSign)
         {
-            DateTime startDate = DateHandling.AddTenorAdjust(asOf, settlementLag, dayRule);
+            DateTime startDate = DateHandling.AddTenorAdjust(asOf, startTenor, dayRule);
+            startDate = DateHandling.AddTenorAdjust(startDate, settlementLag, dayRule);
             DateTime endDate = DateHandling.AddTenorAdjust(startDate, endTenor, dayRule);
             this.AsOf = asOf;
             this.StartDate = startDate;
@@ -76,7 +79,12 @@ namespace MasterThesis
             this.FixedSchedule = new OisSchedule(asOf, startTenor, endTenor, settlementLag, dayCountFixed, dayRule);
             this.Notional = notional;
             this.FixedRate = fixedRate;
-            this.TradeSign = EnumHelpers.TradeSignToDouble(direction);
+            this.TradeSign = tradeSign;
+        }
+
+        public void UpdateFixedRateToPar(LinearRateModel model)
+        {
+            FixedRate = model.DiscCurve.OisRateSimple(this, InterpMethod.Hermite);
         }
 
         public DateTime GetCurvePoint()
@@ -123,6 +131,11 @@ namespace MasterThesis
                 throw new InvalidOperationException("TradeSign has to be 1 (pay fixed) or -1 (pay float)");
         }
 
+        public void UpdateFixedRateToPar(LinearRateModel model)
+        {
+            FixedLeg.FixedRate = model.IrParSwapRate(this);
+        }
+
         public  DateTime GetCurvePoint()
         {
             return FloatLeg.EndDate;
@@ -167,6 +180,11 @@ namespace MasterThesis
 
         }
 
+        public void UpdateFixedRateToPar(LinearRateModel model)
+        {
+            FloatLegSpread.Spread = model.ParBasisSpread(this);
+        }
+
         public DateTime GetCurvePoint()
         {
             if (FloatLegSpread.EndDate == null)
@@ -191,12 +209,12 @@ namespace MasterThesis
         public double Notional;
         public double TradeSign;
         
-        public Fra(DateTime asOf, DateTime startDate, DateTime endDate, CurveTenor referenceIndex, DayCount dayCount, DayRule dayRule, double fixedRate, double notional, Direction direction = Direction.Pay)
+        public Fra(DateTime asOf, DateTime startDate, DateTime endDate, CurveTenor referenceIndex, DayCount dayCount, DayRule dayRule, double fixedRate, double notional, int tradeSign)
         {
-            Initialize(asOf, startDate, endDate, referenceIndex, dayCount, dayRule, fixedRate, notional, direction);
+            Initialize(asOf, startDate, endDate, referenceIndex, dayCount, dayRule, fixedRate, notional, tradeSign);
         }
 
-        private void Initialize(DateTime asOf, DateTime startDate, DateTime endDate, CurveTenor referenceIndex, DayCount dayCount, DayRule dayRule, double fixedRate, double notional, Direction direction)
+        private void Initialize(DateTime asOf, DateTime startDate, DateTime endDate, CurveTenor referenceIndex, DayCount dayCount, DayRule dayRule, double fixedRate, double notional, int tradeSign)
         {
             this.StartDate = startDate;
             this.EndDate = endDate;
@@ -206,14 +224,22 @@ namespace MasterThesis
             this.ReferenceIndex = referenceIndex;
             this.AsOf = asOf;
             this.Notional = notional;
-            TradeSign = EnumHelpers.TradeSignToDouble(direction);
+            if (tradeSign == 1 || tradeSign == -1)
+                TradeSign = tradeSign;
+            else
+                throw new InvalidOperationException("TradeSign of FRA has to be 1 or -1 (1 = pay fixed)");
         }
 
-        public Fra(DateTime asOf, string startTenor, string endTenor, CurveTenor referenceIndex, DayCount dayCount, DayRule dayRule, double fixedRate, double notional, Direction direction = Direction.Pay)
+        public Fra(DateTime asOf, string startTenor, string endTenor, CurveTenor referenceIndex, DayCount dayCount, DayRule dayRule, double fixedRate, double notional, int tradeSign)
         {
             DateTime startDate = DateHandling.AddTenorAdjust(asOf, startTenor, dayRule);
             DateTime endDate = DateHandling.AddTenorAdjust(startDate, endTenor, dayRule);
-            Initialize(asOf, startDate, endDate, referenceIndex, dayCount, dayRule, fixedRate, notional, direction);
+            Initialize(asOf, startDate, endDate, referenceIndex, dayCount, dayRule, fixedRate, notional, tradeSign);
+        }
+
+        public void UpdateFixedRateToPar(LinearRateModel model)
+        {
+            FixedRate = model.FwdCurveCollection.GetCurve(ReferenceIndex).FwdRate(AsOf, StartDate, EndDate, DayRule, DayCount, InterpMethod.Hermite);
         }
 
         public DateTime GetCurvePoint()
@@ -228,7 +254,6 @@ namespace MasterThesis
         {
             return Instrument.Fra;
         }
-
     }
 
     public class Futures : LinearRateInstrument
@@ -236,24 +261,29 @@ namespace MasterThesis
         public double Convexity;
         public Fra FraSameSpec;
 
-        public Futures(DateTime asOf, DateTime startDate, DateTime endDate, CurveTenor referenceIndex, DayCount dayCount, DayRule dayRule, double fixedRate, double notional, double? convexity = null)
+        public Futures(DateTime asOf, DateTime startDate, DateTime endDate, CurveTenor referenceIndex, DayCount dayCount, DayRule dayRule, double fixedRate, double notional, int tradeSign, double? convexity = null)
         {
-            FraSameSpec = new Fra(asOf, startDate, endDate, referenceIndex, dayCount, dayRule, fixedRate, notional);
+            FraSameSpec = new Fra(asOf, startDate, endDate, referenceIndex, dayCount, dayRule, fixedRate, notional, tradeSign);
             if (convexity == null)
                 Convexity = CalcSimpleConvexity(asOf, startDate, endDate, dayCount);
             else
                 Convexity = (double) convexity;
         }
 
-        public Futures(DateTime asOf, string startTenor, string endTenor, CurveTenor referenceIndex, DayCount dayCount, DayRule dayRule, double fixedRate, double notional, double? convexity = null)
+        public Futures(DateTime asOf, string startTenor, string endTenor, CurveTenor referenceIndex, DayCount dayCount, DayRule dayRule, double fixedRate, double notional, int tradeSign, double? convexity = null)
         {
             DateTime startDate = DateHandling.AddTenorAdjust(asOf, startTenor, dayRule);
             DateTime endDate = DateHandling.AddTenorAdjust(startDate, endTenor, dayRule);
-            FraSameSpec = new Fra(asOf, startDate, endDate, referenceIndex, dayCount, dayRule, notional, fixedRate);
+            FraSameSpec = new Fra(asOf, startDate, endDate, referenceIndex, dayCount, dayRule, fixedRate, notional, tradeSign);
             if (convexity == null)
                 Convexity = CalcSimpleConvexity(asOf, startDate, endDate, dayCount);
             else
                 Convexity = (double)convexity;
+        }
+
+        public void UpdateFixedRateToPar(LinearRateModel model)
+        {
+            FraSameSpec.UpdateFixedRateToPar(model);
         }
 
         public Futures(Fra fra, double? convexity)

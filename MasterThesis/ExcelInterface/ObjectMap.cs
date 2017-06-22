@@ -13,13 +13,14 @@ namespace MasterThesis.ExcelInterface
         public static IDictionary<string, FwdCurveContainer> FwdCurveCollections = new Dictionary<string, FwdCurveContainer>();
         public static IDictionary<string, Curve> FwdCurves = new Dictionary<string, Curve>();
         public static IDictionary<string, LinearRateModel> LinearRateModels = new Dictionary<string, LinearRateModel>();
+        public static IDictionary<string, FwdCurveRepresentation> FwdCurveRepresentations = new Dictionary<string, FwdCurveRepresentation>();
 
         // Derivatives
         public static IDictionary<string, FixedLeg> FixedLegs = new Dictionary<string, FixedLeg>();
         public static IDictionary<string, FloatLeg> FloatLegs = new Dictionary<string, FloatLeg>();
         public static IDictionary<string, IrSwap> IrSwaps = new Dictionary<string, IrSwap>();
         public static IDictionary<string, BasisSwap> BasisSwaps = new Dictionary<string, BasisSwap>();
-        public static IDictionary<string, LinearRateInstrument> LinearRateProducts = new Dictionary<string, LinearRateInstrument>();
+        public static IDictionary<string, LinearRateInstrument> LinearRateInstruments = new Dictionary<string, LinearRateInstrument>();
 
         // InstrumentFactories
         public static IDictionary<string, InstrumentFactory> InstrumentFactories = new Dictionary<string, InstrumentFactory>();

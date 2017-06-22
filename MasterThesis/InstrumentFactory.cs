@@ -55,6 +55,24 @@ namespace MasterThesis
             AsOf = asOf;
         }
 
+        public void UpdateAllInstrumentsToParGivenModel(LinearRateModel model)
+        {
+            foreach (string key in Fras.Keys)
+                Fras[key].UpdateFixedRateToPar(model);
+
+            foreach (string key in Futures.Keys)
+                Futures[key].UpdateFixedRateToPar(model);
+
+            foreach (string key in IrSwaps.Keys)
+                IrSwaps[key].UpdateFixedRateToPar(model);
+
+            foreach (string key in BasisSwaps.Keys)
+                BasisSwaps[key].UpdateFixedRateToPar(model);
+
+            foreach (string key in OisSwaps.Keys)
+                OisSwaps[key].UpdateFixedRateToPar(model);
+        }
+
         public double ValueInstrumentFromFactory(LinearRateModel model, string instrument)
         {
             QuoteType type = InstrumentTypeMap[instrument];
@@ -118,7 +136,7 @@ namespace MasterThesis
         public void AddBasisSwaps(string[] swapString)
         {
             for (int i = 0; i < swapString.Length; i++)
-                InterpretSpreadString(swapString[i]);
+                InterpretTenorBasisSwapString(swapString[i]);
         }
 
         public void AddFras(string[] fraString)
@@ -127,7 +145,7 @@ namespace MasterThesis
                 InterpretFraString(fraString[i]);
         }
 
-        private void InterpretSpreadString(string instrumentString)
+        private void InterpretTenorBasisSwapString(string instrumentString)
         {
             string identifier, type, currency, swapNoSpreadIdent, swapSpreadIdent;
             string[] infoArray = instrumentString.Split(',').ToArray();
@@ -135,8 +153,10 @@ namespace MasterThesis
             identifier = infoArray[0];
             type = infoArray[1];
             currency = infoArray[2];
-            swapNoSpreadIdent = infoArray[3];
-            swapSpreadIdent = infoArray[4];
+
+            // In accordance with market practice, we put the spread on the short leg
+            swapSpreadIdent = infoArray[3];
+            swapNoSpreadIdent = infoArray[4];
 
             int defaultTradeSign = 1;
 
@@ -179,6 +199,7 @@ namespace MasterThesis
             fwdTenor = infoArray[15];
             dayCount = StrToEnum.DayCountConvert(infoArray[11]);
             double fixedRate = 0.01;
+            int defaultTradeSign = 1;
 
             DateTime startDate, endDate;
 
@@ -188,7 +209,7 @@ namespace MasterThesis
                 endDate = DateHandling.AddTenorAdjust(startDate, floatPayFreq, dayRule);
 
                 curveTenor = StrToEnum.CurveTenorFromSimpleTenor(floatPayFreq);
-                Fra fra = new MasterThesis.Fra(AsOf, startDate, endDate, curveTenor, dayCount, dayRule, fixedRate, _notional);
+                Fra fra = new MasterThesis.Fra(AsOf, startDate, endDate, curveTenor, dayCount, dayRule, fixedRate, _notional, defaultTradeSign);
                 Futures[identifier] = new MasterThesis.Futures(fra, null);
                 CurvePointMap[identifier] = fra.GetCurvePoint();
                 InstrumentTypeMap[identifier] = QuoteType.FuturesRate;
@@ -222,6 +243,7 @@ namespace MasterThesis
             fwdTenor = infoArray[15];
             dayCount = StrToEnum.DayCountConvert(infoArray[11]);
             double fixedRate = 0.01;
+            int defaultTradeSign = 1;
 
             if (type == "DEPOSIT")
             {
@@ -236,7 +258,7 @@ namespace MasterThesis
                 // handle FRA
                 // Has to consider both FwdTenor and SettlementLag here..
                 curveTenor = StrToEnum.CurveTenorFromSimpleTenor(floatPayFreq);
-                Fra fra = new MasterThesis.Fra(AsOf, fwdTenor, endTenor, curveTenor, dayCount, dayRule, fixedRate, _notional);
+                Fra fra = new MasterThesis.Fra(AsOf, fwdTenor, endTenor, curveTenor, dayCount, dayRule, fixedRate, _notional, defaultTradeSign);
                 Fras[identifier] = fra;
                 CurvePointMap[identifier] = fra.GetCurvePoint();
                 InstrumentTypeMap[identifier] = QuoteType.FraRate;
@@ -293,7 +315,11 @@ namespace MasterThesis
                 {
                     // Handle OIS case
                     // Error with endTenor here and string parsing 
-                    OisSwap oisSwap = new OisSwap(AsOf, startTenor, endTenor, settlementLag, fixedDayCount, floatDayCount, dayRule, _notional, fixedRate);
+
+                    // TEMPORARY
+                    settlementLag = "0D";
+                    dayRule = DayRule.F;
+                    OisSwap oisSwap = new OisSwap(AsOf, startTenor, endTenor, settlementLag, fixedDayCount, floatDayCount, dayRule, _notional, fixedRate, defaultTradeSign);
                     OisSwaps[identifier] = oisSwap;
                     CurvePointMap[identifier] = oisSwap.GetCurvePoint();
                     InstrumentTypeMap[identifier] = QuoteType.OisRate;

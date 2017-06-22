@@ -23,8 +23,7 @@ namespace MasterThesis
     public enum Tenor { D, B, W, M, Y };
     public enum Direction { Pay, Rec };
 
-
-    // OLD / UNUSED
+    // ---- old and unused
     public enum MarketDataInstrument { IrSwapRate, OisRate, BaseSpread, Fra, Future, BasisSwap, Cash, Fixing }
     public enum SwapQuoteType { Vanilla, ShortSwap }
     public enum InstrumentComplexity { Linear, NonLinear }
@@ -33,8 +32,18 @@ namespace MasterThesis
 
     public static class EnumHelpers
     {
+        public static int TradeSignToInt(Direction tradeSign)
+        {
+            // Swaps: Pay fixed, basis swaps: pay spread.
+            if (tradeSign == Direction.Pay)
+                return 1;
+            else
+                return -1;
+        }
+
         public static double TradeSignToDouble(Direction tradeSign)
         {
+            // Swaps: Pay fixed, Basis swaps pay spread
             if (tradeSign == Direction.Pay)
                 return 1.0;
             else
@@ -64,7 +73,6 @@ namespace MasterThesis
     /// </summary>
     public static class ConstructInstrumentInspector
     {
-
         public static object[,] MakeExcelOutput(InstrumentFactory factory, string identifier)
         {
             Schedule schedule1 = null;
@@ -253,7 +261,6 @@ namespace MasterThesis
             return output;
         }
     }
-
 
     public static class StrToEnum
     {
@@ -528,6 +535,9 @@ namespace MasterThesis
         }
     }
 
+    /// <summary>
+    /// Old and not used
+    /// </summary>
     public static class ExcelUtility
     {
         public static string WorkbookName = "CURVEBOOK";
