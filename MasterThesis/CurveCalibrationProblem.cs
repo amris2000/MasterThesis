@@ -124,7 +124,10 @@ namespace MasterThesis
             ADouble quadraticSum = 0.0;
 
             for (int i = 0; i < InputInstruments.Count; i++)
-                quadraticSum = quadraticSum + ADouble.Pow(InputInstruments[i].ValueInstrumentAD(model, Factory) - InputInstruments[i].QuoteValue, 2.0) * scaling;
+            {
+                ADouble tempDifference = InputInstruments[i].ValueInstrumentAD(model, Factory) - InputInstruments[i].QuoteValue;
+                quadraticSum = quadraticSum + ADouble.Pow(tempDifference, 2.0) * scaling;
+            }
 
             return quadraticSum;
         }
@@ -645,7 +648,7 @@ namespace MasterThesis
             AADTape.InterpretTape();
             double[] gradient = AADTape.GetGradient();
             for (int i = 0; i < gradient.Length; i++)
-                grad[i] = -1.0*gradient[i];
+                grad[i] = gradient[i];
 
             AADTape.ResetTape();
         }

@@ -219,7 +219,7 @@ namespace MasterThesis
             ADouble result = 0.0;
             for (int i = 0; i < annuitySchedule.AdjEndDates.Count; i++)
             {
-                result += annuitySchedule.Coverages[i] * ADDiscCurve.DiscFactor(asOf, annuitySchedule.AdjEndDates[i], dayCount, interpolation);
+                result = result + annuitySchedule.Coverages[i] * ADDiscCurve.DiscFactor(asOf, annuitySchedule.AdjEndDates[i], dayCount, interpolation);
             }
             return result;
         }
@@ -294,7 +294,7 @@ namespace MasterThesis
                 ADouble cvg = floatLeg.Schedule.Coverages[i];
                 ADouble fwdRate = ADFwdCurveCollection.GetCurve(floatLeg.Tenor).FwdRate(floatLeg.AsOf, startDate, endDate, floatLeg.Schedule.DayRule, floatLeg.Schedule.DayCount, Interpolation);
                 ADouble discFactor = ADDiscCurve.DiscFactor(floatLeg.AsOf, endDate, floatLeg.DayCount, Interpolation);
-                floatValue += (fwdRate + spread) * cvg * discFactor;
+                floatValue = floatValue + (fwdRate + spread) * cvg * discFactor;
             }
 
             return floatValue * floatLeg.Notional;
@@ -312,7 +312,7 @@ namespace MasterThesis
                 ADouble cvg = floatLeg.Schedule.Coverages[i];
                 ADouble fwdRate = ADFwdCurveCollection.GetCurve(floatLeg.Tenor).FwdRate(floatLeg.AsOf, startDate, endDate, floatLeg.Schedule.DayRule, floatLeg.Schedule.DayCount, Interpolation);
                 ADouble discFactor = ADDiscCurve.DiscFactor(floatLeg.AsOf, endDate, floatLeg.DayCount, Interpolation);
-                floatValue += (fwdRate + spread) * cvg * discFactor;
+                floatValue = floatValue + (fwdRate + spread) * cvg * discFactor;
             }
             return floatValue * floatLeg.Notional;
         }
@@ -325,7 +325,7 @@ namespace MasterThesis
 
         public ADouble IrSwapNpvAD(IrSwap swap)
         {
-            return (double)swap.TradeSign*(ValueFixedLegAD(swap.FixedLeg) - ValueFloatLegAD(swap.FloatLeg));
+            return (double)swap.TradeSign*(ValueFixedLegAD(swap.FixedLeg) - 1.0 * ValueFloatLegAD(swap.FloatLeg));
         }
 
         public ADouble IrParSwapRateAD(IrSwap swap)
@@ -337,7 +337,7 @@ namespace MasterThesis
 
         public ADouble BasisSwapNpvAD(BasisSwap swap)
         {
-            return (double)swap.TradeSign*(ValueFloatLegAD(swap.FloatLegNoSpread) - ValueFloatLegAD(swap.FloatLegSpread));
+            return (double)swap.TradeSign*(ValueFloatLegAD(swap.FloatLegNoSpread) - 1.0 * ValueFloatLegAD(swap.FloatLegSpread));
         }
 
         public ADouble ParBasisSpreadAD(BasisSwap swap)
@@ -345,7 +345,7 @@ namespace MasterThesis
             ADouble pvNoSpread = ValueFloatLegNoSpreadAD(swap.FloatLegNoSpread) / swap.FloatLegNoSpread.Notional;
             ADouble pvSpread = ValueFloatLegNoSpreadAD(swap.FloatLegSpread) / swap.FloatLegNoSpread.Notional;
             ADouble annuityNoSpread = AnnuityAD(swap.FloatLegSpread.Schedule, Interpolation);
-            return (pvSpread - pvNoSpread) / annuityNoSpread;
+            return (pvSpread - 1.0 * pvNoSpread) / annuityNoSpread;
         }
 
         public ADouble OisRateSimpleAD(OisSwap swap)

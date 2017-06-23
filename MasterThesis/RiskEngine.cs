@@ -256,7 +256,7 @@ namespace MasterThesis
                     // Rows of _jacobian are delta risk to the same curve point.
                     Jacobian[j, i] = _fullGradients[Instruments[i].Identifier][j];
 
-                    // The opposite
+                    // The opposite - wrong and not working.
                     //Jacobian[i, j] = _fullGradients[_instruments[i].Identifier][j];
                 }
             }
@@ -272,10 +272,6 @@ namespace MasterThesis
 
         private void InvertJacobian()
         {
-            // It's probably never exactly equal to zero
-            //if (AlmostEqual(Jacobian.Determinant(), 0.0))
-            //    throw new InvalidOperationException("Jacobian is not invertible. Determinant is 0.0");
-
             InvertedJacobian = Jacobian.Inverse();
         }
 

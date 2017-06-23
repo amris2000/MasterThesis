@@ -9,6 +9,7 @@ namespace MasterThesis
 {
     /// <summary>
     /// Used for inspecting instrument schedule in Excel Layer.
+    /// See the "CheckInstrumentSchedule" sheet.
     /// </summary>
     public static class InstrumentFactoryHeaders
     {
@@ -26,6 +27,15 @@ namespace MasterThesis
         }
     }
 
+    /// <summary>
+    /// The instrumentfactory contains a number of derivative objects
+    /// and a map between names and the objects. This is used when we 
+    /// choose the instruments that makes up the calibration procedure
+    /// from the Excel-interface. This way, we can associate an identifier,
+    /// i.e. EURAB6E15Y for a 15Y fixed-for-floating swap referencing 6M EURIBOR,
+    /// with an actual C# object created from a string of parameter. The class
+    /// contains members to parse strings into objects.
+    /// </summary>
     public class InstrumentFactory
     {
         public IDictionary<string, Fra> Fras;
@@ -39,7 +49,16 @@ namespace MasterThesis
         public IDictionary<string, InstrumentFormatType> InstrumentFormatTypeMap;
         public IDictionary<string, string> IdentifierStringMap;
         public IDictionary<string, DateTime> CurvePointMap;
-        private double _notional = 1.0;
+
+        // Default values. We set notional to 1 so that our
+        // outright risk calculations tells us the notional
+        // at which we should trade a given instrument. 
+        // The fixedRate does not matter in the calibration, and will be updated
+        // to par ex post (could set it equal to the quote, but that would require a coupling
+        // between two classes). Default trade sign is "pay whatever" i.e. the fixedLeg or the spreadLeg.
+        private double _defaultNotional = 1.0;
+        private int _defaultTradeSign = 1;
+        private double _defaultFixedRate = 0.01;
 
         public InstrumentFactory(DateTime asOf)
         {
@@ -55,6 +74,13 @@ namespace MasterThesis
             AsOf = asOf;
         }
 
+        /// <summary>
+        /// Given a linear rate model, updates fixed rates of all 
+        /// instruments in factory to par. This is used when we calculate risk.
+        /// We want to hedge with liquid instruments, and trades are usually
+        /// initiated at par. 
+        /// </summary>
+        /// <param name="model"></param>
         public void UpdateAllInstrumentsToParGivenModel(LinearRateModel model)
         {
             foreach (string key in Fras.Keys)
@@ -73,6 +99,14 @@ namespace MasterThesis
                 OisSwaps[key].UpdateFixedRateToPar(model);
         }
 
+        /// <summary>
+        /// Values an instrument contained in the instrument factory using a 
+        /// linear rate model. Note that value here means calculating the value
+        /// par rate (which is how trades are quoted).
+        /// </summary>
+        /// <param name="model"></param>
+        /// <param name="instrument"></param>
+        /// <returns></returns>
         public double ValueInstrumentFromFactory(LinearRateModel model, string instrument)
         {
             QuoteType type = InstrumentTypeMap[instrument];
@@ -94,6 +128,14 @@ namespace MasterThesis
             }
         }
 
+        /// <summary>
+        /// Values an instrument contained in the instrument factory using a 
+        /// linear rate model. Note that value here means calculating the value
+        /// par rate (which is how trades are quoted).
+        /// </summary>
+        /// <param name="model"></param>
+        /// <param name="instrument"></param>
+        /// <returns></returns>
         public ADouble ValueInstrumentFromFactoryAD(LinearRateModel model, string instrument)
         {
             QuoteType type = InstrumentTypeMap[instrument];
@@ -114,6 +156,11 @@ namespace MasterThesis
                     throw new InvalidOperationException("Instrument QuoteType not supported...");
             }
         }
+
+        /* Functions below takes as input an array of strings in a given format
+         * and then parses the string to parameters to be used in the construction
+         * of instances of interest rate derivative objects.
+         */
 
         public void AddFwdStartingSwaps(string[] swapString)
         {
@@ -145,6 +192,12 @@ namespace MasterThesis
                 InterpretFraString(fraString[i]);
         }
 
+        /* Functions below are the actual functions used to 
+         * parse instrument strings into actual objects. We've created
+         * a method for each of the instrument classes we consider.
+         * Note that the string has to have a very specific format.
+         */
+
         private void InterpretTenorBasisSwapString(string instrumentString)
         {
             string identifier, type, currency, swapNoSpreadIdent, swapSpreadIdent;
@@ -158,13 +211,11 @@ namespace MasterThesis
             swapSpreadIdent = infoArray[3];
             swapNoSpreadIdent = infoArray[4];
 
-            int defaultTradeSign = 1;
-
             try
             {
                 IrSwap swapNoSpread = IrSwaps[swapNoSpreadIdent];
                 IrSwap swapSpread = IrSwaps[swapSpreadIdent];
-                BasisSwap swap = new BasisSwap(swapNoSpread, swapSpread, defaultTradeSign);
+                BasisSwap swap = new BasisSwap(swapNoSpread, swapSpread, _defaultTradeSign);
                 BasisSwaps[identifier] = swap;
                 DateTime curvePoint = swap.GetCurvePoint();
                 CurvePointMap[identifier] = swap.GetCurvePoint();
@@ -198,8 +249,6 @@ namespace MasterThesis
             floatFixingTenor = infoArray[9];
             fwdTenor = infoArray[15];
             dayCount = StrToEnum.DayCountConvert(infoArray[11]);
-            double fixedRate = 0.01;
-            int defaultTradeSign = 1;
 
             DateTime startDate, endDate;
 
@@ -209,7 +258,7 @@ namespace MasterThesis
                 endDate = DateHandling.AddTenorAdjust(startDate, floatPayFreq, dayRule);
 
                 curveTenor = StrToEnum.CurveTenorFromSimpleTenor(floatPayFreq);
-                Fra fra = new MasterThesis.Fra(AsOf, startDate, endDate, curveTenor, dayCount, dayRule, fixedRate, _notional, defaultTradeSign);
+                Fra fra = new MasterThesis.Fra(AsOf, startDate, endDate, curveTenor, dayCount, dayRule, _defaultFixedRate, _defaultNotional, _defaultTradeSign);
                 Futures[identifier] = new MasterThesis.Futures(fra, null);
                 CurvePointMap[identifier] = fra.GetCurvePoint();
                 InstrumentTypeMap[identifier] = QuoteType.FuturesRate;
@@ -242,23 +291,17 @@ namespace MasterThesis
             floatFixingTenor = infoArray[9];
             fwdTenor = infoArray[15];
             dayCount = StrToEnum.DayCountConvert(infoArray[11]);
-            double fixedRate = 0.01;
-            int defaultTradeSign = 1;
 
             if (type == "DEPOSIT")
             {
-                // handle deposits - only used for LIBOR discounting.
-                //curveTenor = StrToEnum.CurveTenorFromSimpleTenor(floatPayFreq);
-                //Fra fra = new MasterThesis.Fra(AsOf, fwdTenor, endTenor, curveTenor, dayCount, dayRule, fixedRate);
-                //Fras[identifier] = fra;
-                //InstrumentTypeMap[identifier] = QuoteType.Deposit;
+                //handle deposits - only used for LIBOR discounting. Not implemented
             }
             else
             {
                 // handle FRA
                 // Has to consider both FwdTenor and SettlementLag here..
                 curveTenor = StrToEnum.CurveTenorFromSimpleTenor(floatPayFreq);
-                Fra fra = new MasterThesis.Fra(AsOf, fwdTenor, endTenor, curveTenor, dayCount, dayRule, fixedRate, _notional, defaultTradeSign);
+                Fra fra = new MasterThesis.Fra(AsOf, fwdTenor, endTenor, curveTenor, dayCount, dayRule, _defaultFixedRate, _defaultNotional, _defaultTradeSign);
                 Fras[identifier] = fra;
                 CurvePointMap[identifier] = fra.GetCurvePoint();
                 InstrumentTypeMap[identifier] = QuoteType.FraRate;
@@ -306,9 +349,6 @@ namespace MasterThesis
             else
                 endDate = DateHandling.AddTenorAdjust(startDate, endTenor, dayRule);
 
-            double fixedRate = 0.01;
-            int defaultTradeSign = 1; // Pay fixed
-
             try
             {
                 if (referenceIndex == "EONIA")
@@ -319,7 +359,8 @@ namespace MasterThesis
                     // TEMPORARY
                     settlementLag = "0D";
                     dayRule = DayRule.F;
-                    OisSwap oisSwap = new OisSwap(AsOf, startTenor, endTenor, settlementLag, fixedDayCount, floatDayCount, dayRule, _notional, fixedRate, defaultTradeSign);
+
+                    OisSwap oisSwap = new OisSwap(AsOf, startTenor, endTenor, settlementLag, fixedDayCount, floatDayCount, dayRule, _defaultNotional, _defaultFixedRate, _defaultTradeSign);
                     OisSwaps[identifier] = oisSwap;
                     CurvePointMap[identifier] = oisSwap.GetCurvePoint();
                     InstrumentTypeMap[identifier] = QuoteType.OisRate;
@@ -330,13 +371,12 @@ namespace MasterThesis
                 else
                 {
                     // Handle non-OIS case
-                    IrSwap swap = new IrSwap(AsOf, startDate, endDate, fixedRate, fixedTenor, floatTenor, fixedDayCount, floatDayCount, dayRule, dayRule, _notional, defaultTradeSign, 0.0);
+                    IrSwap swap = new IrSwap(AsOf, startDate, endDate, _defaultFixedRate, fixedTenor, floatTenor, fixedDayCount, floatDayCount, dayRule, dayRule, _defaultNotional, _defaultTradeSign, 0.0);
                     IrSwaps[identifier] = swap;
                     CurvePointMap[identifier] = swap.GetCurvePoint();
                     InstrumentTypeMap[identifier] = QuoteType.ParSwapRate;
                     InstrumentFormatTypeMap[identifier] = InstrumentFormatType.Swaps;
                     IdentifierStringMap[identifier] = instrumentString;
-
                 }
             } 
             catch

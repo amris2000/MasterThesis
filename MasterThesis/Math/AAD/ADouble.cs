@@ -212,7 +212,7 @@ namespace MasterThesis
             ADouble temp = new ADouble();
             temp.Value = K - x.Value;
             temp.Count = AADTape._tapeCounter;
-            AADTape.AddEntry((int)Constants.AADType.ConsSub, x.Count, 0, 0, temp.Value, K);
+            AADTape.AddEntry((int)Constants.AADType.ConsSubInverse, x.Count, 0, 0, temp.Value, K);
             return temp;
         }
 

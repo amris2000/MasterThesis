@@ -32,7 +32,7 @@ namespace MasterThesis
         }
         public ADouble DiscFactor(DateTime asOf, DateTime date, DayCount dayCount, InterpMethod interpolation)
         {
-            return ADouble.Exp(-ZeroRate(date, interpolation) * DateHandling.Cvg(asOf, date, dayCount));
+            return ADouble.Exp(-1.0 * ZeroRate(date, interpolation) * DateHandling.Cvg(asOf, date, dayCount));
         }
         public ADouble FwdRate(DateTime asOf, DateTime startDate, DateTime endDate, DayRule dayRule, DayCount dayCount, InterpMethod interpolation)
         {
@@ -63,7 +63,7 @@ namespace MasterThesis
             for (int i = 0; i < schedule.AdjEndDates.Count; i++)
             {
                 discFactor = DiscFactor(schedule.AsOf, schedule.AdjEndDates[i], schedule.DayCount, interpolation);
-                output += schedule.Coverages[i] * discFactor;
+                output = output + schedule.Coverages[i] * discFactor;
             }
             return output;
         }
@@ -74,7 +74,7 @@ namespace MasterThesis
             ADouble oisAnnuity = OisAnnuityAD(swap.FloatSchedule, interpolation);
             double notional = swap.TradeSign*swap.Notional;
             ADouble oisRate = OisRateSimpleAD(swap, interpolation);
-            return notional * (swap.FixedRate - oisRate) * oisAnnuity;
+            return notional * (swap.FixedRate - 1.0*oisRate) * oisAnnuity;
         }
 
         /// <summary>
@@ -132,7 +132,7 @@ namespace MasterThesis
                 ADouble compoundedRate = OisCompoundedRateAD(asOf, startDate, endDate, swap.FloatSchedule.DayRule, swap.FloatSchedule.DayCount, interpolation);
                 ADouble discFactor = DiscFactor(asOf, endDate, swap.FixedSchedule.DayCount, interpolation);
                 ADouble coverage = DateHandling.Cvg(startDate, endDate, swap.FloatSchedule.DayCount);
-                floatContribution += discFactor * compoundedRate * coverage;
+                floatContribution = floatContribution + discFactor * compoundedRate * coverage;
             }
             return floatContribution / annuity;
         }

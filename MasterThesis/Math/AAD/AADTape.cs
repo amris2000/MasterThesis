@@ -235,7 +235,7 @@ namespace MasterThesis
                         Adjoint[Arg2[i]] += Value[Arg1[i]] * Adjoint[i];
                         break;
 
-                    case 5: // Division (Check that this is in fact correct...)
+                    case 5: // Division
                         Adjoint[Arg1[i]] += Adjoint[i] / Value[Arg2[i]];
                         Adjoint[Arg2[i]] -= Adjoint[i] * Value[Arg1[i]] / (Math.Pow(Value[Arg2[i]], 2));
                         break;
@@ -247,7 +247,7 @@ namespace MasterThesis
                     case 7: // Natural Logarithm
                         Adjoint[Arg1[i]] += Adjoint[i] / Value[Arg1[i]];
                         break;
-                    case 8:
+                    case 8: // Power
                         Adjoint[Arg1[i]] += Adjoint[i] * Consts[i] * Math.Pow(Value[Arg1[i]], Consts[i] - 1);
                         break;
 
@@ -258,10 +258,17 @@ namespace MasterThesis
                     case 12: // Const Divide
                         Adjoint[Arg1[i]] -= Adjoint[i] * Consts[i] / (Math.Pow(Value[Arg1[i]], 2));
                         break;
-                    case 13: // Const  add - Should perhabs do nothing here ... For efficiency (or not.. seems to give 0)
+                    case 13: // Const  add
                         Adjoint[Arg1[i]] += Adjoint[i];
                         break;
+
+                        // Const sub. This is needed since 
+                        //      f = x - K => f' = 1
+                        //      f = K - x => f' = -1 ... Learned this the hard way.
                     case 14: // Const sub
+                        Adjoint[Arg1[i]] += Adjoint[i];
+                        break;
+                    case 15: // Const sub (inverse)
                         Adjoint[Arg1[i]] -= Adjoint[i];
                         break;
                     default:

@@ -56,8 +56,6 @@ namespace MasterThesis
 
                 j = j - 1;
 
-                //j = j - 1;
-                //n = n - 1;
                 switch (method)
                 {
                     case InterpMethod.Constant:

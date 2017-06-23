@@ -38,10 +38,55 @@ namespace Sandbox
             Console.Write("");
         }
 
+        public static ADouble goalTest(ADouble x)
+        {
+            return ADouble.Pow(x - 5.0, 2.0);
+        }
+
+        public static ADouble goalTestInverse(ADouble x)
+        {
+            return ADouble.Pow(5.0 - x, 2.0);
+        }
+
         public static ADouble f(ADouble x1, ADouble x2)
         {
             return 2.0 * x1 * x2 + ADouble.Log(x1 - 4.0 * x2);
         }
+
+        public static void GoalFunctionTest()
+        {
+            ADouble x1 = 10.0;
+            List<ADouble> activeVariables = new List<ADouble>();
+            activeVariables.Add(x1);
+
+            // Initialize tape with x1 and x2
+            AADTape.Initialize(activeVariables.ToArray());
+
+            // Compute the function value of f. Tape is now running
+            ADouble result = goalTest(x1);
+
+            // Once complete, interpret the tape
+            AADTape.InterpretTape();
+            AADTape.PrintTape();
+
+            AADTape.ResetTape();
+            ///////////
+
+            activeVariables = new List<ADouble>();
+            activeVariables.Add(x1);
+
+            // Initialize tape with x1 and x2
+            AADTape.Initialize(activeVariables.ToArray());
+
+            // Compute the function value of f. Tape is now running
+            ADouble result2 = goalTestInverse(x1);
+
+            // Once complete, interpret the tape
+            AADTape.InterpretTape();
+            AADTape.PrintTape();
+
+        }
+
 
         public static void CalculateDerivativesByAd()
         {
@@ -101,7 +146,9 @@ namespace Sandbox
             //myMat[1, 1] = 4;
             //Matrix<double> inverse = myMat.Inverse();
 
-            CalculateDerivativesByAd();
+            //CalculateDerivativesByAd();
+            GoalFunctionTest();
+
 
             //MiscTests.TestIt();
             //MultiThreadingTests.SimpleTest();

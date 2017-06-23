@@ -23,6 +23,7 @@ namespace MasterThesis
             Pow = 8,
             ConsAdd = 13,
             ConsSub = 14,
+            ConsSubInverse = 15,
             ConsDiv = 12,
             ConsMul = 11
         };
