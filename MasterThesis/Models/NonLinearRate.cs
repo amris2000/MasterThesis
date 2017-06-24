@@ -6,6 +6,11 @@ using System.Threading.Tasks;
 
 namespace MasterThesis
 {
+    /* --- General information
+     * The contents of this file is not used within 
+     * the masters thesis.
+     */
+
     public interface INonLinearRateModel
     {
         void IncrementByTimeStep();
@@ -28,7 +33,6 @@ namespace MasterThesis
         public void SimulatePath() { }
         public void ValueEuropeanPayoff() { }
         public void IncrementUnderlying() { }
-
     }
 
     public class Heston
@@ -75,14 +79,14 @@ namespace MasterThesis
             double halfVar = (rate + vol * vol * 0.5) * mat;
             double d1 = (Math.Log(spot / strike) + halfVar) / std;
             double d2 = d1 - std;
-            return spot * Maths.NormalCdf(d1) - strike * Maths.NormalCdf(d2) * Math.Exp(-rate * mat);
+            return spot * MyMath.NormalCdf(d1) - strike * MyMath.NormalCdf(d2) * Math.Exp(-rate * mat);
         }
 
         public static double BachelierCallPrice(double spot, double lambda, double mat, double strike)
         {
             double d = (spot - strike) / (lambda * Math.Sqrt(mat));
             double NormalPdf = 1.0; // calculate this
-            return Maths.NormalCdf(d) * (spot - strike) + lambda * Math.Sqrt(mat) * NormalPdf;
+            return MyMath.NormalCdf(d) * (spot - strike) + lambda * Math.Sqrt(mat) * NormalPdf;
         }
     }
 
@@ -95,7 +99,7 @@ namespace MasterThesis
             double out1 = rand.NextDouble();
             double temp = rand.NextDouble();
             double out2 = A * out1 + B * temp;
-            return new double[2] { Maths.U2G(out1), Maths.U2G(out2) };
+            return new double[2] { MyMath.U2G(out1), MyMath.U2G(out2) };
         }
     }
 
@@ -199,8 +203,6 @@ namespace MasterThesis
 
             throw new InvalidOperationException("Bi-section algorithm did not converge in " + nMax + " iterations.");
         }
-
-
     }
 
     public class Freia
@@ -280,26 +282,4 @@ namespace MasterThesis
             return values.Average();
         }
     }
-
-    //public static class TestItFunctions
-    //{
-    //    public static void MakeSvModel(string modelName, double lambda, double level, double rho, double s0, double z0, double epsilon, double alpha, double backbone, double mix, double beta)
-    //    {
-    //        svModel model = new svModel(lambda, level, rho, s0, z0, epsilon, alpha, backbone, mix, beta);
-    //        TestStore.svModels[modelName] = model;
-    //    }
-
-    //    public static double impliedVol(string modelName, double impliedVol, double strike, double maturity)
-    //    {
-    //        svModel model = TestStore.svModels[modelName];
-    //        return model.ImpliedVol(impliedVol, strike);
-    //    }
-
-    //    public static double callValue(string modelName, double strike, double maturity, int paths, int timeSteps)
-    //    {
-    //        svModel model = TestStore.svModels[modelName];
-    //        return model.callValue(maturity, strike, paths, timeSteps);
-    //    }
-
-    //}
 }

@@ -7,10 +7,12 @@ using MasterThesis.Extensions;
 
 namespace MasterThesis
 {
-    /// <summary>
-    /// Create fwd curve representation from zeroCurve.
-    /// Works for both AD and non-AD curves.
-    /// </summary>
+    /* --- General information
+     * 
+     */
+
+    // Create fwd curve representation from zeroCurve.
+    // Works for both AD and non-AD curves.
     public class FwdCurveRepresentation
     {
         public List<DateTime> Dates;
@@ -114,7 +116,7 @@ namespace MasterThesis
 
         public double Interp(DateTime date, InterpMethod interpolation)
         {
-            return Maths.InterpolateCurve(Dates, date, Values, interpolation);
+            return MyMath.InterpolateCurve(Dates, date, Values, interpolation);
         }
         public double ZeroRate(DateTime maturityDate, InterpMethod interpolation)
         {

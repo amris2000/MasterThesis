@@ -6,10 +6,15 @@ using System.Threading.Tasks;
 
 namespace MasterThesis
 {
-    public static class Constants
+    /* --- General information
+    * Contains utility and definitions for the
+    * AAD implementation.
+    */
+
+    public static class AADUtility
     {
-        public static uint TAPE_SIZE = 10000000;
-        public enum AADType
+        public static uint MAX_TAPE_SIZE = 10000000;
+        public enum AADCalculationType
         {
             Undef = -1,
             Const = 0,
@@ -27,7 +32,6 @@ namespace MasterThesis
             ConsDiv = 12,
             ConsMul = 11
         };
-
         public static string GetTypeName(int n)
         {
             switch (n)

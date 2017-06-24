@@ -6,12 +6,21 @@ using System.Threading.Tasks;
 
 namespace MasterThesis
 {
+    /* --- General information
+     * This file contains the implementation of the automatic
+     * differention tape discussed in the thesis. Also, a class "AADInputVariable"
+     * has been implemented, which is an abstraction of the "active variables" in the
+     * AD calculation. This class contains information on where the actual variable
+     * is stored in the tape which is used to obtain the gradient from the tape
+     * once this has been interpreted.
+     */
+
     public class AADInputVariable
     {
-        public double Input;
+        public double Input { get; private set; }
         private double _derivative;
-        public int PositionInTape;
-        public string Identifier;
+        public int PositionInTape { get; private set; }
+        public string Identifier { get; private set; }
 
         public AADInputVariable(double input, int positionInTape, string identifier = null)
         {
@@ -33,63 +42,64 @@ namespace MasterThesis
         {
             return _derivative;
         }
-
     }
 
     public static class AADTape
     {
-        // Could consider making these privat.
-        // Only way to obtain derivatives is through
-        // the result set.
+        // Obtainable from outside the class
         public static int _tapeCounter { get; private set; }
-        public static int[] Arg1 = new int[Constants.TAPE_SIZE];
-        public static int[] Arg2 = new int[Constants.TAPE_SIZE];
-        public static int[] OperationIdentifier = new int[Constants.TAPE_SIZE];
-        public static double[] Value = new double[Constants.TAPE_SIZE];
-        public static double[] Adjoint = new double[Constants.TAPE_SIZE];
-        public static double[] Consts = new double[Constants.TAPE_SIZE];
-        public static bool IsRunning { get; private set; }
-        public static bool TapeHasBeenInterpreted { get; private set; }
+        public static double[] Adjoint { get; private set; }
+
+        private static int[] _argument1;
+        private static int[] _argument2;
+        private static int[] _operationIdentifier;
+        private static double[] _value;
+        private static double[] _constants;
+        private static bool _tapeIsRunning;
+        private static bool _tapeHasBeenInterpreted;
 
         // Identified by position in Arg1
         private static IDictionary<int, AADInputVariable> _AADResultSets = new Dictionary<int, AADInputVariable>();
 
+        // Static constructor.
+        static AADTape()
+        {
+            // Initialize once application is started
+            _argument1 = new int[AADUtility.MAX_TAPE_SIZE];
+            _argument2 = new int[AADUtility.MAX_TAPE_SIZE];
+            _operationIdentifier = new int[AADUtility.MAX_TAPE_SIZE];
+            _value = new double[AADUtility.MAX_TAPE_SIZE];
+            Adjoint = new double[AADUtility.MAX_TAPE_SIZE];
+            _constants = new double[AADUtility.MAX_TAPE_SIZE];
+
+
+            _tapeIsRunning = false;
+            _tapeHasBeenInterpreted = false;
+            _tapeCounter = 0;
+        }
+
+        #region Related to initialization and reset of the tape
         public static void ResetTape()
         {
             for (int i = _tapeCounter - 1; i >= 0; i--)
                 Adjoint[i] = 0;
 
             _tapeCounter = 0;
-            IsRunning = false;
-            TapeHasBeenInterpreted = false;
+            _tapeIsRunning = false;
+            _tapeHasBeenInterpreted = false;
             _AADResultSets.Clear();
-        }
-
-        // Static constructor.
-        static AADTape()
-        {
-            IsRunning = false;
-            TapeHasBeenInterpreted = false;
-            _tapeCounter = 0;
         }
 
         public static void Initialize()
         {
-            //if (IsRunning)
-            //    throw new InvalidOperationException("Cannot initialize. Tape is already running.");
-
-            IsRunning = true;
-            TapeHasBeenInterpreted = false;
+            _tapeIsRunning = true;
+            _tapeHasBeenInterpreted = false;
         }
 
-        //public static void Initialize(List<Ref<ADouble>> inputs, string[] identifiers = null)
         public static void Initialize(ADouble[] inputs, string[] identifiers = null)
         {
-            //if (IsRunning)
-            //    throw new InvalidOperationException("Cannot initialize. Tape is already running.");
-
-            IsRunning = true;
-            TapeHasBeenInterpreted = false;
+            _tapeIsRunning = true;
+            _tapeHasBeenInterpreted = false;
 
             int inputCount = 0;
 
@@ -112,25 +122,15 @@ namespace MasterThesis
             }
         }
 
-        //// Overloads of initialize for convenience.
-        //public static void Initialize(List<ADouble> inputs, List<string> identifiers = null)
-        //{
-        //    Initialize(inputs.ToArray(), identifiers.ToArray());
-        //}
-
         public static void Initialize(List<ADouble> inputs, string[] identifiers)
         {
             Initialize(inputs.ToArray(), identifiers);
         }
-
-        //public static void Initialize(ADouble[] inputs, List<string> identifiers = null)
-        //{
-        //    Initialize(inputs, identifiers.ToArray());
-        //}
+        #endregion
 
         public static void SetGradient()
         {
-            if (TapeHasBeenInterpreted == false)
+            if (_tapeHasBeenInterpreted == false)
                 throw new InvalidOperationException("Tape has not been intepreted. Cannot extract derivatives.");
 
             int inputCount = _AADResultSets.Count;
@@ -153,6 +153,138 @@ namespace MasterThesis
 
             return output.ToArray();
         }
+        
+        private static void IncrementTape()
+        {
+            _tapeCounter += 1;
+        }
+
+        // Adds entry to the tape. This method is called whenever an AD operation. See the "ADouble" class
+        public static void AddEntry(int operationIdentifier, int arg1Index, int arg2Index, double adjoint, double value, double? constant = null)
+        {
+            // Ensures that we can run AD stuff without filling up the memory.
+            // The tape has to be initialized first
+            if (_tapeIsRunning)
+            {
+                _argument1[_tapeCounter] = arg1Index;
+                _argument2[_tapeCounter] = arg2Index;
+                _operationIdentifier[_tapeCounter] = operationIdentifier;
+                _value[_tapeCounter] = value;
+                if (constant.HasValue)
+                    _constants[_tapeCounter] = (double)constant;
+                IncrementTape();
+            }
+        }
+
+        public static void InterpretTape()
+        {
+            // Once the function has been calculated
+            // and the tape recorded, run this function
+            // to propagate the adjoints backwards.
+            // the switch implements how the adjoint is treated
+            // for each of the operators
+
+            if (_tapeCounter == 0)
+                throw new InvalidOperationException("Tape is empty. Nothing to interpret.");
+
+            // Seed the tape by setting final adjoint to 1
+            Adjoint[_tapeCounter - 1] = 1;
+
+            // Interpret tape by backwards propagation
+            for (int i = _tapeCounter - 1; i >= 1; i--)
+            {
+                switch (_operationIdentifier[i])
+                {
+                    case 1: // Assign
+                        Adjoint[_argument1[i]] += Adjoint[i];
+                        break;
+
+                    // --- Arithmetic
+                    case 2: // Add
+                        Adjoint[_argument1[i]] += Adjoint[i];
+                        Adjoint[_argument2[i]] += Adjoint[i];
+                        break;
+                    case 3: // Subtract
+                        Adjoint[_argument1[i]] += Adjoint[i];
+                        Adjoint[_argument2[i]] -= Adjoint[i];
+                        break;
+                    case 4: // Multiply
+                        Adjoint[_argument1[i]] += _value[_argument2[i]] * Adjoint[i];
+                        Adjoint[_argument2[i]] += _value[_argument1[i]] * Adjoint[i];
+                        break;
+
+                    case 5: // Division
+                        Adjoint[_argument1[i]] += Adjoint[i] / _value[_argument2[i]];
+                        Adjoint[_argument2[i]] -= Adjoint[i] * _value[_argument1[i]] / (Math.Pow(_value[_argument2[i]], 2));
+                        break;
+
+                    // -- Unary operations
+                    case 6: // Exponentiate
+                        Adjoint[_argument1[i]] += Adjoint[i] * _value[i]; // Value[i] = Exp(x). Could also say Math.Exp(Value[Arg1[i]])
+                        break;
+                    case 7: // Natural Logarithm
+                        Adjoint[_argument1[i]] += Adjoint[i] / _value[_argument1[i]];
+                        break;
+                    case 8: // Power
+                        Adjoint[_argument1[i]] += Adjoint[i] * _constants[i] * Math.Pow(_value[_argument1[i]], _constants[i] - 1);
+                        break;
+
+                    // --- Arithmetic with constants
+                    case 11: // Const multiply
+                        Adjoint[_argument1[i]] += Adjoint[i] * _constants[i];
+                        break;
+                    case 12: // Const Divide
+                        Adjoint[_argument1[i]] -= Adjoint[i] * _constants[i] / (Math.Pow(_value[_argument1[i]], 2));
+                        break;
+                    case 13: // Const  add
+                        Adjoint[_argument1[i]] += Adjoint[i];
+                        break;
+
+                        // Const sub. This is needed since 
+                        //      f = x - K => f' = 1
+                        //      f = K - x => f' = -1 ... Learned this the hard way.
+                    case 14: // Const sub
+                        Adjoint[_argument1[i]] += Adjoint[i];
+                        break;
+                    case 15: // Const sub (inverse)
+                        Adjoint[_argument1[i]] -= Adjoint[i];
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            _tapeHasBeenInterpreted = true;
+            _tapeIsRunning = false;
+            SetGradient();
+        }
+
+        #region Print functionality for console
+        public static void PrintTape()
+        {
+            Console.WriteLine("");
+            Console.WriteLine("----------- Printing AAD tape");
+            List<string[]> Out = new List<string[]>();
+
+            Out.Add(new string[] { "    ", "#", "OPER", "ARG1", "ARG2", "VAL", "ADJ", "CONS" });
+            for (int i = 0; i < _tapeCounter; i++)
+            {
+
+                Out.Add(new string[] {
+                    "     ",
+                    i.ToString(),
+                    AADUtility.GetTypeName(AADTape._operationIdentifier[i]),
+                    AADTape._argument1[i].ToString(),
+                    AADTape._argument2[i].ToString(),
+                    Math.Round(AADTape._value[i], 3).ToString(),
+                    Math.Round(AADTape.Adjoint[i], 3).ToString(),
+                    Math.Round(AADTape._constants[i],3).ToString()
+                    });
+            }
+
+            var Output = PrintUtility.PrintListNicely(Out, 5);
+            Console.WriteLine(Output);
+        }
 
         public static void PrintResultSet()
         {
@@ -170,141 +302,6 @@ namespace MasterThesis
             var actualOutput = PrintUtility.PrintListNicely(output);
             Console.WriteLine(actualOutput);
         }
-        
-        // Tape can only be incremented internally.
-        private static void IncrementTape()
-        {
-            _tapeCounter += 1;
-        }
-
-        // Adds entry to the tape. This method is called whenever an AD operation 
-        // is being made (see ADouble class)
-        public static void AddEntry(int operationIdentifier, int arg1Index, int arg2Index, double adjoint, double value, double? constant = null)
-        {
-            // Ensures that we can run AD stuff without filling up the memory.
-            // The tape has to be initialized first
-            if (IsRunning)
-            {
-                Arg1[_tapeCounter] = arg1Index;
-                Arg2[_tapeCounter] = arg2Index;
-                OperationIdentifier[_tapeCounter] = operationIdentifier;
-                Value[_tapeCounter] = value;
-                if (constant.HasValue)
-                    Consts[_tapeCounter] = (double)constant;
-                IncrementTape();
-            }
-        }
-
-        // Once the function has been calculated
-        // and the tape recorded, run this function
-        // to propagate the adjoints backwards.
-        // the switch implements how the adjoint is treated
-        // for each of the operators
-        public static void InterpretTape()
-        {
-            // Consider if exception should be thrown if
-            // tape is not running (has to be running to interpret)
-            // or the other way around. Nice to have
-
-            if (_tapeCounter == 0)
-                throw new InvalidOperationException("Tape is empty. Nothing to interpret.");
-
-            // Set the last adjoint equal to 1
-            Adjoint[_tapeCounter - 1] = 1;
-
-            // Interpret tape by backwards propagation
-            for (int i = _tapeCounter - 1; i >= 1; i--)
-            {
-                switch (OperationIdentifier[i])
-                {
-                    case 1: // Assign
-                        Adjoint[Arg1[i]] += Adjoint[i];
-                        break;
-
-                    // -- ELEMENTARY OPERATIONS
-                    case 2: // Add
-                        Adjoint[Arg1[i]] += Adjoint[i];
-                        Adjoint[Arg2[i]] += Adjoint[i];
-                        break;
-                    case 3: // Subtract
-                        Adjoint[Arg1[i]] += Adjoint[i];
-                        Adjoint[Arg2[i]] -= Adjoint[i];
-                        break;
-                    case 4: // Multiply
-                        Adjoint[Arg1[i]] += Value[Arg2[i]] * Adjoint[i];
-                        Adjoint[Arg2[i]] += Value[Arg1[i]] * Adjoint[i];
-                        break;
-
-                    case 5: // Division
-                        Adjoint[Arg1[i]] += Adjoint[i] / Value[Arg2[i]];
-                        Adjoint[Arg2[i]] -= Adjoint[i] * Value[Arg1[i]] / (Math.Pow(Value[Arg2[i]], 2));
-                        break;
-
-                    // -- UNARY OPERATORS
-                    case 6: // Exponentiate
-                        Adjoint[Arg1[i]] += Adjoint[i] * Value[i]; // Value[i] = Exp(x). Could also say Math.Exp(Value[Arg1[i]])
-                        break;
-                    case 7: // Natural Logarithm
-                        Adjoint[Arg1[i]] += Adjoint[i] / Value[Arg1[i]];
-                        break;
-                    case 8: // Power
-                        Adjoint[Arg1[i]] += Adjoint[i] * Consts[i] * Math.Pow(Value[Arg1[i]], Consts[i] - 1);
-                        break;
-
-                    // -- CONSTANT OPERATORS
-                    case 11: // Const multiply
-                        Adjoint[Arg1[i]] += Adjoint[i] * Consts[i];
-                        break;
-                    case 12: // Const Divide
-                        Adjoint[Arg1[i]] -= Adjoint[i] * Consts[i] / (Math.Pow(Value[Arg1[i]], 2));
-                        break;
-                    case 13: // Const  add
-                        Adjoint[Arg1[i]] += Adjoint[i];
-                        break;
-
-                        // Const sub. This is needed since 
-                        //      f = x - K => f' = 1
-                        //      f = K - x => f' = -1 ... Learned this the hard way.
-                    case 14: // Const sub
-                        Adjoint[Arg1[i]] += Adjoint[i];
-                        break;
-                    case 15: // Const sub (inverse)
-                        Adjoint[Arg1[i]] -= Adjoint[i];
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            TapeHasBeenInterpreted = true;
-            IsRunning = false;
-            SetGradient();
-        }
-
-        public static void PrintTape()
-        {
-            Console.WriteLine("");
-            Console.WriteLine("----------- Printing AAD tape");
-            List<string[]> Out = new List<string[]>();
-
-            Out.Add(new string[] { "    ", "#", "OPER", "ARG1", "ARG2", "VAL", "ADJ", "CONS" });
-            for (int i = 0; i < _tapeCounter; i++)
-            {
-
-                Out.Add(new string[] {
-                    "     ",
-                    i.ToString(),
-                    Constants.GetTypeName(AADTape.OperationIdentifier[i]),
-                    AADTape.Arg1[i].ToString(),
-                    AADTape.Arg2[i].ToString(),
-                    Math.Round(AADTape.Value[i], 3).ToString(),
-                    Math.Round(AADTape.Adjoint[i], 3).ToString(),
-                    Math.Round(AADTape.Consts[i],3).ToString()
-                    });
-            }
-
-            var Output = PrintUtility.PrintListNicely(Out, 5);
-            Console.WriteLine(Output);
-        }
+        #endregion
     }
 }

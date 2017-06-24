@@ -7,24 +7,35 @@ using System.IO;
 
 namespace MasterThesis
 {
-    /// <summary>
-    /// Non-AAD part of the LinearRateModel class
-    /// </summary>
+    /* --- General information
+     * This file contains the part of the linear rate model class
+     * that works with doubles. It contains functions to value and risk
+     * linear rate instruments and hold curves and an interpolation method
+     * as members.
+     * 
+     * Because of time-constraints, a compromise had to made which meant that
+     * a seperate implementataion of the linear rate model had to be created
+     * to work proberly with automatic differention. Ideally, the ADouble class
+     * should be the only number class used throughout the library, but there
+     * was not enough time to ensure to rewrite the whole library in terms
+     * of the "ADouble" class.
+     * 
+     */
+
     public partial class LinearRateModel
     {
         public Curve DiscCurve;
         public FwdCurveContainer FwdCurveCollection;
         public InterpMethod Interpolation;
 
-        public LinearRateModel(Curve discCurve, FwdCurveContainer fwdCurveCollection, InterpMethod interpolation = InterpMethod.Linear)
+        public LinearRateModel(Curve discCurve, FwdCurveContainer fwdCurveCollection, InterpMethod interpolation)
         {
             Interpolation = interpolation;
             DiscCurve = discCurve;
             FwdCurveCollection = fwdCurveCollection;
         }
 
-        // --------- RELATED TO BUMP-AND-RUN RISK -------------
-
+        // --- Related to Bump-and-run risk calculations
         private LinearRateModel BumpFwdCurveAndReturn(CurveTenor fwdCurve, int curvePoint, double bump = 0.0001)
         {
             Curve newCurve = FwdCurveCollection.GetCurve(fwdCurve).Copy();
@@ -51,14 +62,7 @@ namespace MasterThesis
             return new LinearRateModel(newDiscCurve, FwdCurveCollection.Copy(), Interpolation);
         } 
 
-        /// <summary>
-        /// Risk value of a basis point. 
-        /// </summary>
-        /// <param name="product"></param>
-        /// <param name="fwdCurve"></param>
-        /// <param name="curvePoint"></param>
-        /// <param name="bump"></param>
-        /// <returns></returns>
+        // Calculate BnR forward risk on a linear rate instrument
         public double BumpAndRunFwdRisk(LinearRateInstrument product, CurveTenor fwdCurve, int curvePoint, double bump = 0.0001)
         {
             double valueNoBump = ValueLinearRateProduct(product);
@@ -67,13 +71,7 @@ namespace MasterThesis
             return (valueBump - valueNoBump)/bump*0.0001; 
         }
 
-        /// <summary>
-        /// Risk value of a  basis point.
-        /// </summary>
-        /// <param name="product"></param>
-        /// <param name="curvePoint"></param>
-        /// <param name="bump"></param>
-        /// <returns></returns>
+        // Calcualate BnR disc risk on a linear rate instrument 
         public double BumpAndRunDisc(LinearRateInstrument product, int curvePoint, double bump = 0.0001)
         {
             double valueNoBump = ValueLinearRateProduct(product);
@@ -128,8 +126,7 @@ namespace MasterThesis
             return output;
         }
 
-        // -------- RELATED TO VALUING INSTRUMENTS -------------
-
+        // --- Related to valuing linear rate instrument (non-AD)
         public double ValueLinearRateProduct(LinearRateInstrument product)
         {
             switch (product.GetInstrumentType())
@@ -149,17 +146,6 @@ namespace MasterThesis
             }
         }
 
-        /// <summary>
-        /// Calculate the value of an annuity
-        /// </summary>
-        /// <param name="asOf"></param>
-        /// <param name="startDate"></param>
-        /// <param name="endDate"></param>
-        /// <param name="tenor"></param>
-        /// <param name="dayCount"></param>
-        /// <param name="dayRule"></param>
-        /// <param name="interpolation"></param>
-        /// <returns></returns>
         public double Annuity(DateTime asOf, DateTime startDate, DateTime endDate, CurveTenor tenor, DayCount dayCount, DayRule dayRule, InterpMethod interpolation)
         {
             SwapSchedule annuitySchedule = new SwapSchedule(asOf, startDate, endDate, dayCount, dayRule, tenor);
@@ -171,22 +157,12 @@ namespace MasterThesis
             return result;
         }
 
-        /// <summary>
-        /// Calculate value from annuity from a swap schedule
-        /// </summary>
-        /// <param name="Schedule"></param>
-        /// <param name="Method"></param>
-        /// <returns></returns>
         public double Annuity(SwapSchedule Schedule, InterpMethod Method)
         {
             return Annuity(Schedule.AsOf, Schedule.StartDate, Schedule.EndDate, Schedule.Frequency, Schedule.DayCount, Schedule.DayRule, Method);
         }
 
-        /// <summary>
-        /// Calculate the par fra rate (used for curve calibration)
-        /// </summary>
-        /// <param name="fra"></param>
-        /// <returns></returns>
+        // Fras
         public double ParFraRate(Fra fra)
         {
             Curve fwdCurve = this.FwdCurveCollection.GetCurve(fra.ReferenceIndex);
@@ -194,11 +170,6 @@ namespace MasterThesis
             return rate;
         }
 
-        /// <summary>
-        /// NPV of a FRA 
-        /// </summary>
-        /// <param name="fra"></param>
-        /// <returns></returns>
         public double FraNpv(Fra fra)
         {
             double fraRate = FwdCurveCollection.GetCurve(fra.ReferenceIndex).FwdRate(fra.AsOf, fra.StartDate, fra.EndDate, fra.DayRule, fra.DayCount, Interpolation);
@@ -208,12 +179,7 @@ namespace MasterThesis
             return fra.TradeSign * notional * discFactor * coverage * (fra.FixedRate - fraRate);
         }
 
-        /// <summary>
-        /// Calculate par futures rate (used for curve calibration). Here, we value
-        /// futures as the par value of a fra + a convexity adjustment.
-        /// </summary>
-        /// <param name="future"></param>
-        /// <returns></returns>
+        // Futures
         public double ParFutureRate(Futures future)
         {
             return ParFraRate(future.FraSameSpec) + future.Convexity;
@@ -229,6 +195,7 @@ namespace MasterThesis
             return notional * (1 - futuresRate);
         }
 
+        // Swap legs
         public double ValueFloatLeg(FloatLeg floatLeg)
         {
             double floatValue = 0.0;
@@ -271,6 +238,7 @@ namespace MasterThesis
             return FixedLeg.FixedRate * FixedAnnuity * FixedLeg.Notional;
         }
 
+        // Interest rate swap
         public double IrSwapNpv(IrSwap swap)
         {
             return swap.TradeSign*(ValueFixedLeg(swap.FixedLeg)- ValueFloatLeg(swap.FloatLeg));
@@ -283,6 +251,7 @@ namespace MasterThesis
             return FloatPv / FixedAnnuity;
         }
 
+        // Basis swaps
         public double BasisSwapNpv(BasisSwap swap)
         {
             return swap.TradeSign*(ValueFloatLeg(swap.FloatLegNoSpread) - ValueFloatLeg(swap.FloatLegSpread));
@@ -296,6 +265,7 @@ namespace MasterThesis
             return (PvSpread - PvNoSpread) / AnnuityNoSpread;
         }
 
+        // Ois swaps (more functions are located under the Curve-classes)
         public double OisRateSimple(OisSwap swap)
         {
             return DiscCurve.OisRateSimple(swap, Interpolation);

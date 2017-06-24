@@ -147,9 +147,9 @@ namespace MasterThesis.ExcelInterface
 
     public static class CalibrationFunctions
     {
-        public static void CalibrationSpec_Make(string baseName, double precision, double scaling, double diffStep, InterpMethod interpolation, int maxIterations, double startingValues, int bfgs_m, bool useAd, int[] calibrationOrder = null)
+        public static void CalibrationSpec_Make(string baseName, double precision, double scaling, double diffStep, InterpMethod interpolation, int maxIterations, double startingValues, int bfgs_m, bool useAd, bool inheritDiscSize, double stepSizeOfInheritance, int[] calibrationOrder = null)
         {
-            CalibrationSpec spec = new CalibrationSpec(precision, scaling, diffStep, interpolation, maxIterations, startingValues, bfgs_m, useAd, calibrationOrder);
+            CalibrationSpec spec = new CalibrationSpec(precision, scaling, diffStep, interpolation, maxIterations, startingValues, bfgs_m, useAd, inheritDiscSize, stepSizeOfInheritance, calibrationOrder);
             ObjectMap.CalibrationSettings[baseName] = spec;
         }
 

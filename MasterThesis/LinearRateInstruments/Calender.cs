@@ -8,6 +8,15 @@ using MasterThesis;
 
 namespace MasterThesis
 {
+    /* --- General information
+     * This file contains abstractions of schedules for linear rate products.
+     * Ideally, we should only have a single schedule class that works for all 
+     * products. Here, we settle for an option where fixed-for-floating and tenor basis swaps
+     * use one class and OISs use another class. This choice has been made to avoid
+     * the extra overhang of constructing proper scheduling functionality for stubs.
+     * 
+     */
+
     public abstract class Schedule
     {
         public List<DateTime> UnAdjStartDates { get; protected set; }
@@ -23,7 +32,6 @@ namespace MasterThesis
         public DayRule DayRule { get; protected set; }
         public uint Periods { get; protected set; }
 
-        // Move these to some other general class
         public static double ConvertTenorToYearFraction(string tenor)
         {
             double multiplier = 0.0;
@@ -122,11 +130,13 @@ namespace MasterThesis
         }
     }
 
-    // Ideally, this should be a derived class on SwapSchedule, since an
-    // OIS schedule (in this context) is either a short period, or 1Y schedule with 
-    // a stub in the end. Nice to have
     public class OisSchedule : Schedule
     {
+        // Ideally, this should be a derived class on SwapSchedule, since an
+        // OIS schedule (in this context) is either a short period, or 1Y schedule with 
+        // a stub in the end. For our purpose, we just define a derived the class
+        // that only works for our purpose (i.e. it's not general.)
+
         public OisSchedule(DateTime asOf, string startTenor, string endTenor, string settlementLag, DayCount dayCount, DayRule dayRule)
             : base(asOf, startTenor, endTenor, dayCount, dayRule)
         {

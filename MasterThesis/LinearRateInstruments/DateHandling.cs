@@ -8,9 +8,14 @@ using MasterThesis;
 
 namespace MasterThesis
 {
-    /// <summary>
-    /// Holds functionality to handle date rolling and parsing tenors to dates.
-    /// </summary>
+    /* --- General information
+     * This file contains the general date handling functionality.
+     * Placeholder methods has been created for holiday calender functionality
+     * but this has not been implemented. The file contains methods to
+     * add tenors to dates and methods to adjust dates using appropiate day rules
+     * if the rolled dates falls on non-business days (here defined as weekends.)
+     * */
+
     public static class DateHandling
     {
         public static bool StrIsConvertableToDate(string str)
@@ -75,11 +80,6 @@ namespace MasterThesis
             return tenorNumber.ToString() + tenorLetter;
         }
 
-        /// <summary>
-        /// Takes as input a tenor of, say, the form "3M" and returns the tenor enum.
-        /// </summary>
-        /// <param name="tenor"></param>
-        /// <returns></returns>
         public static Tenor GetTenorFromTenor(string tenor)
         {
             return StrToEnum.ConvertTenorLetter(tenor.Right(1));
@@ -95,11 +95,6 @@ namespace MasterThesis
             return Convert.ToInt16(tenor.Replace(tenor.Right(1), ""));
         }
 
-        /// <summary>
-        /// Checks if the day is a business day
-        /// </summary>
-        /// <param name="date"></param>
-        /// <returns></returns>
         public static bool IsBusinessDay(DateTime date)
         {
             if (DateIsOnAWeekend(date))
@@ -112,12 +107,7 @@ namespace MasterThesis
                 return true;
         }
 
-        /// <summary>
-        /// Could make a look up in a holiday calender here.
-        /// Just returning false for now.
-        /// </summary>
-        /// <param name="date"></param>
-        /// <returns></returns>
+        // Could make a look up in a holiday calender here. Just returning false for now.
         public static bool DateIsAHoliday(DateTime date)
         {
             return false;
@@ -131,7 +121,7 @@ namespace MasterThesis
                 return false;
         }
 
-        // Does only work if non-business days are weekends only.
+        // Does only work if non-business days are weekends only (used for ON rate compounding)
         public static DateTime AddBusinessDay(DateTime date)
         {
             if (DateIsOnAWeekend(date) || date.DayOfWeek == DayOfWeek.Friday)
@@ -140,7 +130,7 @@ namespace MasterThesis
                 return date.AddDays(1);
         }
 
-        // Does only work if non-business days are weekends only.
+        // Does only work if non-business days are weekends only (used for ON rate compounding)
         public static DateTime SubtractBusinessDay(DateTime date)
         {
             if (date.DayOfWeek == DayOfWeek.Monday)
@@ -263,6 +253,4 @@ namespace MasterThesis
             return Coverage;
         }
     }
-
-
 }

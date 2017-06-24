@@ -8,9 +8,21 @@ using System.IO;
 
 namespace MasterThesis
 {
-    /// <summary>
-    /// AAD part of the LinearRateModel class
-    /// </summary>
+    /* --- General information
+     * This file contains the part of the linear rate model class
+     * that works with automatic differentions. It contains functions to value and risk
+     * linear rate instruments and hold curves and an interpolation method
+     * as members.
+     * 
+     * Because of time-constraints, a compromise had to made which meant that
+     * a seperate implementataion of the linear rate model had to be created
+     * to work proberly with automatic differention. Ideally, the ADouble class
+     * should be the only number class used throughout the library, but there
+     * was not enough time to ensure to rewrite the whole library in terms
+     * of the "ADouble" class.
+     * 
+     */
+
     public partial class LinearRateModel
     {
         public Curve_AD ADDiscCurve;
@@ -24,27 +36,7 @@ namespace MasterThesis
             Interpolation = interpolation;
         }
 
-        public ADouble ValueLinearRateProductAD(LinearRateInstrument product)
-        {
-            switch (product.GetInstrumentType())
-            {
-                case Instrument.IrSwap:
-                    return IrSwapNpvAD((IrSwap)product);
-                case Instrument.Fra:
-                    return FraNpvAD((Fra)product);
-                case Instrument.Futures:
-                    return FuturesNpvAD((Futures)product);
-                case Instrument.OisSwap:
-                    return ADDiscCurve.OisSwapNpvAD((OisSwap)product, Interpolation);
-                case Instrument.BasisSwap:
-                    return BasisSwapNpvAD((BasisSwap)product);
-                default:
-                    throw new InvalidOperationException("product instrument type is not valid.");
-            }
-        }
-
-        // --------- RELATED TO AD RISK 
-
+        // --- Related to risking linear instruments with automatic differentiation 
         public string[] CreateIdentArray()
         {
             List<string> identifiers = new List<string>();
@@ -171,6 +163,8 @@ namespace MasterThesis
             return output.ToArray();
         }
 
+        // The functionality below takes the original "double" curves
+        // and converts them to AD curves.
         public void SetAdCurvesFromOrdinaryCurve()
         {
             List<ADouble> discValues = new List<ADouble>();
@@ -202,17 +196,26 @@ namespace MasterThesis
             ADDiscCurve = new MasterThesis.Curve_AD(DiscCurve.Dates, discValues);
         }
 
-        /// <summary>
-        /// Calculate the value of an annuity
-        /// </summary>
-        /// <param name="asOf"></param>
-        /// <param name="startDate"></param>
-        /// <param name="endDate"></param>
-        /// <param name="tenor"></param>
-        /// <param name="dayCount"></param>
-        /// <param name="dayRule"></param>
-        /// <param name="interpolation"></param>
-        /// <returns></returns>
+        // --- Related to pricing linear rate instruments using automatic differentiation
+        public ADouble ValueLinearRateProductAD(LinearRateInstrument product)
+        {
+            switch (product.GetInstrumentType())
+            {
+                case Instrument.IrSwap:
+                    return IrSwapNpvAD((IrSwap)product);
+                case Instrument.Fra:
+                    return FraNpvAD((Fra)product);
+                case Instrument.Futures:
+                    return FuturesNpvAD((Futures)product);
+                case Instrument.OisSwap:
+                    return ADDiscCurve.OisSwapNpvAD((OisSwap)product, Interpolation);
+                case Instrument.BasisSwap:
+                    return BasisSwapNpvAD((BasisSwap)product);
+                default:
+                    throw new InvalidOperationException("product instrument type is not valid.");
+            }
+        }
+
         public ADouble AnnuityAD(DateTime asOf, DateTime startDate, DateTime endDate, CurveTenor tenor, DayCount dayCount, DayRule dayRule, InterpMethod interpolation)
         {
             SwapSchedule annuitySchedule = new SwapSchedule(asOf, startDate, endDate, dayCount, dayRule, tenor);
@@ -224,22 +227,12 @@ namespace MasterThesis
             return result;
         }
 
-        /// <summary>
-        /// Calculate value from annuity from a swap schedule
-        /// </summary>
-        /// <param name="Schedule"></param>
-        /// <param name="Method"></param>
-        /// <returns></returns>
         public ADouble AnnuityAD(SwapSchedule Schedule, InterpMethod Method)
         {
             return AnnuityAD(Schedule.AsOf, Schedule.StartDate, Schedule.EndDate, Schedule.Frequency, Schedule.DayCount, Schedule.DayRule, Method);
         }
 
-        /// <summary>
-        /// Calculate the par fra rate (used for curve calibration)
-        /// </summary>
-        /// <param name="fra"></param>
-        /// <returns></returns>
+        // Fras
         public ADouble ParFraRateAD(Fra fra)
         {
             Curve_AD fwdCurve = this.ADFwdCurveCollection.GetCurve(fra.ReferenceIndex);
@@ -247,11 +240,6 @@ namespace MasterThesis
             return rate;
         }
 
-        /// <summary>
-        /// NPV of a FRA 
-        /// </summary>
-        /// <param name="fra"></param>
-        /// <returns></returns>
         public ADouble FraNpvAD(Fra fra)
         {
             ADouble fraRate = ADFwdCurveCollection.GetCurve(fra.ReferenceIndex).FwdRate(fra.AsOf, fra.StartDate, fra.EndDate, fra.DayRule, fra.DayCount, Interpolation);
@@ -261,12 +249,7 @@ namespace MasterThesis
             return fra.TradeSign * notional * discFactor * coverage * (fra.FixedRate - fraRate);
         }
 
-        /// <summary>
-        /// Calculate par futures rate (used for curve calibration). Here, we value
-        /// futures as the par value of a fra + a convexity adjustment.
-        /// </summary>
-        /// <param name="future"></param>
-        /// <returns></returns>
+        // Futures
         public ADouble ParFutureRateAD(Futures future)
         {
             return ParFraRateAD(future.FraSameSpec) + future.Convexity;
@@ -282,6 +265,7 @@ namespace MasterThesis
             return notional * (1.0 - futuresRate);
         }
 
+        // Swap legs
         public ADouble ValueFloatLegAD(FloatLeg floatLeg)
         {
             ADouble floatValue = 0.0;
@@ -323,6 +307,7 @@ namespace MasterThesis
             return FixedLeg.FixedRate * FixedAnnuity * FixedLeg.Notional;
         }
 
+        // Fixed-for-floating Interest rate swaps
         public ADouble IrSwapNpvAD(IrSwap swap)
         {
             return (double)swap.TradeSign*(ValueFixedLegAD(swap.FixedLeg) - 1.0 * ValueFloatLegAD(swap.FloatLeg));
@@ -335,6 +320,7 @@ namespace MasterThesis
             return floatPv / fixedAnnuity;
         }
 
+        // Tenor basis swaps
         public ADouble BasisSwapNpvAD(BasisSwap swap)
         {
             return (double)swap.TradeSign*(ValueFloatLegAD(swap.FloatLegNoSpread) - 1.0 * ValueFloatLegAD(swap.FloatLegSpread));
@@ -348,6 +334,7 @@ namespace MasterThesis
             return (pvSpread - 1.0 * pvNoSpread) / annuityNoSpread;
         }
 
+        // Overnight indexed swaps (More functionality is contained in the AD Curve class
         public ADouble OisRateSimpleAD(OisSwap swap)
         {
             return ADDiscCurve.OisRateSimpleAD(swap, Interpolation);

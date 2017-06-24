@@ -58,9 +58,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ADCurve.cs" />
+    <Compile Include="CurveCalibration\CalibrationHelpers.cs" />
+    <Compile Include="Models\ADCurve.cs" />
     <Compile Include="ExcelInterface\ObjectMap.cs" />
-    <Compile Include="DateHandling.cs" />
+    <Compile Include="LinearRateInstruments\DateHandling.cs" />
     <Compile Include="Extensions\ObjectExtensions.cs" />
     <Compile Include="Math\AAD\ADouble.cs" />
     <Compile Include="Math\AAD\AADTestFunctions.cs" />
@@ -68,24 +69,22 @@
     <Compile Include="Math\AAD\AADTypes.cs" />
     <Compile Include="Models\LinearRateADD.cs" />
     <Compile Include="Models\NonLinearRate.cs" />
-    <Compile Include="Old\Conventions.cs" />
-    <Compile Include="Old\CurveConstruction.cs" />
-    <Compile Include="Curves.cs" />
-    <Compile Include="CurveCalibrationProblem.cs" />
+    <Compile Include="Models\Curves.cs" />
+    <Compile Include="CurveCalibration\CurveConstructors.cs" />
     <Compile Include="ExcelInterface\InterfaceFunctions.cs" />
-    <Compile Include="InstrumentFactory.cs" />
-    <Compile Include="Extensions\OtherExtensions.cs" />
+    <Compile Include="CurveCalibration\InstrumentFactory.cs" />
     <Compile Include="Models\LinearRate.cs" />
     <Compile Include="Extensions\DateTimeExtensions.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
-    <Compile Include="LinearProducts.cs" />
-    <Compile Include="Old\MarketData.cs" />
-    <Compile Include="Math\Maths.cs" />
+    <Compile Include="LinearRateInstruments\LinearProducts.cs" />
+    <Compile Include="Math\Math.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Calender.cs" />
-    <Compile Include="Old\Store.cs" />
-    <Compile Include="RiskEngine.cs" />
-    <Compile Include="Utility.cs" />
+    <Compile Include="LinearRateInstruments\Calender.cs" />
+    <Compile Include="RiskCalculations\RiskContainers.cs" />
+    <Compile Include="RiskCalculations\RiskEngine.cs" />
+    <Compile Include="RiskCalculations\RiskJacobian.cs" />
+    <Compile Include="UtilityAndEnums\GeneralUtility.cs" />
+    <Compile Include="UtilityAndEnums\Enums.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -96,6 +95,7 @@
       <Name>Alglib2</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

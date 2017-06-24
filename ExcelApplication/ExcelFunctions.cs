@@ -309,14 +309,14 @@ namespace ExcelApplication
         }
 
         [ExcelFunction(Description = "Make CalibrationSpec", Name = "mt.Calibration.CalibrationSettings.Make")]
-        public static string Calibration_CalibrationSettings_Make(string baseHandle, double precision, double scaling, double diffStep, string interpolation, int maxIterations, double startingValues, int bfgs_m, bool useAd, object[] calibrationOrder = null)
+        public static string Calibration_CalibrationSettings_Make(string baseHandle, double precision, double scaling, double diffStep, string interpolation, int maxIterations, double startingValues, int bfgs_m, bool useAd, bool inheritDiscSize, double stepSizeOfInheritance, object[] calibrationOrder = null)
         {
             InterpMethod interp = StrToEnum.InterpolationConvert(interpolation);
 
             if (calibrationOrder[0] is ExcelMissing)
             {
                 calibrationOrder = null;
-                CalibrationFunctions.CalibrationSpec_Make(baseHandle, precision, scaling, diffStep, interp, maxIterations, startingValues, bfgs_m, useAd);
+                CalibrationFunctions.CalibrationSpec_Make(baseHandle, precision, scaling, diffStep, interp, maxIterations, startingValues, bfgs_m, useAd, inheritDiscSize, stepSizeOfInheritance);
             }
             else
             {
@@ -325,7 +325,7 @@ namespace ExcelApplication
                 for (int i = 0; i < calibrationOrder.Length; i++)
                     intCalibrationOrder[i] = Convert.ToInt32(calibrationOrder[i]);
 
-                CalibrationFunctions.CalibrationSpec_Make(baseHandle, precision, scaling, diffStep, interp, maxIterations, startingValues, bfgs_m, useAd, intCalibrationOrder);
+                CalibrationFunctions.CalibrationSpec_Make(baseHandle, precision, scaling, diffStep, interp, maxIterations, startingValues, bfgs_m, useAd, inheritDiscSize, stepSizeOfInheritance, intCalibrationOrder);
 
             }
 

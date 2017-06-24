@@ -7,6 +7,10 @@ using MasterThesis.Extensions;
 
 namespace MasterThesis
 {
+    /* --- General information
+    * 
+    */
+
     public class Curve_AD
     {
         public List<DateTime> Dates;
@@ -24,7 +28,7 @@ namespace MasterThesis
 
         public ADouble Interp(DateTime date, InterpMethod interpolation)
         {
-            return Maths.InterpolateCurve(Dates, date, Values, interpolation);
+            return MyMath.InterpolateCurve(Dates, date, Values, interpolation);
         }
         public ADouble ZeroRate(DateTime date, InterpMethod interpolation)
         {

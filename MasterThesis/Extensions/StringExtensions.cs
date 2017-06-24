@@ -8,22 +8,22 @@ namespace MasterThesis.Extensions
 {
     public static class StringExtensions
     {
-        public static string Right(this string sValue, int iMaxLength)
+        public static string Right(this string value, int maxLength)
         {
             //Check if the value is valid
-            if (string.IsNullOrEmpty(sValue))
+            if (string.IsNullOrEmpty(value))
             {
                 //Set valid empty string as string could be null
-                sValue = string.Empty;
+                value = string.Empty;
             }
-            else if (sValue.Length > iMaxLength)
+            else if (value.Length > maxLength)
             {
                 //Make the string no longer than the max length
-                sValue = sValue.Substring(sValue.Length - iMaxLength, iMaxLength);
+                value = value.Substring(value.Length - maxLength, maxLength);
             }
 
             //Return the string
-            return sValue;
+            return value;
         }
 
         public static string Left(this string value, int maxLength)

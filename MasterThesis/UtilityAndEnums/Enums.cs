@@ -12,6 +12,7 @@ using MasterThesis.ExcelInterface;
 
 namespace MasterThesis
 {
+    // Enums related to scheduling, curves and linear rate instruments
     public enum CurveTenor { Simple, DiscOis, DiscLibor, Fwd1D, Fwd1M, Fwd3M, Fwd6M, Fwd1Y }
     public enum DayRule {  MF, F, P, N }
     public enum StubPlacement { Beginning, End, NullStub };
@@ -22,13 +23,6 @@ namespace MasterThesis
     public enum InstrumentFormatType { Swaps, Fras, Futures, BasisSpreads, FwdStartingSwaps };
     public enum Tenor { D, B, W, M, Y };
     public enum Direction { Pay, Rec };
-
-    // ---- old and unused
-    public enum MarketDataInstrument { IrSwapRate, OisRate, BaseSpread, Fra, Future, BasisSwap, Cash, Fixing }
-    public enum SwapQuoteType { Vanilla, ShortSwap }
-    public enum InstrumentComplexity { Linear, NonLinear }
-    public enum QuoteTypeOld { SwapRate, BasisSpread, Fixing, FraRate, FutureRate, BaseSpread }
-    public enum InstrumentType { Swap, Fra, Future, IrSwap, MmBasisSwap, BasisSwap, FxFwd, OisSwap, Deposit, Swaption, Fixing }
 
     public static class EnumHelpers
     {
@@ -68,9 +62,7 @@ namespace MasterThesis
         }
     }
 
-    /// <summary>
-    /// Used to inspect instrument in Excel Layer. 
-    /// </summary>
+    // Used to inspect instrument from a factory in Excel Layer. 
     public static class ConstructInstrumentInspector
     {
         public static object[,] MakeExcelOutput(InstrumentFactory factory, string identifier)
@@ -262,9 +254,9 @@ namespace MasterThesis
         }
     }
 
+    #region Functionality to convert strings to enums and visa versa. Needed for Excel/C# communication
     public static class StrToEnum
     {
-
         public static Tenor ConvertTenorLetter(string tenorLetter)
         {
             switch(tenorLetter.ToUpper())
@@ -336,7 +328,6 @@ namespace MasterThesis
             {
                 case "1D":
                     return CurveTenor.Fwd1D;
-                
                 case "1M":
                     return CurveTenor.Fwd1M;
                 case "3M":
@@ -392,7 +383,7 @@ namespace MasterThesis
             }
         }
 
-        public static CurveTenor CurveIdent(string CurveIdent)
+        public static CurveTenor ConvertCurveIdentToCurveTenor(string CurveIdent)
         {
             switch (CurveIdent)
             {
@@ -412,29 +403,6 @@ namespace MasterThesis
                     return CurveTenor.DiscLibor;
                 default:
                     throw new ArgumentException("CANNOT FIND CURVETENOR FOR INPUT STRING.");
-            }
-        }
-
-        public static MarketDataInstrument TypeIdent(string TypeIdent)
-        {
-            switch (TypeIdent)
-            {
-                case "SWAP":
-                    return MarketDataInstrument.IrSwapRate;
-                case "BASIS SWAP":
-                    return MarketDataInstrument.BasisSwap;
-                case "BASESPREAD":
-                    return MarketDataInstrument.BaseSpread;
-                case "CASH":
-                    return MarketDataInstrument.Cash;
-                case "FRA":
-                    return MarketDataInstrument.Fra;
-                case "FUTURE":
-                    return MarketDataInstrument.Future;
-                case "FIXING":
-                    return MarketDataInstrument.Fixing;
-                default:
-                    throw new ArgumentException("CANNOT FIND MARKETDATAINSTRUMENT FOR INPUT STRING.");
             }
         }
 
@@ -534,186 +502,6 @@ namespace MasterThesis
             }
         }
     }
+    #endregion
 
-    /// <summary>
-    /// Old and not used
-    /// </summary>
-    public static class ExcelUtility
-    {
-        public static string WorkbookName = "CURVEBOOK";
-        public static string Sheet = "CURVES";
-        public static string Path = @"C:\Users\Frede\Dropbox\Polit\12. SPECIALE\ExcelFiles\Data\Test.xlsx";
-        public static DataSet MyData;
-        public static Curve Fwd1d, Fwd1m, Fwd3m, Fwd6m, Fwd1y;
-        public static Curve DiscOis, DiscLibor;
-
-        public static void DataReader()
-        {
-            FileStream Stream = File.Open(Path, FileMode.Open, FileAccess.Read);
-
-            IExcelDataReader ExcelReader = ExcelReaderFactory.CreateOpenXmlReader(Stream);
-
-            //DataSet Result = ExcelReader.AsDataSet();
-
-            ExcelReader.IsFirstRowAsColumnNames = true;
-
-            MyData = ExcelReader.AsDataSet();
-            MyData.DataSetName = "CURVES";
-
-            ExcelReader.Close();
-
-        }
-
-        public static void LoadCurvesFromFile()
-        {
-            int i = MyData.Tables[0].Rows.Count;
-            List<DateTime> Fwd1d = new List<DateTime>();
-            List<DateTime> Fwd1m = new List<DateTime>();
-            List<DateTime> Fwd3m = new List<DateTime>();
-            List<DateTime> Fwd6m = new List<DateTime>();
-            List<DateTime> Fwd1y = new List<DateTime>();
-            List<DateTime> DiscOis = new List<DateTime>();
-            List<DateTime> DiscLibor = new List<DateTime>();
-            List<double> Fwd1dVal = new List<double>();
-            List<double> Fwd1mVal = new List<double>();
-            List<double> Fwd3mVal = new List<double>();
-            List<double> Fwd6mVal = new List<double>();
-            List<double> Fwd1yVal = new List<double>();
-            List<double> DiscOisVal = new List<double>();
-            List<double> DiscLiborVal = new List<double>();
-
-            int j = 0;
-            foreach (DataRow Row in MyData.Tables[0].Rows)
-            {
-                if (MyData.Tables[0].Rows[j]["FWD1D_DATE"].ToString() != "")
-                    Fwd1d.Add((DateTime)MyData.Tables[0].Rows[j]["FWD1D_DATE"]);
-                if (MyData.Tables[0].Rows[j]["FWD1M_DATE"].ToString() != "")
-                    Fwd1m.Add((DateTime)MyData.Tables[0].Rows[j]["FWD1M_DATE"]);
-                if (MyData.Tables[0].Rows[j]["FWD3M_DATE"].ToString() != "")
-                    Fwd3m.Add((DateTime)MyData.Tables[0].Rows[j]["FWD3M_DATE"]);
-                if (MyData.Tables[0].Rows[j]["FWD6M_DATE"].ToString() != "")
-                    Fwd6m.Add((DateTime)MyData.Tables[0].Rows[j]["FWD6M_DATE"]);
-                if (MyData.Tables[0].Rows[j]["FWD1Y_DATE"].ToString() != "")
-                    Fwd1y.Add((DateTime)MyData.Tables[0].Rows[j]["FWD1Y_DATE"]);
-                if (MyData.Tables[0].Rows[j]["DISCOIS_DATE"].ToString() != "")
-                    DiscOis.Add((DateTime)MyData.Tables[0].Rows[j]["DISCOIS_DATE"]);
-                if (MyData.Tables[0].Rows[j]["DISCLIBOR_DATE"].ToString() != "")
-                    DiscLibor.Add((DateTime)MyData.Tables[0].Rows[j]["DISCLIBOR_DATE"]);
-
-                if (MyData.Tables[0].Rows[j]["FWD1D_VAL"].ToString() != "")
-                    Fwd1dVal.Add((double)MyData.Tables[0].Rows[j]["FWD1D_VAL"]);
-                if (MyData.Tables[0].Rows[j]["FWD1M_VAL"].ToString() != "")
-                    Fwd1mVal.Add((double)MyData.Tables[0].Rows[j]["FWD1M_VAL"]);
-                if (MyData.Tables[0].Rows[j]["FWD3M_VAL"].ToString() != "")
-                    Fwd3mVal.Add((double)MyData.Tables[0].Rows[j]["FWD3M_VAL"]);
-                if (MyData.Tables[0].Rows[j]["FWD6M_VAL"].ToString() != "")
-                    Fwd6mVal.Add((double)MyData.Tables[0].Rows[j]["FWD6M_VAL"]);
-                if (MyData.Tables[0].Rows[j]["FWD1Y_VAL"].ToString() != "")
-                    Fwd1yVal.Add((double)MyData.Tables[0].Rows[j]["FWD1Y_VAL"]);
-                if (MyData.Tables[0].Rows[j]["DISCOIS_VAL"].ToString() != "")
-                    DiscOisVal.Add((double)MyData.Tables[0].Rows[j]["DISCOIS_VAL"]);
-                if (MyData.Tables[0].Rows[j]["DISCLIBOR_VAL"].ToString() != "")
-                    DiscLiborVal.Add((double)MyData.Tables[0].Rows[j]["DISCLIBOR_VAL"]);
-                j = j + 1;
-            }
-
-            FwdCurveContainer MyCurves = new MasterThesis.FwdCurveContainer();
-            MyCurves.AddCurve(new Curve(Fwd1d, Fwd1dVal), CurveTenor.Fwd1D);
-            MyCurves.AddCurve(new Curve(Fwd1m, Fwd1mVal), CurveTenor.Fwd1M);
-            MyCurves.AddCurve(new Curve(Fwd3m, Fwd3mVal), CurveTenor.Fwd3M);
-            MyCurves.AddCurve(new Curve(Fwd6m, Fwd6mVal), CurveTenor.Fwd6M);
-            MyCurves.AddCurve(new Curve(Fwd1y, Fwd1yVal), CurveTenor.Fwd1Y);
-            //Store.FwdCurveCollections["MYCURVES"] = MyCurves;
-            //Store.Curves[CurveTenor.DiscLibor] = new MasterThesis.Curve(DiscLibor, DiscLiborVal, CurveTenor.DiscLibor);
-            //Store.Curves[CurveTenor.DiscOis] = new MasterThesis.Curve(DiscOis, DiscOisVal, CurveTenor.DiscOis);
-        }
-
-        public static void CreateCurveOld()
-        {
-            int i = MyData.Tables[0].Rows.Count;
-            DateTime[] Fwd1d = new DateTime[i];
-            DateTime[] Fwd1m = new DateTime[i];
-            DateTime[] Fwd3m = new DateTime[i];
-            DateTime[] Fwd6m = new DateTime[i];
-            DateTime[] Fwd1y = new DateTime[i];
-            DateTime[] DiscOis = new DateTime[i];
-            DateTime[] DiscLibor = new DateTime[i];
-            double[] Fwd1dVal = new double[i];
-            double[] Fwd1mVal = new double[i];
-            double[] Fwd3mVal = new double[i];
-            double[] Fwd6mVal = new double[i];
-            double[] Fwd1yVal = new double[i];
-            double[] DiscOisVal = new double[i];
-            double[] DiscLiborVal = new double[i];
-
-            int j = 0;
-            foreach (DataRow Row in MyData.Tables[0].Rows)
-            {
-                if (MyData.Tables[0].Rows[j]["FWD1D_DATE"].ToString() != "")
-                    Fwd1d[j] = (DateTime)MyData.Tables[0].Rows[j]["FWD1D_DATE"];
-                if (MyData.Tables[0].Rows[j]["FWD1M_DATE"].ToString() != "")
-                    Fwd1m[j] = (DateTime)MyData.Tables[0].Rows[j]["FWD1M_DATE"];
-                if (MyData.Tables[0].Rows[j]["FWD3M_DATE"].ToString() != "")
-                    Fwd3m[j] = (DateTime)MyData.Tables[0].Rows[j]["FWD3M_DATE"];
-                if (MyData.Tables[0].Rows[j]["FWD6M_DATE"].ToString() != "")
-                    Fwd6m[j] = (DateTime)MyData.Tables[0].Rows[j]["FWD6M_DATE"];
-                if (MyData.Tables[0].Rows[j]["FWD1Y_DATE"].ToString() != "")
-                    Fwd1y[j] = (DateTime)MyData.Tables[0].Rows[j]["FWD1Y_DATE"];
-                if (MyData.Tables[0].Rows[j]["DISCOIS_DATE"].ToString() != "")
-                    DiscOis[j] = (DateTime)MyData.Tables[0].Rows[j]["DISCOIS_DATE"];
-                if (MyData.Tables[0].Rows[j]["DISCLIBOR_DATE"].ToString() != "")
-                    DiscLibor[j] = (DateTime)MyData.Tables[0].Rows[j]["DISCLIBOR_DATE"];
-
-                if (MyData.Tables[0].Rows[j]["FWD1D_VAL"].ToString() != "")
-                    Fwd1dVal[j] = (double)MyData.Tables[0].Rows[j]["FWD1D_VAL"];
-                if (MyData.Tables[0].Rows[j]["FWD1M_VAL"].ToString() != "")
-                    Fwd1mVal[j] = (double)MyData.Tables[0].Rows[j]["FWD1M_VAL"];
-                if (MyData.Tables[0].Rows[j]["FWD3M_VAL"].ToString() != "")
-                    Fwd3mVal[j] = (double)MyData.Tables[0].Rows[j]["FWD3M_VAL"];
-                if (MyData.Tables[0].Rows[j]["FWD6M_VAL"].ToString() != "")
-                    Fwd6mVal[j] = (double)MyData.Tables[0].Rows[j]["FWD6M_VAL"];
-                if (MyData.Tables[0].Rows[j]["FWD1Y_VAL"].ToString() != "")
-                    Fwd1yVal[j] = (double)MyData.Tables[0].Rows[j]["FWD1Y_VAL"];
-                if (MyData.Tables[0].Rows[j]["DISCOIS_VAL"].ToString() != "")
-                    DiscOisVal[j] = (double)MyData.Tables[0].Rows[j]["DISCOIS_VAL"];
-                if (MyData.Tables[0].Rows[j]["DISCLIBOR_VAL"].ToString() != "")
-                    DiscLiborVal[j] = (double)MyData.Tables[0].Rows[j]["DISCLIBOR_VAL"];
-                j = j + 1;
-            }
-        }
-    }
-    public static class PrintUtility
-    {
-        public static string PrintListNicely(List<string[]> lines, int padding = 1)
-        {
-            // Calculate maximum numbers for each element accross all lines
-            var numElements = lines[0].Length;
-            var maxValues = new int[numElements];
-            for (int i = 0; i < numElements; i++)
-            {
-                maxValues[i] = lines.Max(x => x[i].Length) + padding;
-            }
-
-            var sb = new StringBuilder();
-            // Build the output
-            bool isFirst = true;
-            foreach (var line in lines)
-            {
-                if (!isFirst)
-                {
-                    sb.AppendLine();
-                }
-                isFirst = false;
-
-                for (int i = 0; i < line.Length; i++)
-                {
-                    var value = line[i];
-                    // Append the value with padding of the maximum length of any value for this element
-                    sb.Append(value.PadRight(maxValues[i]));
-                }
-            }
-            return sb.ToString();
-        }
-
-    }
 }
