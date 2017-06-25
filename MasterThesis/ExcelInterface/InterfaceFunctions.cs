@@ -524,7 +524,6 @@ namespace MasterThesis.ExcelInterface
         {
             LinearRateModel model = ObjectMap.LinearRateModels[baseName];
             IrSwap swap = (IrSwap) ObjectMap.LinearRateInstruments[swapName];
-            //IrSwap swap = ObjectMap.IrSwaps[swapName];
             return model.IrParSwapRate(swap);
         }
 

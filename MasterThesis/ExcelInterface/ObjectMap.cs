@@ -32,7 +32,6 @@ namespace MasterThesis.ExcelInterface
 
         // RiskEngine
         public static IDictionary<string, List<CalibrationInstrument>> CalibrationInstrumentSets = new Dictionary<string, List<CalibrationInstrument>>();
-        //public static IDictionary<string, RiskEngine> RiskEngines = new Dictionary<string, RiskEngine>();
         public static IDictionary<string, ZcbRiskOutputContainer> ZcbRiskOutputContainers = new Dictionary<string, ZcbRiskOutputContainer>();
         public static IDictionary<string, OutrightRiskContainer> OutrightRiskContainers = new Dictionary<string, OutrightRiskContainer>();
         public static IDictionary<string, RiskEngine> RiskEngines = new Dictionary<string, RiskEngine>();

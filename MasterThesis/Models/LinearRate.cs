@@ -244,11 +244,11 @@ namespace MasterThesis
             return swap.TradeSign*(ValueFixedLeg(swap.FixedLeg)- ValueFloatLeg(swap.FloatLeg));
         }
 
-        public double IrParSwapRate(IrSwap Swap)
+        public double IrParSwapRate(IrSwap swap)
         {
-            double FloatPv = ValueFloatLeg(Swap.FloatLeg)/Swap.FloatLeg.Notional;
-            double FixedAnnuity = Annuity(Swap.FixedLeg.Schedule, Interpolation);
-            return FloatPv / FixedAnnuity;
+            double floatPV = ValueFloatLeg(swap.FloatLeg)/swap.FloatLeg.Notional;
+            double fixedAnnuity = Annuity(swap.FixedLeg.Schedule, Interpolation);
+            return floatPV / fixedAnnuity;
         }
 
         // Basis swaps
@@ -260,8 +260,8 @@ namespace MasterThesis
         public double ParBasisSpread(BasisSwap swap)
         {
             double PvNoSpread = ValueFloatLegNoSpread(swap.FloatLegNoSpread)/swap.FloatLegNoSpread.Notional;
-            double PvSpread = ValueFloatLegNoSpread(swap.FloatLegSpread)/swap.FloatLegNoSpread.Notional;
-            double AnnuityNoSpread = Annuity(swap.FloatLegSpread.Schedule, Interpolation);
+            double PvSpread = ValueFloatLegNoSpread(swap.FloatLegSpread)/swap.FloatLegSpread.Notional;
+            double AnnuityNoSpread = Annuity(swap.FloatLegNoSpread.Schedule, Interpolation);
             return (PvSpread - PvNoSpread) / AnnuityNoSpread;
         }
 

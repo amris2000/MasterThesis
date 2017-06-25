@@ -24,13 +24,7 @@ namespace MasterThesis
         private int[] _currentCurvePoints;
         private int _problemDimension;
 
-        /// <summary>
-        /// For constructing multiple curves at a time
-        /// </summary>
-        /// <param name="discCurve"></param>
-        /// <param name="problems"></param>
-        /// <param name="tenors"></param>
-        /// <param name="OrderOfCalibration"></param>
+        // For constructing multiple curves at a time
         public FwdCurveConstructor(Curve discCurve, CurveCalibrationProblem[] problems, CurveTenor[] tenors, CalibrationSpec settings, int[] OrderOfCalibration = null)
         {
             SetEverything(discCurve, problems, tenors, settings, OrderOfCalibration);
@@ -114,12 +108,9 @@ namespace MasterThesis
             _currentCurvePoints = output;
         }
 
-        /// <summary>
-        /// Sets starting values for the curve calibration problem. Here, i'm exploiting the fact
-        /// that i know that curves on longer maturity fixings are above the disc curve.
-        /// Taking the disc curve as a starting point (inherit the shape)
-        /// </summary>
-        /// <returns></returns>
+        /* Sets starting values for the curve calibration problem. Here, i'm exploiting the fact
+        *  that i know that curves on longer maturity fixings are above the disc curve.
+        *  Taking the disc curve as a starting point (inherit the shape)*/
         public double[] ConstructStartingValues()
         {
             List<double> output = new List<double>();
@@ -138,14 +129,10 @@ namespace MasterThesis
         }
 
         #region CODE FOR CONSTRUCTING FWD CURVES WITH BUMP + RUN
-        /// <summary>
-        /// This is the main optimization function used to calibrate the curves.
-        /// It is dependent on the current calibration settings
-        /// defind by _currentTenor and _currentCurvePoints.
-        /// </summary>
-        /// <param name="curveValues"></param>
-        /// <param name="func"></param>
-        /// <param name="obj"></param>
+
+        /* This is the main optimization function used to calibrate the curves.
+        *  It is dependent on the current calibration settings
+        *  defind by _currentTenor and _currentCurvePoints.*/
         private void OptimizationFunction(double[] curveValues, ref double func, object obj)
         {
             _internalState += 1;
@@ -314,6 +301,7 @@ namespace MasterThesis
         #endregion
 
         #region CODE FOR CONSTRUCTING CURVES BASED ON INPUT ORDER WITH AD
+
         public double[] ConstructStartingValues_AD_Current()
         {
             List<double> output = new List<double>();
@@ -343,7 +331,8 @@ namespace MasterThesis
             return output.ToArray();
         }
 
-        private void OptimizationFunction_AD_Current(double[] curveValues, ref double func, double[] grad, object obj)
+        // The old version
+        private void OptimizationFunction_AD_Current2(double[] curveValues, ref double func, double[] grad, object obj)
         {
             _internalState += 1;
 
@@ -403,6 +392,103 @@ namespace MasterThesis
 
         }
 
+        // The new version
+        private void OptimizationFunction_AD_Current(double[] curveValues, ref double func, double[] grad, object obj)
+        {
+            _internalState += 1;
+
+            if (_internalState > _internalStateMax)
+                return;
+
+            List<List<double>> curveValueCollection = new List<List<double>>();
+
+            int n = 0;
+            for (int i = 0; i < _currentCurvePoints.Length; i++)
+            {
+                List<double> temp = new List<double>();
+                for (int j = 0; j < _currentCurvePoints[i]; j++)
+                {
+                    temp.Add(curveValues[n]);
+                    n += 1;
+                }
+                curveValueCollection.Add(temp);
+            }
+
+            for (int i = 0; i < _currentCurvePoints.Length; i++)
+                _fwdCurveCollection.UpdateCurveValues(curveValueCollection[i], _currentTenors[i]);
+
+            LinearRateModel tempModel = new LinearRateModel(_discCurve, _fwdCurveCollection, _settings.Interpolation);
+            tempModel.SetAdCurvesFromOrdinaryCurve();
+            //tempModel.ADFwdCurveCollection = new ADFwdCurveContainer();
+            //tempModel.SetAdDiscCurveFromOrdinaryCurve();
+            n = 0;
+
+
+            AADTape.ResetTape();
+
+            List<ADouble> curveValuesAd = new List<ADouble>();
+            for (int i = 0; i < _currentCurvePoints.Length; i++)
+            {
+                for (int j = 0; j < _currentCurvePoints[i]; j++)
+                {
+                    curveValuesAd.Add(new ADouble(curveValues[n]));
+                    n += 1;
+                }
+                //curveValueCollection.Add(temp);
+            }
+
+
+
+            // ERROR HERE. NEED TO SET THE CURVES FROM THE CALIBATION BEFORE
+
+            //foreach (CurveTenor tempTenor in _hasBeenCalibrated.Keys)
+            //{
+            //    if (_hasBeenCalibrated[tempTenor])
+            //    {
+            //        Curve tempCurve = _fwdCurveCollection.GetCurve(tempTenor).Copy();
+            //        List<ADouble> tempValues = new List<ADouble>();
+
+
+            //        for (int i = 0; i < _fwdCurveCollection.GetCurve(tempTenor).Values.Count; i++)
+            //            tempValues.Add(new ADouble(_fwdCurveCollection.GetCurve(tempTenor).Values[i]));
+
+            //        Curve_AD tempADCurve = new Curve_AD(_fwdCurveCollection.GetCurve(tempTenor).Dates, tempValues);
+            //        tempModel.ADFwdCurveCollection.AddCurve(tempADCurve, tempTenor);
+            //    }
+            //}
+
+            //foreach (CurveTenor tempTenor in _hasBeenCalibrated.Keys)
+            //{
+            //    if (_hasBeenCalibrated[tempTenor])
+            //        tempModel.ADFwdCurveCollection.AddCurve(tempADCurve, tempTenor);
+            //}
+
+
+            AADTape.Initialize(curveValuesAd.ToArray());
+
+            n = 0;
+            // Use _hasCurvesBeenCalibrated.
+            for (int i = 0; i < _currentCurvePoints.Length; i++)
+            {
+                List<ADouble> tempADouble = new List<ADouble>();
+                for (int j = 0; j < _currentCurvePoints[i]; j++)
+                {
+                    tempADouble.Add(curveValuesAd[n]);
+                    n += 1;
+                }
+                tempModel.ADFwdCurveCollection.AddCurve(new Curve_AD(_fwdCurveCollection.GetCurve(_currentTenors[i]).Dates, tempADouble), _currentTenors[i]);
+            }
+
+            func = GoalFunction_AD(_currentTenors, tempModel);
+            AADTape.InterpretTape();
+            double[] gradient = AADTape.GetGradient();
+            for (int i = 0; i < gradient.Length; i++)
+                grad[i] = gradient[i];
+
+            AADTape.ResetTape();
+
+        }
+
         public void CalibrateAllCurves_AD(bool useExistingCurves = false)
         {
             int maxOrder = _settings.CalibrationOrder.Max();
@@ -447,6 +533,8 @@ namespace MasterThesis
             alglib.minlbfgssetcond(state, epsg, epsf, epsx, _settings.MaxIterations);
             alglib.minlbfgsoptimize(state, OptimizationFunction_AD_Current, null, null);
             alglib.minlbfgsresults(state, out curveValues, out rep);
+
+            SetCurrentTenorsAsCalibrated();
         }
         #endregion
 

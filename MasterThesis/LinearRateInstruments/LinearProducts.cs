@@ -171,8 +171,8 @@ namespace MasterThesis
 
         public BasisSwap(IrSwap swapSpread, IrSwap swapNoSpread, int tradeSign)
         {
-            this.FloatLegNoSpread = swapNoSpread.FloatLeg;
-            this.FloatLegSpread = swapSpread.FloatLeg;
+            this.FloatLegNoSpread = swapNoSpread.FloatLeg.Copy();
+            this.FloatLegSpread = swapSpread.FloatLeg.Copy();
 
             TradeSign = tradeSign;
 

@@ -12,8 +12,7 @@ namespace ExcelApplication
 {
     public class ExcelFunctions
     {
-        // ------- CURVE FUNCTIONS
-
+        #region Curves: make functions
         public static DateTime[] ConvertDoublesToDateTimes(double[] doubles)
         {
             DateTime[] dates = new DateTime[doubles.Length];
@@ -23,7 +22,7 @@ namespace ExcelApplication
             return dates;
         }
 
-        [ExcelFunction(Description = "My First function in Excel", Name = "mt.LinearRate.DiscCurve.Make", IsVolatile = true)]
+        [ExcelFunction(Description = "My First function in Excel", Name = "mt.Curve.DiscCurve.Make", IsVolatile = true)]
         public static string LinearRate_DiscCurve_Make(string baseHandle, object[] dates, object[] values)
         {
 
@@ -37,7 +36,7 @@ namespace ExcelApplication
             return baseHandle;
         }
 
-        [ExcelFunction(Description = "My First function in Excel", Name = "mt.LinearRate.FwdCurve.Make", IsVolatile = true)]
+        [ExcelFunction(Description = "My First function in Excel", Name = "mt.Curve.FwdCurve.Make", IsVolatile = true)]
         public static string LinearRate_FwdCurve_Make(string baseHandle, object[] dates, object[] values)
         {
 
@@ -51,7 +50,7 @@ namespace ExcelApplication
             return baseHandle;
         }
 
-        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.FwdCurveCollection.Make", IsVolatile = true)]
+        [ExcelFunction(Description = "Some description.", Name = "mt.Curve.FwdCurveCollection.Make", IsVolatile = true)]
         public static string LinearRate_FwdCurveCollection_Make(string baseHandle, object[] fwdCurveHandles, object[] tenorNames)
         {
             CurveTenor[] tenorEnums = new CurveTenor[tenorNames.Length];
@@ -65,32 +64,45 @@ namespace ExcelApplication
             return output;
         }
 
-        // .. Get functions
-
-
-
-        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.DiscCurve.Get", IsVolatile = true)]
-        public static object[,] LinearRate_DiscCurve_Get(string discCurveHandle)
-        {
-            return LinearRateFunctions.DiscCurve_Get(discCurveHandle);
-        }
-
-        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.BumpCurveAndStore", IsVolatile = true)]
+        [ExcelFunction(Description = "Some description.", Name = "mt.Curve.BumpAndStore", IsVolatile = true)]
         public static string LinearRate_BumpCurveAndStore(string baseHandle, string originalCurveHandle, int curvePoint, double bumpSize)
         {
             LinearRateFunctions.Curve_BumpCurveAndStore(baseHandle, originalCurveHandle, curvePoint, bumpSize);
             return baseHandle;
-        }       
+        }
 
-        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.FwdCurve.StoreFromCollection")]
+        [ExcelFunction(Description = "Some description.", Name = "mt.Curve.FwdCurve.StoreFromCollection")]
         public static string LinearRate_FwdCurve_StoreFromCollection(string baseHandle, string FwdCurveCollectionHandle, string tenor)
         {
             CurveTenor tenorActual = StrToEnum.CurveTenorConvert(tenor);
             LinearRateFunctions.FwdCurve_StoreFromCollection(baseHandle, FwdCurveCollectionHandle, tenorActual);
             return baseHandle;
         }
+        #endregion
 
-        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.Curve.GetFwdRate", IsVolatile = true)]
+        #region Curves: functions to get curves or calculate values on curves
+        [ExcelFunction(Description = "Some description.", Name = "mt.Curve.DiscCurve.Get", IsVolatile = true)]
+        public static object[,] LinearRate_DiscCurve_Get(string discCurveHandle)
+        {
+            return LinearRateFunctions.DiscCurve_Get(discCurveHandle);
+        }
+
+        [ExcelFunction(Description = "Some description.", Name = "mt.Curve.FwdCurve.GetFromCollection", IsVolatile = true)]
+        public static object[,] LinearRate_FwdCurve_GetFromCollection(string fwdCurveCollectionHandle, string fwdCurveTenor)
+        {
+            CurveTenor tenorEnum = StrToEnum.CurveTenorConvert(fwdCurveTenor);
+            return LinearRateFunctions.FwdCurve_GetFromCollection(fwdCurveCollectionHandle, tenorEnum);
+        }
+
+        //[ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.DiscCurve.GetValue", IsVolatile = true)]
+        //public static double LinearRate_DiscCurve_GetValue(string baseHandle, double date, string interpolationMethod)
+        //{
+        //    DateTime dateTime = DateTime.FromOADate(date);
+        //    InterpMethod interpolation = StrToEnum.InterpolationConvert(interpolationMethod);
+        //    return LinearRateFunctions.DiscCurve_GetValue(baseHandle, dateTime, interpolation);
+        //}
+
+        [ExcelFunction(Description = "Some description.", Name = "mt.Curve.CalcFwdRate", IsVolatile = true)]
         public static double LinearRate_Curve_GetFwdRate(string curveHandle, DateTime asOf, DateTime startDate, string tenorStr, string dayCountStr, string dayRuleStr, string interpolationStr)
         {
             CurveTenor tenor = StrToEnum.CurveTenorFromSimpleTenor(tenorStr);
@@ -101,22 +113,7 @@ namespace ExcelApplication
             return LinearRateFunctions.Curve_GetFwdRate(curveHandle, asOf, startDate, tenor, dayCount, dayRule, interpolation);
         }
 
-        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.FwdCurve.GetFromCollection", IsVolatile = true)]
-        public static object[,] LinearRate_FwdCurve_GetFromCollection(string fwdCurveCollectionHandle, string fwdCurveTenor)
-        {
-            CurveTenor tenorEnum = StrToEnum.CurveTenorConvert(fwdCurveTenor);
-            return LinearRateFunctions.FwdCurve_GetFromCollection(fwdCurveCollectionHandle, tenorEnum);
-        }
-
-        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.DiscCurve.GetValue", IsVolatile = true)]
-        public static double LinearRate_DiscCurve_GetValue(string baseHandle, double date, string interpolationMethod)
-        {
-            DateTime dateTime = DateTime.FromOADate(date);
-            InterpMethod interpolation = StrToEnum.InterpolationConvert(interpolationMethod);
-            return LinearRateFunctions.DiscCurve_GetValue(baseHandle, dateTime, interpolation);
-        }
-
-        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.Curve.GetValue", IsVolatile = true)]
+        [ExcelFunction(Description = "Some description.", Name = "mt.Curve.CalcValue", IsVolatile = true)]
         public static double LinearRate_Curve_GetValue(string baseHandle, double date, string interpolationMethod)
         {
             DateTime dateTime = DateTime.FromOADate(date);
@@ -124,8 +121,7 @@ namespace ExcelApplication
             return LinearRateFunctions.Curve_GetValue(baseHandle, dateTime, interpolation);
         }
 
-
-        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.Curve.GetDiscFactor", IsVolatile = true)]
+        [ExcelFunction(Description = "Some description.", Name = "mt.Curve.CalcDiscFactor", IsVolatile = true)]
         public static double LinearRate_Curve_GetValue(string baseHandle, DateTime asOf, DateTime date, string dayCountStr, string interpolationStr)
         {
             InterpMethod interpolation = StrToEnum.InterpolationConvert(interpolationStr);
@@ -133,49 +129,51 @@ namespace ExcelApplication
             return LinearRateFunctions.Curve_GetDiscFactor(baseHandle, asOf, date, dayCount, interpolation);
         }
 
-        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.FwdCurve.GetValue", IsVolatile = true)]
-        public static double LinearRate_FwdCurve_GetValue(string baseHandle, double date, string interpolationMethod)
-        {
-            DateTime dateTime = DateTime.FromOADate(date);
-            InterpMethod interpolation = StrToEnum.InterpolationConvert(interpolationMethod);
-            return LinearRateFunctions.FwdCurve_GetValue(baseHandle, dateTime, interpolation);
-        }
+        //[ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.FwdCurve.GetValue", IsVolatile = true)]
+        //public static double LinearRate_FwdCurve_GetValue(string baseHandle, double date, string interpolationMethod)
+        //{
+        //    DateTime dateTime = DateTime.FromOADate(date);
+        //    InterpMethod interpolation = StrToEnum.InterpolationConvert(interpolationMethod);
+        //    return LinearRateFunctions.FwdCurve_GetValue(baseHandle, dateTime, interpolation);
+        //}
 
         // .. FWD CURVE REPRESENTATIONS
 
-        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.FwdCurveRepresentation.MakeFromFwdCurve", IsVolatile = true)]
-        public static string LinearRate_FwdCurveRepresentation_MakeFromFwdCurve(string baseHandle, string fwdCurveHandle, string curveTenorStr, DateTime asOf
-            , string dayCountStr, string dayRuleStr, string interpolationStr)
-        {
-            CurveTenor tenor = StrToEnum.CurveTenorFromSimpleTenor(curveTenorStr);
-            InterpMethod interpolation = StrToEnum.InterpolationConvert(interpolationStr);
-            DayCount dayCount = StrToEnum.DayCountConvert(dayCountStr);
-            DayRule dayRule = StrToEnum.DayRuleConvert(dayRuleStr);
+        //[ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.FwdCurveRepresentation.MakeFromFwdCurve", IsVolatile = true)]
+        //public static string LinearRate_FwdCurveRepresentation_MakeFromFwdCurve(string baseHandle, string fwdCurveHandle, string curveTenorStr, DateTime asOf
+        //    , string dayCountStr, string dayRuleStr, string interpolationStr)
+        //{
+        //    CurveTenor tenor = StrToEnum.CurveTenorFromSimpleTenor(curveTenorStr);
+        //    InterpMethod interpolation = StrToEnum.InterpolationConvert(interpolationStr);
+        //    DayCount dayCount = StrToEnum.DayCountConvert(dayCountStr);
+        //    DayRule dayRule = StrToEnum.DayRuleConvert(dayRuleStr);
 
-            LinearRateFunctions.FwdCurveRepresentation_MakeFromFwdCurve(baseHandle, fwdCurveHandle, tenor, asOf, dayCount, dayRule, interpolation);
-            return baseHandle;
-        }
+        //    LinearRateFunctions.FwdCurveRepresentation_MakeFromFwdCurve(baseHandle, fwdCurveHandle, tenor, asOf, dayCount, dayRule, interpolation);
+        //    return baseHandle;
+        //}
 
-        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.FwdCurveRepresentation.MakeFromDiscCurve", IsVolatile = true)]
-        public static string LinearRate_FwdCurveRepresentation_MakeFromDiscCurve(string baseHandle, string discCurveHandle, string curveTenorStr, DateTime asOf
-            , string dayCountStr, string dayRuleStr, string interpolationStr)
-        {
-            CurveTenor tenor = StrToEnum.CurveTenorConvert(curveTenorStr);
-            InterpMethod interpolation = StrToEnum.InterpolationConvert(interpolationStr);
-            DayCount dayCount = StrToEnum.DayCountConvert(dayCountStr);
-            DayRule dayRule = StrToEnum.DayRuleConvert(dayRuleStr);
+        //[ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.FwdCurveRepresentation.MakeFromDiscCurve", IsVolatile = true)]
+        //public static string LinearRate_FwdCurveRepresentation_MakeFromDiscCurve(string baseHandle, string discCurveHandle, string curveTenorStr, DateTime asOf
+        //    , string dayCountStr, string dayRuleStr, string interpolationStr)
+        //{
+        //    CurveTenor tenor = StrToEnum.CurveTenorConvert(curveTenorStr);
+        //    InterpMethod interpolation = StrToEnum.InterpolationConvert(interpolationStr);
+        //    DayCount dayCount = StrToEnum.DayCountConvert(dayCountStr);
+        //    DayRule dayRule = StrToEnum.DayRuleConvert(dayRuleStr);
 
-            LinearRateFunctions.FwdCurveRepresentation_MakeFromDiscCurve(baseHandle, discCurveHandle, tenor, asOf, dayCount, dayRule, interpolation);
-            return baseHandle;
-        }
+        //    LinearRateFunctions.FwdCurveRepresentation_MakeFromDiscCurve(baseHandle, discCurveHandle, tenor, asOf, dayCount, dayRule, interpolation);
+        //    return baseHandle;
+        //}
 
-        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.FwdCurveRepresentation.Get", IsVolatile = true)]
-        public static object[,] LinearRate_FwdCurveRepresentation_Get(string baseHandle)
-        {
-            return LinearRateFunctions.FwdCurveRepresentation_Get(baseHandle);
-        }
+        //[ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.FwdCurveRepresentation.Get", IsVolatile = true)]
+        //public static object[,] LinearRate_FwdCurveRepresentation_Get(string baseHandle)
+        //{
+        //    return LinearRateFunctions.FwdCurveRepresentation_Get(baseHandle);
+        //}
 
-        // ------- LINEAR RATE FUNTIONS
+        #endregion
+
+        #region LinearRateModel: functions related to making models and valuing linearRateInstruments
 
         [ExcelFunction(Description = "Some description.", Name = "mt.LinearRateModel.Make", IsVolatile = true)]
         public static string LinearRate_LinearRateModel_Make(string baseHandle, string fwdCurveCollectionHandle, string discCurveHandle, string interpolation)
@@ -186,9 +184,9 @@ namespace ExcelApplication
         }
 
         [ExcelFunction(Description = "Some description", Name = "mt.LinearRateModel.Value", IsVolatile = true)]
-        public static double LinearRate_LinearRateModel_Value(string linearRateModelHandle, string productHandle)
+        public static double LinearRate_LinearRateModel_Value(string linearRateModelHandle, string linearRateInstrumentHandle)
         {
-            return LinearRateFunctions.LinearRateModel_Value(linearRateModelHandle, productHandle);
+            return LinearRateFunctions.LinearRateModel_Value(linearRateModelHandle, linearRateInstrumentHandle);
         }
 
         // Swap functions
@@ -249,15 +247,18 @@ namespace ExcelApplication
             return LinearRateFunctions.LinearRateModel_FixedLegValue(linearRateModelHandle, fixedLegHandle);
         }
 
-        // ------- SWAP FUNCTIONS
-        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.IrSwap.Make", IsVolatile = true)]
+        #endregion
+
+        #region LinearRateInstrument: functions related to constructing linearRateInstrument objects from Excel
+
+        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRateInstrument.IrSwap.Make", IsVolatile = true)]
         public static string LinearRate_PlainVanillaSwap_Make(string baseHandle, string fixedLegHandle, string floatLegHandle, int tradeSign)
         {
             LinearRateFunctions.PlainVanillaSwap_Make(baseHandle, fixedLegHandle, floatLegHandle, tradeSign);
             return baseHandle;
         }
 
-        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.OisSwap.Make", IsVolatile = true)]
+        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRateInstrument.OisSwap.Make", IsVolatile = true)]
         public static string LinearRate_OisSwap_Make(string baseHandle, DateTime asOf, string startTenor, string endTenor, string settlementLag, string dayCountFixedStr,
                 string dayCountFloatStr, string dayRuleStr, double notional, double fixedRate, int tradeSign)
         {
@@ -269,14 +270,14 @@ namespace ExcelApplication
             return baseHandle;
         }
 
-        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.BasisSwap.Make", IsVolatile = true)]
+        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRateInstrument.BasisSwap.Make", IsVolatile = true)]
         public static string LinearRate_BasisSwap_Make(string baseHandle, string floatLegSpreadHandle, string floatLegNoSpreadHandle, int tradeSign)
         {
             LinearRateFunctions.BasisSwap_Make(baseHandle, floatLegNoSpreadHandle, floatLegSpreadHandle, tradeSign);
             return baseHandle;
         }
 
-        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.FloatLeg.Make", IsVolatile = true)]
+        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRateInstrument.FloatLeg.Make", IsVolatile = true)]
         public static string LinearRate_FloatLeg_Make(string baseHandle, DateTime asOf, DateTime startDate, DateTime endDate,
                         string frequency, string dayCount, string dayRule, double notional, double spread)
         {
@@ -288,7 +289,7 @@ namespace ExcelApplication
             return baseHandle;
         }
 
-        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.FixedLeg.Make", IsVolatile = true)]
+        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRateInstrument.FixedLeg.Make", IsVolatile = true)]
         public static string LinearRate_FixedLeg_Make(string baseHandle, DateTime asOf, DateTime startDate, DateTime endDate, double fixedRate,
                         string frequency, string dayCount, string dayRule, double notional)
         {
@@ -300,15 +301,18 @@ namespace ExcelApplication
             return baseHandle;
         }
 
-        // ------ CALIBRATION RELATED
-        [ExcelFunction(Description = "Some description.", Name = "mt.CurveCalibrationProblem.Make")]
+        #endregion
+
+        #region Calibration: functions related to calibrating curves
+
+        [ExcelFunction(Description = "Some description.", Name = "mt.Calibration.CurveCalibrationProblem.Make")]
         public static string Calibration_CurveCalibrationProblem_Make(string baseHandle, string instrumentFactoryHandle, object[] quoteIdentifiers, object[] quoteValues)
         {
             CalibrationFunctions.CurveCalibrationProblem_Make(baseHandle, instrumentFactoryHandle, quoteIdentifiers.Cast<string>().ToArray(), quoteValues.Cast<double>().ToArray());
             return baseHandle;
         }
 
-        [ExcelFunction(Description = "Make CalibrationSpec", Name = "mt.Calibration.CalibrationSettings.Make")]
+        [ExcelFunction(Description = "Some description", Name = "mt.Calibration.CalibrationSettings.Make")]
         public static string Calibration_CalibrationSettings_Make(string baseHandle, double precision, double scaling, double diffStep, string interpolation, int maxIterations, double startingValues, int bfgs_m, bool useAd, bool inheritDiscSize, double stepSizeOfInheritance, object[] calibrationOrder = null)
         {
             InterpMethod interp = StrToEnum.InterpolationConvert(interpolation);
@@ -332,7 +336,7 @@ namespace ExcelApplication
             return baseHandle;
         }
 
-        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.DiscCurve.MakeFromCalibrationProblem")]
+        [ExcelFunction(Description = "Some description", Name = "mt.Calibration.MakeDiscCurveFromProblem")]
         public static string Calibration_DiscCurve_MakeFromCalibrationProblem(string baseHandle, string curveCalibProblemHandle, string calibSpecHandle, bool useAd)
         {
             if (ExcelDnaUtil.IsInFunctionWizard())
@@ -342,7 +346,7 @@ namespace ExcelApplication
             return baseHandle;
         }
 
-        [ExcelFunction(Description = "some description.", Name = "mt.FwdCurveCalibrationProblem.Make")]
+        [ExcelFunction(Description = "some description", Name = "mt.Calibration.FwdCurveCalibrationProblem.Make")]
         public static string Calibration_FwdCurveCalibrationProblem_Make(string baseHandle, string discCurveHandle, object[] curveCalibHandles, object[] fwdCurveTenors, string calibSpecHandle)
         {
 
@@ -357,7 +361,7 @@ namespace ExcelApplication
             return baseHandle;
         }
 
-        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRate.FwdCurveCollection.MakeFromCalibrationProblem")]
+        [ExcelFunction(Description = "Some description", Name = "mt.Calibration.MakeFwdCurveCollectionFromProblem")]
         public static string Calibration_FwdCurveCollection_MakeFromCalibrationProblem(string baseHandle, string fwdCurveConstructorHandle, bool useAd)
         {
             if (ExcelDnaUtil.IsInFunctionWizard())
@@ -368,7 +372,9 @@ namespace ExcelApplication
 
         }
 
-        // ------ INSTRUMENT FACTORY RELATED
+        #endregion
+
+        #region InstrumentFactory: related to creating and updating instrumentFactories
 
         [ExcelFunction(Description = "some description", Name = "mt.InstrumentFactory.UpdateAllInstrumentsToPar", IsVolatile = true)]
         public static string Factory_UpdateAllInstrumentsToPar(string baseHandle, string modelHandle)
@@ -484,36 +490,23 @@ namespace ExcelApplication
             return InstrumentFactoryFunctions.InstrumentFactory_GetInstrumentInfo(instrumentFactoryHandle, instrumentHandle);
         }
 
-        [ExcelFunction(Description = "some description", Name = "mt.ParseStringAndOutput", IsVolatile = true)]
-        public static object[,] ParseStringAndOutput(string instrumentString)
-        {
-            object[] output = instrumentString.Split(',');
-            object[,] realOutput = new object[output.Length, 1];
-            for (int i = 0; i < output.Length; i++)
-            {
-                realOutput[i, 0] = output[i];
-            }
+        #endregion
 
-            return realOutput;
-        }
-
-        // --- RELATED TO AD
+        #region RiskEngine: related to computing risk 
         [ExcelFunction(Description = "Some description", Name = "mt.RiskEngine.ZcbRiskAd", IsVolatile = true)]
         public static object[,] RiskAdTest(string modelHandle, string productHandle)
         {
             return ADFunctions.ZcbRiskAD(modelHandle, productHandle);
         }
 
-
-        // --- RELATED TO RISK ENGINE (NEW)
-        [ExcelFunction(Description = " Some decription", Name = "mt.CalibrationInstrumentSet.Make", IsVolatile = true)]
+        [ExcelFunction(Description = " Some decription", Name = "mt.RiskEngine.CalibrationInstrumentSet.Make", IsVolatile = true)]
         public static string CalibrationInstrumentSet_Make(string baseHandle, object[] linearRateProductHandles, string curveTenor)
         {
             RiskEngineFunctions.CalibrationInstrumentSet_Make(baseHandle, linearRateProductHandles.Cast<string>().ToArray(), curveTenor);
             return baseHandle;
         }
 
-        [ExcelFunction(Description = "Some description", Name = "mt.Portfolio.Make", IsVolatile = true)]
+        [ExcelFunction(Description = "Some description", Name = "mt.RiskEngine.Portfolio.Make", IsVolatile = true)]
         public static string Portfolio_Make(string baseHandle, object[] linearRateProductHandles)
         {
             RiskEngineFunctions.Portfolio_Make(baseHandle, linearRateProductHandles.Cast<string>().ToArray());
@@ -534,41 +527,41 @@ namespace ExcelApplication
             return baseHandle;
         }
 
-        [ExcelFunction(Description = "Some description", Name = "mt.RiskEngine.StoreZcbRisk", IsVolatile = true)]
-        public static string RiskEngineNew_StoreZcbRisk(string baseHandle, string riskEngineHandle)
-        {
-            RiskEngineFunctions.RiskEngineNew_StoreZcbRisk(baseHandle, riskEngineHandle);
-            return baseHandle;
-        }
-
-        [ExcelFunction(Description = "SOme descritoin", Name = "mt.RiskEngine.StoreOutrightRisk", IsVolatile = true)]
+        [ExcelFunction(Description = "Some descritoin", Name = "mt.RiskEngine.OutrightRiskOutput.Store", IsVolatile = true)]
         public static string RiskEngineNew_StoreOutrightRisk(string baseHandle, string riskEngineHandle)
         {
             RiskEngineFunctions.RiskEngineNew_StoreOutrightRisk(baseHandle, riskEngineHandle);
             return baseHandle;
         }
 
-        [ExcelFunction(Description = "Some description", Name = "mt.RiskEngine.StoreOutrightRiskFromContainer", IsVolatile = true)]
+        [ExcelFunction(Description = "Some description", Name = "mt.RiskEngine.OutrightRiskOutput.StoreFromContainer", IsVolatile = true)]
         public static string RiskOutput_StoreOutrightRiskFromContainer(string baseHandle, string riskOutputContainerHandle, string tenor)
         {
             RiskEngineFunctions.OutrightRiskOutput_StoreFromRiskOutContainer(baseHandle, riskOutputContainerHandle, tenor);
             return baseHandle;
         }
 
-        [ExcelFunction(Description =" Some description.", Name = "mt.RiskEngine.OutrightRiskOutput.Get", IsVolatile = true)]
+        [ExcelFunction(Description =" Some description", Name = "mt.RiskEngine.OutrightRiskOutput.Get", IsVolatile = true)]
         public static object[,] OutrightRiskOUtput_Get(string baseHandle)
         {
             return RiskEngineFunctions.OutrightRiskOutput_Get(baseHandle);
         }
 
-        [ExcelFunction(Description = "Some description", Name = "mt.RiskEngine.StoreRiskOutputFromContainer", IsVolatile = true)]
+        [ExcelFunction(Description = "Some description", Name = "mt.RiskEngine.ZcbRiskOutput.Store", IsVolatile = true)]
+        public static string RiskEngineNew_StoreZcbRisk(string baseHandle, string riskEngineHandle)
+        {
+            RiskEngineFunctions.RiskEngineNew_StoreZcbRisk(baseHandle, riskEngineHandle);
+            return baseHandle;
+        }
+
+        [ExcelFunction(Description = "Some description", Name = "mt.RiskEngine.ZcbRiskOutput.StoreFromContainer", IsVolatile = true)]
         public static string RiskOutput_StoreFromRiskOutputContainer(string baseHandle, string riskOutputContainerHandle, string tenor)
         {
             RiskEngineFunctions.RiskOutput_StoreFromRiskOutputContainer(baseHandle, riskOutputContainerHandle, tenor);
             return baseHandle;
         }
 
-        [ExcelFunction(Description = "Some description", Name = "mt.RiskEngine.RiskOutput.Get", IsVolatile=true)]
+        [ExcelFunction(Description = "Some description", Name = "mt.RiskEngine.ZcbRiskOutput.Get", IsVolatile=true)]
         public static object[,] RiskOutput_Get(string baseHandle)
         {
             return RiskEngineFunctions.ZcbRiskOutput_Get(baseHandle);
@@ -604,6 +597,6 @@ namespace ExcelApplication
         //{
         //    return RiskEngineFunctions.RiskEngine_GetDiscRiskOutput(riskEngineHandle);
         //}
-
+        #endregion
     }
 }

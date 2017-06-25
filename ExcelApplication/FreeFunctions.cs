@@ -23,5 +23,18 @@ namespace ExcelApplication
             return DateHandling.AdjustDate(startDate, dayRuleEnum);
         }
 
+        [ExcelFunction(Description = "some description", Name = "mt.Helpers.ParseStringAndOutput", IsVolatile = true)]
+        public static object[,] ParseStringAndOutput(string instrumentString)
+        {
+            object[] output = instrumentString.Split(',');
+            object[,] realOutput = new object[output.Length, 1];
+            for (int i = 0; i < output.Length; i++)
+            {
+                realOutput[i, 0] = output[i];
+            }
+
+            return realOutput;
+        }
+
     }
 }

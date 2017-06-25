@@ -329,9 +329,9 @@ namespace MasterThesis
         public ADouble ParBasisSpreadAD(BasisSwap swap)
         {
             ADouble pvNoSpread = ValueFloatLegNoSpreadAD(swap.FloatLegNoSpread) / swap.FloatLegNoSpread.Notional;
-            ADouble pvSpread = ValueFloatLegNoSpreadAD(swap.FloatLegSpread) / swap.FloatLegNoSpread.Notional;
-            ADouble annuityNoSpread = AnnuityAD(swap.FloatLegSpread.Schedule, Interpolation);
-            return (pvSpread - 1.0 * pvNoSpread) / annuityNoSpread;
+            ADouble pvSpread = ValueFloatLegNoSpreadAD(swap.FloatLegSpread) / swap.FloatLegSpread.Notional;
+            ADouble annuityNoSpread = AnnuityAD(swap.FloatLegNoSpread.Schedule, Interpolation);
+            return (pvSpread - pvNoSpread) / annuityNoSpread;
         }
 
         // Overnight indexed swaps (More functionality is contained in the AD Curve class
