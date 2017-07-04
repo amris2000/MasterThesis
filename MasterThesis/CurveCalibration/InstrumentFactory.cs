@@ -357,7 +357,7 @@ namespace MasterThesis
                     // Error with endTenor here and string parsing 
 
                     // TEMPORARY
-                    settlementLag = "0D";
+                    //settlementLag = "0D";
                     dayRule = DayRule.F;
 
                     OisSwap oisSwap = new OisSwap(AsOf, startTenor, endTenor, settlementLag, fixedDayCount, floatDayCount, dayRule, _defaultNotional, _defaultFixedRate, _defaultTradeSign);
