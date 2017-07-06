@@ -147,11 +147,13 @@ namespace MasterThesis
         }
     }
 
-    public class BasisSwap : LinearRateInstrument
+    public class TenorBasisSwap : LinearRateInstrument
     {
-        public FloatLeg FloatLegNoSpread;
-        public FloatLeg FloatLegSpread;
-        public int TradeSign;             // TradeSign = 1: Receive spread
+        public FloatLeg FloatLegNoSpread { get; private set; }
+        public FloatLeg FloatLegSpread { get; private set; }
+        public IrSwap SwapSpread { get; private set; }
+        public IrSwap SwapNoSpread { get; private set; }
+        public int TradeSign { get; private set; }             // TradeSign = 1: Receive spread
 
         private void CheckTradeSign()
         {
@@ -159,23 +161,28 @@ namespace MasterThesis
                 throw new InvalidOperationException("TradeSign of basis swap need to be =1 (rec spread) or =-1 (pay spread)");
         }
 
-        public BasisSwap(FloatLeg floatLegSpread, FloatLeg floatLegNoSpread, int tradeSign) 
+        public TenorBasisSwap(FloatLeg floatLegSpread, FloatLeg floatLegNoSpread, int tradeSign) 
         {
-            this.FloatLegNoSpread = floatLegNoSpread;
-            this.FloatLegSpread = floatLegSpread;
+            this.FloatLegNoSpread = floatLegNoSpread.Copy();
+            this.FloatLegSpread = floatLegSpread.Copy();
+
+            // Construct default FixedLeg - quick and dirty
+            FixedLeg tempFixedLeg = new MasterThesis.FixedLeg(floatLegNoSpread.AsOf, floatLegSpread.StartDate, floatLegSpread.EndDate, 0.01, CurveTenor.Fwd1Y, DayCount.THIRTY360, DayRule.MF, floatLegSpread.Notional);
+            SwapSpread = new MasterThesis.IrSwap(floatLegSpread, tempFixedLeg, tradeSign);
+            SwapNoSpread = new MasterThesis.IrSwap(floatLegNoSpread, tempFixedLeg, -1 * tradeSign);
 
             TradeSign = tradeSign;
-
             CheckTradeSign();
         }
 
-        public BasisSwap(IrSwap swapSpread, IrSwap swapNoSpread, int tradeSign)
+        public TenorBasisSwap(IrSwap swapSpread, IrSwap swapNoSpread, int tradeSign)
         {
             this.FloatLegNoSpread = swapNoSpread.FloatLeg.Copy();
             this.FloatLegSpread = swapSpread.FloatLeg.Copy();
+            this.SwapSpread = swapSpread.Copy();
+            this.SwapNoSpread = swapNoSpread.Copy();
 
             TradeSign = tradeSign;
-
             CheckTradeSign();
 
         }
@@ -253,6 +260,45 @@ namespace MasterThesis
         public Instrument GetInstrumentType()
         {
             return Instrument.Fra;
+        }
+    }
+
+    public class Deposit : LinearRateInstrument
+    {
+        public DateTime StartDate, EndDate, AsOf;
+        public DayCount DayCount;
+        public DayRule DayRule;
+        public CurveTenor ReferenceIndex;
+        public double FixedRate;
+        public double Notional;
+        public double TradeSign;
+
+        public Deposit(DateTime asOf, string startTenor, string endTenor, string settlementLag, double fixedRate, DayCount dayCount, DayRule dayRule, double notional, int tradeSign)
+        {
+            AsOf = asOf;
+            StartDate = DateHandling.AddTenorAdjust(asOf, startTenor, dayRule);
+            StartDate = DateHandling.AddTenorAdjust(StartDate, settlementLag, dayRule);
+            EndDate = DateHandling.AddTenor(StartDate, endTenor, dayRule);
+            Notional = notional;
+            TradeSign = tradeSign;
+            FixedRate = fixedRate;
+            DayRule = dayRule;
+            DayCount = dayCount;
+        }
+
+        public void UpdateFixedRateToPar(LinearRateModel model)
+        {
+            FixedRate = model.ParDepositRate(this);
+        }
+
+        public DateTime GetCurvePoint()
+        {
+            return EndDate;
+        }
+
+        public Instrument GetInstrumentType()
+        {
+            return Instrument.Deposit;
         }
     }
 

@@ -140,7 +140,9 @@ namespace MasterThesis
                 case Instrument.OisSwap:
                     return DiscCurve.OisSwapNpv((OisSwap)product, Interpolation);
                 case Instrument.BasisSwap:
-                    return BasisSwapNpv((BasisSwap)product);
+                    return BasisSwapNpv((TenorBasisSwap)product);
+                case Instrument.Deposit:
+                    return DepositNpv((Deposit)product);
                 default:
                     throw new InvalidOperationException("product instrument type is not valid.");
             }
@@ -252,15 +254,33 @@ namespace MasterThesis
         }
 
         // Basis swaps
-        public double BasisSwapNpv(BasisSwap swap)
+        public double BasisSwapNpv(TenorBasisSwap swap)
         {
-            return swap.TradeSign*(ValueFloatLeg(swap.FloatLegNoSpread) - ValueFloatLeg(swap.FloatLegSpread));
+            return swap.TradeSign * (ValueLinearRateProduct(swap.SwapNoSpread) - ValueLinearRateProduct(swap.SwapSpread));
         }
 
-        public double ParBasisSpread(BasisSwap swap)
+        public double BasisSwapNpvTwoLegs(TenorBasisSwap swap)
         {
-            double PvNoSpread = ValueFloatLegNoSpread(swap.FloatLegNoSpread)/swap.FloatLegNoSpread.Notional;
-            double PvSpread = ValueFloatLegNoSpread(swap.FloatLegSpread)/swap.FloatLegSpread.Notional;
+            return swap.TradeSign * (ValueFloatLeg(swap.FloatLegNoSpread) - ValueFloatLeg(swap.FloatLegSpread));
+        }
+
+        public double ParBasisSpread(TenorBasisSwap swap)
+        {
+            double pvNoSpread = ValueFloatLegNoSpread(swap.FloatLegNoSpread)/swap.FloatLegNoSpread.Notional;
+            double pvSpread = ValueFloatLegNoSpread(swap.FloatLegSpread)/swap.FloatLegSpread.Notional;
+            double annuityOfSpreadFixedLeg = Annuity(swap.SwapSpread.FixedLeg.Schedule, Interpolation);
+            double annuityOfNoSpreadFixedLeg = Annuity(swap.SwapNoSpread.FixedLeg.Schedule, Interpolation);
+
+            // Temp
+            //annuityOfSpreadFixedLeg = Annuity(swap.FloatLegSpread.Schedule, Interpolation);
+            //annuityOfNoSpreadFixedLeg = Annuity(swap.FloatLegSpread.Schedule, Interpolation);
+
+            return pvNoSpread / annuityOfNoSpreadFixedLeg - pvSpread / annuityOfSpreadFixedLeg;
+        }
+        public double ParBasisSpreadTwoLegs(TenorBasisSwap swap)
+        {
+            double PvNoSpread = ValueFloatLegNoSpread(swap.FloatLegNoSpread) / swap.FloatLegNoSpread.Notional;
+            double PvSpread = ValueFloatLegNoSpread(swap.FloatLegSpread) / swap.FloatLegSpread.Notional;
             double AnnuityNoSpread = Annuity(swap.FloatLegNoSpread.Schedule, Interpolation);
             return (PvSpread - PvNoSpread) / AnnuityNoSpread;
         }
@@ -269,6 +289,20 @@ namespace MasterThesis
         public double OisRateSimple(OisSwap swap)
         {
             return DiscCurve.OisRateSimple(swap, Interpolation);
+        }
+
+        public double DepositNpv(Deposit deposit)
+        {
+            double discFactor = DiscCurve.DiscFactor(deposit.AsOf, deposit.EndDate, deposit.DayCount, Interpolation);
+            double cvg = DateHandling.Cvg(deposit.StartDate, deposit.EndDate, deposit.DayCount);
+            return deposit.TradeSign * discFactor * deposit.Notional * (1.0 + deposit.FixedRate * cvg);
+        }
+
+        public double ParDepositRate(Deposit deposit)
+        {
+            double discFactor = DiscCurve.DiscFactor(deposit.StartDate, deposit.EndDate, deposit.DayCount, Interpolation);
+            double cvg = DateHandling.Cvg(deposit.StartDate, deposit.EndDate, deposit.DayCount);
+            return 1.0 / cvg * (1.0 / discFactor - 1.0);
         }
 
     }

@@ -19,7 +19,7 @@ namespace MasterThesis.ExcelInterface
         public static IDictionary<string, FixedLeg> FixedLegs = new Dictionary<string, FixedLeg>();
         public static IDictionary<string, FloatLeg> FloatLegs = new Dictionary<string, FloatLeg>();
         public static IDictionary<string, IrSwap> IrSwaps = new Dictionary<string, IrSwap>();
-        public static IDictionary<string, BasisSwap> BasisSwaps = new Dictionary<string, BasisSwap>();
+        public static IDictionary<string, TenorBasisSwap> BasisSwaps = new Dictionary<string, TenorBasisSwap>();
         public static IDictionary<string, LinearRateInstrument> LinearRateInstruments = new Dictionary<string, LinearRateInstrument>();
 
         // InstrumentFactories

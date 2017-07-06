@@ -61,7 +61,7 @@
     <Compile Include="CurveCalibration\CalibrationHelpers.cs" />
     <Compile Include="Models\ADCurve.cs" />
     <Compile Include="ExcelInterface\ObjectMap.cs" />
-    <Compile Include="LinearRateInstruments\DateHandling.cs" />
+    <Compile Include="UtilityAndEnums\DateHandling.cs" />
     <Compile Include="Extensions\ObjectExtensions.cs" />
     <Compile Include="Math\AAD\ADouble.cs" />
     <Compile Include="Math\AAD\AADTestFunctions.cs" />

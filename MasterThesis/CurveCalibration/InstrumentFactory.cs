@@ -41,8 +41,9 @@ namespace MasterThesis
         public IDictionary<string, Fra> Fras;
         public IDictionary<string, Futures> Futures;
         public IDictionary<string, IrSwap> IrSwaps;
-        public IDictionary<string, BasisSwap> BasisSwaps;
+        public IDictionary<string, TenorBasisSwap> BasisSwaps;
         public IDictionary<string, OisSwap> OisSwaps;
+        public IDictionary<string, Deposit> Deposits;
         public DateTime AsOf;
 
         public IDictionary<string, QuoteType> InstrumentTypeMap;
@@ -66,7 +67,8 @@ namespace MasterThesis
             Futures = new Dictionary<string, Futures>();
             IrSwaps = new Dictionary<string, IrSwap>();
             OisSwaps = new Dictionary<string, OisSwap>();
-            BasisSwaps = new Dictionary<string, BasisSwap>();
+            BasisSwaps = new Dictionary<string, TenorBasisSwap>();
+            Deposits = new Dictionary<string, Deposit>();
             InstrumentTypeMap = new Dictionary<string, QuoteType>();
             InstrumentFormatTypeMap = new Dictionary<string, InstrumentFormatType>();
             IdentifierStringMap = new Dictionary<string, string>();
@@ -97,6 +99,9 @@ namespace MasterThesis
 
             foreach (string key in OisSwaps.Keys)
                 OisSwaps[key].UpdateFixedRateToPar(model);
+
+            foreach (string key in Deposits.Keys)
+                Deposits[key].UpdateFixedRateToPar(model);
         }
 
         /// <summary>
@@ -123,6 +128,8 @@ namespace MasterThesis
                     return model.ParFraRate(Fras[instrument]);
                 case QuoteType.FuturesRate:
                     return model.ParFutureRate(Futures[instrument]);
+                case QuoteType.Deposit:
+                    return model.ParDepositRate(Deposits[instrument]);
                 default:
                     throw new InvalidOperationException("Instrument QuoteType not supported...");
             }
@@ -152,6 +159,8 @@ namespace MasterThesis
                     return model.ParFraRateAD(Fras[instrument]);
                 case QuoteType.FuturesRate:
                     return model.ParFutureRateAD(Futures[instrument]);
+                case QuoteType.Deposit:
+                    return model.ParDepositRateAD(Deposits[instrument]);
                 default:
                     throw new InvalidOperationException("Instrument QuoteType not supported...");
             }
@@ -215,7 +224,7 @@ namespace MasterThesis
             {
                 IrSwap swapNoSpread = IrSwaps[swapNoSpreadIdent];
                 IrSwap swapSpread = IrSwaps[swapSpreadIdent];
-                BasisSwap swap = new BasisSwap(swapNoSpread, swapSpread, _defaultTradeSign);
+                TenorBasisSwap swap = new TenorBasisSwap(swapSpread, swapNoSpread, _defaultTradeSign);
                 BasisSwaps[identifier] = swap;
                 DateTime curvePoint = swap.GetCurvePoint();
                 CurvePointMap[identifier] = swap.GetCurvePoint();
@@ -307,7 +316,6 @@ namespace MasterThesis
                 InstrumentTypeMap[identifier] = QuoteType.FraRate;
                 InstrumentFormatTypeMap[identifier] = InstrumentFormatType.Fras;
                 IdentifierStringMap[identifier] = instrumentString;
-
             }
         }
 
@@ -358,14 +366,29 @@ namespace MasterThesis
 
                     // TEMPORARY
                     //settlementLag = "0D";
-                    dayRule = DayRule.F;
+                    //dayRule = DayRule.F;
 
-                    OisSwap oisSwap = new OisSwap(AsOf, startTenor, endTenor, settlementLag, fixedDayCount, floatDayCount, dayRule, _defaultNotional, _defaultFixedRate, _defaultTradeSign);
-                    OisSwaps[identifier] = oisSwap;
-                    CurvePointMap[identifier] = oisSwap.GetCurvePoint();
-                    InstrumentTypeMap[identifier] = QuoteType.OisRate;
-                    InstrumentFormatTypeMap[identifier] = InstrumentFormatType.Swaps;
-                    IdentifierStringMap[identifier] = instrumentString;
+                    // This is a dirty hack to value deposits
+                    if (identifier == "EUREONON" || identifier == "EUREONTN")
+                    {
+                        Deposit deposit = new Deposit(AsOf, startTenor, endTenor, settlementLag, _defaultFixedRate, floatDayCount, dayRule, _defaultNotional, _defaultTradeSign);
+                        Deposits[identifier] = deposit;
+                        CurvePointMap[identifier] = deposit.GetCurvePoint();
+                        InstrumentTypeMap[identifier] = QuoteType.Deposit;
+                        InstrumentFormatTypeMap[identifier] = InstrumentFormatType.Swaps;
+                        IdentifierStringMap[identifier] = instrumentString;
+                    }
+                    else
+                    {
+                        OisSwap oisSwap = new OisSwap(AsOf, startTenor, endTenor, settlementLag, fixedDayCount, floatDayCount, dayRule, _defaultNotional, _defaultFixedRate, _defaultTradeSign);
+                        OisSwaps[identifier] = oisSwap;
+                        CurvePointMap[identifier] = oisSwap.GetCurvePoint();
+                        InstrumentTypeMap[identifier] = QuoteType.OisRate;
+                        InstrumentFormatTypeMap[identifier] = InstrumentFormatType.Swaps;
+                        IdentifierStringMap[identifier] = instrumentString;
+                    }
+
+
 
                 }
                 else

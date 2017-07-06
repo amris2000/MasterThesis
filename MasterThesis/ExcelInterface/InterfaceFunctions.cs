@@ -255,6 +255,9 @@ namespace MasterThesis.ExcelInterface
 
             foreach (string key in factory.Fras.Keys)
                 ObjectMap.LinearRateInstruments[key] = factory.Fras[key];
+
+            foreach (string key in factory.Deposits.Keys)
+                ObjectMap.LinearRateInstruments[key] = factory.Deposits[key];
         }
 
         public static void InstrumentFactory_Make(string baseName, DateTime asOf)
@@ -303,7 +306,7 @@ namespace MasterThesis.ExcelInterface
         // NAME SHOULD BE CHANGED: CALCULATES PAR SPREAD
         public static double InstrumentFactory_ValueBasisSwap(string instrumentFactory, string model, string instrument)
         {
-            BasisSwap swap = ObjectMap.InstrumentFactories[instrumentFactory].BasisSwaps[instrument];
+            TenorBasisSwap swap = ObjectMap.InstrumentFactories[instrumentFactory].BasisSwaps[instrument];
             return ObjectMap.LinearRateModels[model].ParBasisSpread(swap);
         }
 
@@ -530,7 +533,7 @@ namespace MasterThesis.ExcelInterface
         public static double LinearRateModel_BasisSwapValue(string baseName, string swapName)
         {
             LinearRateModel model = ObjectMap.LinearRateModels[baseName];
-            BasisSwap swap = (BasisSwap) ObjectMap.LinearRateInstruments[swapName];
+            TenorBasisSwap swap = (TenorBasisSwap) ObjectMap.LinearRateInstruments[swapName];
             //BasisSwap swap = ObjectMap.BasisSwaps[swapName];
             return model.BasisSwapNpv(swap);
         }
@@ -538,7 +541,7 @@ namespace MasterThesis.ExcelInterface
         public static double LinearRateModel_BasisParSpread(string modelName, string basisSwapName)
         {
             LinearRateModel model = ObjectMap.LinearRateModels[modelName];
-            BasisSwap swap = (BasisSwap)ObjectMap.LinearRateInstruments[basisSwapName];
+            TenorBasisSwap swap = (TenorBasisSwap)ObjectMap.LinearRateInstruments[basisSwapName];
             //BasisSwap swap = ObjectMap.BasisSwaps[basisSwapName];
             return model.ParBasisSpread(swap);
         }
@@ -597,7 +600,7 @@ namespace MasterThesis.ExcelInterface
         {
             FloatLeg floatLegNoSpread = ObjectMap.FloatLegs[floatLegNoSpreadName];
             FloatLeg floatLegSpread = ObjectMap.FloatLegs[floatLegSpreadName];
-            BasisSwap swap = new MasterThesis.BasisSwap(floatLegNoSpread, floatLegSpread, tradeSign);
+            TenorBasisSwap swap = new MasterThesis.TenorBasisSwap(floatLegNoSpread, floatLegSpread, tradeSign);
 
             ObjectMap.LinearRateInstruments[baseName] = swap;
             ObjectMap.BasisSwaps[baseName] = swap;

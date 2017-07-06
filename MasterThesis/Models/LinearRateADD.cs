@@ -210,7 +210,9 @@ namespace MasterThesis
                 case Instrument.OisSwap:
                     return ADDiscCurve.OisSwapNpvAD((OisSwap)product, Interpolation);
                 case Instrument.BasisSwap:
-                    return BasisSwapNpvAD((BasisSwap)product);
+                    return BasisSwapNpvAD((TenorBasisSwap)product);
+                case Instrument.Deposit:
+                    return DepositNpvAD((Deposit)product);
                 default:
                     throw new InvalidOperationException("product instrument type is not valid.");
             }
@@ -321,12 +323,30 @@ namespace MasterThesis
         }
 
         // Tenor basis swaps
-        public ADouble BasisSwapNpvAD(BasisSwap swap)
+        public ADouble BasisSwapNpvAD(TenorBasisSwap swap)
         {
             return (double)swap.TradeSign*(ValueFloatLegAD(swap.FloatLegNoSpread) - 1.0 * ValueFloatLegAD(swap.FloatLegSpread));
         }
 
-        public ADouble ParBasisSpreadAD(BasisSwap swap)
+        public ADouble BasisSwapNpvTwoLegsAD(TenorBasisSwap swap)
+        {
+            return (double)swap.TradeSign * (ValueFloatLegAD(swap.FloatLegNoSpread) - 1.0 * ValueFloatLegAD(swap.FloatLegSpread));
+        }
+
+        public ADouble ParBasisSpreadAD(TenorBasisSwap swap)
+        {
+            ADouble pvNoSpread = ValueFloatLegNoSpreadAD(swap.FloatLegNoSpread) / swap.FloatLegNoSpread.Notional;
+            ADouble pvSpread = ValueFloatLegNoSpreadAD(swap.FloatLegSpread) / swap.FloatLegSpread.Notional;
+            ADouble annuityOfSpreadFixedLeg = AnnuityAD(swap.FloatLegSpread.Schedule, Interpolation);
+            ADouble annuityOfNoSpreadFixedLeg = AnnuityAD(swap.FloatLegNoSpread.Schedule, Interpolation);
+
+            //annuityOfSpreadFixedLeg = AnnuityAD(swap.FloatLegSpread.Schedule, Interpolation);
+            //annuityOfNoSpreadFixedLeg = AnnuityAD(swap.FloatLegSpread.Schedule, Interpolation);
+
+            return pvNoSpread / annuityOfNoSpreadFixedLeg - pvSpread / annuityOfSpreadFixedLeg;
+        }
+
+        public ADouble ParBasisSpreadTwoLegsAD(TenorBasisSwap swap)
         {
             ADouble pvNoSpread = ValueFloatLegNoSpreadAD(swap.FloatLegNoSpread) / swap.FloatLegNoSpread.Notional;
             ADouble pvSpread = ValueFloatLegNoSpreadAD(swap.FloatLegSpread) / swap.FloatLegSpread.Notional;
@@ -334,10 +354,26 @@ namespace MasterThesis
             return (pvSpread - pvNoSpread) / annuityNoSpread;
         }
 
+
         // Overnight indexed swaps (More functionality is contained in the AD Curve class
         public ADouble OisRateSimpleAD(OisSwap swap)
         {
             return ADDiscCurve.OisRateSimpleAD(swap, Interpolation);
         }
+
+        public ADouble DepositNpvAD(Deposit deposit)
+        {
+            ADouble discFactor = ADDiscCurve.DiscFactor(deposit.AsOf, deposit.EndDate, deposit.DayCount, Interpolation);
+            ADouble cvg = DateHandling.Cvg(deposit.StartDate, deposit.EndDate, deposit.DayCount);
+            return deposit.TradeSign * discFactor * deposit.Notional * (1.0 + deposit.FixedRate * cvg);
+        }
+
+        public ADouble ParDepositRateAD(Deposit deposit)
+        {
+            ADouble discFactor = ADDiscCurve.DiscFactor(deposit.StartDate, deposit.EndDate, deposit.DayCount, Interpolation);
+            ADouble cvg = DateHandling.Cvg(deposit.StartDate, deposit.EndDate, deposit.DayCount);
+            return 1.0 / cvg * (1.0 / discFactor - 1.0);
+        }
+
     }
 }
