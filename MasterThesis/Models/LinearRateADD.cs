@@ -248,7 +248,7 @@ namespace MasterThesis
             ADouble notional = fra.Notional;
             ADouble discFactor = ADDiscCurve.DiscFactor(fra.AsOf, fra.EndDate, fra.DayCount, Interpolation);
             ADouble coverage = DateHandling.Cvg(fra.StartDate, fra.EndDate, fra.DayCount);
-            return fra.TradeSign * notional * discFactor * coverage * (fra.FixedRate - fraRate);
+            return fra.TradeSign * notional * discFactor * coverage * (fraRate - fra.FixedRate);
         }
 
         // Futures
@@ -312,7 +312,7 @@ namespace MasterThesis
         // Fixed-for-floating Interest rate swaps
         public ADouble IrSwapNpvAD(IrSwap swap)
         {
-            return (double)swap.TradeSign*(ValueFixedLegAD(swap.FixedLeg) - 1.0 * ValueFloatLegAD(swap.FloatLeg));
+            return (double)swap.TradeSign*(ValueFloatLegAD(swap.FloatLeg) - ValueFixedLegAD(swap.FixedLeg));
         }
 
         public ADouble IrParSwapRateAD(IrSwap swap)
@@ -325,33 +325,49 @@ namespace MasterThesis
         // Tenor basis swaps
         public ADouble BasisSwapNpvAD(TenorBasisSwap swap)
         {
-            return (double)swap.TradeSign*(ValueFloatLegAD(swap.FloatLegNoSpread) - 1.0 * ValueFloatLegAD(swap.FloatLegSpread));
+            if (swap.ConstructedFromFloatingLegs)
+                return BasisSwapNpvTwoLegsAD(swap);
+            else
+                return BasisSwapNpvTwoIrsAD(swap);
         }
 
         public ADouble BasisSwapNpvTwoLegsAD(TenorBasisSwap swap)
         {
-            return (double)swap.TradeSign * (ValueFloatLegAD(swap.FloatLegNoSpread) - 1.0 * ValueFloatLegAD(swap.FloatLegSpread));
+            return (double)swap.TradeSign * (ValueFloatLegAD(swap.FloatLegNoSpread) - ValueFloatLegAD(swap.FloatLegSpread));
         }
+
+        public ADouble BasisSwapNpvTwoIrsAD(TenorBasisSwap swap)
+        {
+            return ValueLinearRateProductAD(swap.SwapNoSpread) - ValueLinearRateProductAD(swap.SwapSpread);
+        }
+
 
         public ADouble ParBasisSpreadAD(TenorBasisSwap swap)
         {
-            ADouble pvNoSpread = ValueFloatLegNoSpreadAD(swap.FloatLegNoSpread) / swap.FloatLegNoSpread.Notional;
-            ADouble pvSpread = ValueFloatLegNoSpreadAD(swap.FloatLegSpread) / swap.FloatLegSpread.Notional;
-            ADouble annuityOfSpreadFixedLeg = AnnuityAD(swap.FloatLegSpread.Schedule, Interpolation);
-            ADouble annuityOfNoSpreadFixedLeg = AnnuityAD(swap.FloatLegNoSpread.Schedule, Interpolation);
-
-            //annuityOfSpreadFixedLeg = AnnuityAD(swap.FloatLegSpread.Schedule, Interpolation);
-            //annuityOfNoSpreadFixedLeg = AnnuityAD(swap.FloatLegSpread.Schedule, Interpolation);
-
-            return pvNoSpread / annuityOfNoSpreadFixedLeg - pvSpread / annuityOfSpreadFixedLeg;
+            if (swap.ConstructedFromFloatingLegs)
+                return ParBasisSpreadTwoLegsAD(swap);
+            else
+                return ParBasisSpreadTwoIrsAD(swap);
         }
 
         public ADouble ParBasisSpreadTwoLegsAD(TenorBasisSwap swap)
         {
             ADouble pvNoSpread = ValueFloatLegNoSpreadAD(swap.FloatLegNoSpread) / swap.FloatLegNoSpread.Notional;
             ADouble pvSpread = ValueFloatLegNoSpreadAD(swap.FloatLegSpread) / swap.FloatLegSpread.Notional;
-            ADouble annuityNoSpread = AnnuityAD(swap.FloatLegNoSpread.Schedule, Interpolation);
-            return (pvSpread - pvNoSpread) / annuityNoSpread;
+            ADouble annuitySpread = AnnuityAD(swap.FloatLegSpread.Schedule, Interpolation);
+            return (pvNoSpread - pvSpread) / annuitySpread;
+        }
+
+        public ADouble ParBasisSpreadTwoIrsAD(TenorBasisSwap swap)
+        {
+            // Tedious way
+            //ADouble pvNoSpread = ValueFloatLegNoSpreadAD(swap.FloatLegNoSpread) / swap.FloatLegNoSpread.Notional;
+            //ADouble pvSpread = ValueFloatLegNoSpreadAD(swap.FloatLegSpread) / swap.FloatLegSpread.Notional;
+            //ADouble annuityOfSpreadFixedLeg = AnnuityAD(swap.FloatLegSpread.Schedule, Interpolation);
+            //ADouble annuityOfNoSpreadFixedLeg = AnnuityAD(swap.FloatLegNoSpread.Schedule, Interpolation);
+            //return pvNoSpread / annuityOfNoSpreadFixedLeg - pvSpread / annuityOfSpreadFixedLeg;
+
+            return IrParSwapRateAD(swap.SwapNoSpread) - IrParSwapRateAD(swap.SwapSpread);
         }
 
 

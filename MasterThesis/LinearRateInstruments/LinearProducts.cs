@@ -154,6 +154,7 @@ namespace MasterThesis
         public IrSwap SwapSpread { get; private set; }
         public IrSwap SwapNoSpread { get; private set; }
         public int TradeSign { get; private set; }             // TradeSign = 1: Receive spread
+        public bool ConstructedFromFloatingLegs { get; private set; }
 
         private void CheckTradeSign()
         {
@@ -173,6 +174,8 @@ namespace MasterThesis
 
             TradeSign = tradeSign;
             CheckTradeSign();
+
+            ConstructedFromFloatingLegs = true;
         }
 
         public TenorBasisSwap(IrSwap swapSpread, IrSwap swapNoSpread, int tradeSign)
@@ -185,6 +188,7 @@ namespace MasterThesis
             TradeSign = tradeSign;
             CheckTradeSign();
 
+            ConstructedFromFloatingLegs = false;
         }
 
         public void UpdateFixedRateToPar(LinearRateModel model)

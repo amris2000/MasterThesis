@@ -301,6 +301,13 @@ namespace ExcelApplication
             return baseHandle;
         }
 
+        [ExcelFunction(Description = "Some description.", Name = "mt.LinearRateInstrument.BasisSwap.MakeFromIrSwaps")]
+        public static string LinearRate_BasisSwap_MakeFromIrSwaps(string baseHandle, string swapSpread, string swapNoSpread, int tradeSign)
+        {
+            LinearRateFunctions.BasisSwap_MakeFromIrs(baseHandle, swapSpread, swapNoSpread, tradeSign);
+            return baseHandle;
+        }
+
         #endregion
 
         #region Calibration: functions related to calibrating curves

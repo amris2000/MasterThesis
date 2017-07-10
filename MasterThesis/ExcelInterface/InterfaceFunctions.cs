@@ -296,28 +296,24 @@ namespace MasterThesis.ExcelInterface
             ObjectMap.InstrumentFactories[baseName].AddFwdStartingSwaps(swapStrings);
         }
 
-        // NAME SHOULD BE CHANGED: CALCULATES PAR RATE
         public static double InstrumentFactory_ValueSwap(string instrumentFactory, string model, string instrument)
         {
             IrSwap swap = ObjectMap.InstrumentFactories[instrumentFactory].IrSwaps[instrument];
             return ObjectMap.LinearRateModels[model].IrParSwapRate(swap);
         }
 
-        // NAME SHOULD BE CHANGED: CALCULATES PAR SPREAD
         public static double InstrumentFactory_ValueBasisSwap(string instrumentFactory, string model, string instrument)
         {
             TenorBasisSwap swap = ObjectMap.InstrumentFactories[instrumentFactory].BasisSwaps[instrument];
             return ObjectMap.LinearRateModels[model].ParBasisSpread(swap);
         }
 
-        // NAME SHOULD BE CHANGED: CALCULATES OIS RATE
         public static double InstrumentFactory_ValueOisSwap(string instrumentFactory, string model, string instrument)
         {
             OisSwap swap = ObjectMap.InstrumentFactories[instrumentFactory].OisSwaps[instrument];
             return ObjectMap.LinearRateModels[model].OisRateSimple(swap);
         }
 
-        // NAME SHOULD BE CHANGED: CALCULATES PAR FRA RATE
         public static double InstrumentFactory_ParFraRate(string instrumentFactory, string model, string instrument)
         {
             Fra fra = ObjectMap.InstrumentFactories[instrumentFactory].Fras[instrument];
@@ -600,10 +596,21 @@ namespace MasterThesis.ExcelInterface
         {
             FloatLeg floatLegNoSpread = ObjectMap.FloatLegs[floatLegNoSpreadName];
             FloatLeg floatLegSpread = ObjectMap.FloatLegs[floatLegSpreadName];
-            TenorBasisSwap swap = new MasterThesis.TenorBasisSwap(floatLegNoSpread, floatLegSpread, tradeSign);
+            TenorBasisSwap swap = new MasterThesis.TenorBasisSwap(floatLegSpread, floatLegNoSpread, tradeSign);
 
             ObjectMap.LinearRateInstruments[baseName] = swap;
             ObjectMap.BasisSwaps[baseName] = swap;
+        }
+
+        public static void BasisSwap_MakeFromIrs(string baseName, string swapSpread, string swapNoSpread, int tradeSign)
+        {
+            IrSwap swapSpreadObject = ObjectMap.IrSwaps[swapSpread];
+            IrSwap swapNoSpreadObject = ObjectMap.IrSwaps[swapNoSpread];
+            TenorBasisSwap basisSwap = new TenorBasisSwap(swapSpreadObject, swapNoSpreadObject, tradeSign);
+
+            ObjectMap.LinearRateInstruments[baseName] = basisSwap;
+            ObjectMap.BasisSwaps[baseName] = basisSwap;
+
         }
 
 

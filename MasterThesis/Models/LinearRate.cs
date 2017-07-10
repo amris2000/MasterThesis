@@ -178,7 +178,7 @@ namespace MasterThesis
             double notional = fra.Notional;
             double discFactor = DiscCurve.DiscFactor(fra.AsOf, fra.StartDate, fra.DayCount, Interpolation); // Note from today and to startDate => Market FRA
             double coverage = DateHandling.Cvg(fra.StartDate, fra.EndDate, fra.DayCount);
-            return fra.TradeSign * notional * discFactor * coverage * (fra.FixedRate - fraRate);
+            return fra.TradeSign * notional * discFactor * coverage * (fraRate - fra.FixedRate);
         }
 
         // Futures
@@ -243,7 +243,7 @@ namespace MasterThesis
         // Interest rate swap
         public double IrSwapNpv(IrSwap swap)
         {
-            return swap.TradeSign*(ValueFixedLeg(swap.FixedLeg)- ValueFloatLeg(swap.FloatLeg));
+            return swap.TradeSign*(ValueFloatLeg(swap.FloatLeg) - ValueFixedLeg(swap.FixedLeg));
         }
 
         public double IrParSwapRate(IrSwap swap)
@@ -256,7 +256,10 @@ namespace MasterThesis
         // Basis swaps
         public double BasisSwapNpv(TenorBasisSwap swap)
         {
-            return swap.TradeSign * (ValueLinearRateProduct(swap.SwapNoSpread) - ValueLinearRateProduct(swap.SwapSpread));
+            if (swap.ConstructedFromFloatingLegs)
+                return BasisSwapNpvTwoLegs(swap);
+            else
+                return BasisSwapNpvTwoIrs(swap);
         }
 
         public double BasisSwapNpvTwoLegs(TenorBasisSwap swap)
@@ -264,25 +267,37 @@ namespace MasterThesis
             return swap.TradeSign * (ValueFloatLeg(swap.FloatLegNoSpread) - ValueFloatLeg(swap.FloatLegSpread));
         }
 
+        public double BasisSwapNpvTwoIrs(TenorBasisSwap swap)
+        {
+            return ValueLinearRateProduct(swap.SwapNoSpread) - ValueLinearRateProduct(swap.SwapSpread);
+        }
+
         public double ParBasisSpread(TenorBasisSwap swap)
         {
-            double pvNoSpread = ValueFloatLegNoSpread(swap.FloatLegNoSpread)/swap.FloatLegNoSpread.Notional;
-            double pvSpread = ValueFloatLegNoSpread(swap.FloatLegSpread)/swap.FloatLegSpread.Notional;
-            double annuityOfSpreadFixedLeg = Annuity(swap.SwapSpread.FixedLeg.Schedule, Interpolation);
-            double annuityOfNoSpreadFixedLeg = Annuity(swap.SwapNoSpread.FixedLeg.Schedule, Interpolation);
-
-            // Temp
-            //annuityOfSpreadFixedLeg = Annuity(swap.FloatLegSpread.Schedule, Interpolation);
-            //annuityOfNoSpreadFixedLeg = Annuity(swap.FloatLegSpread.Schedule, Interpolation);
-
-            return pvNoSpread / annuityOfNoSpreadFixedLeg - pvSpread / annuityOfSpreadFixedLeg;
+            if (swap.ConstructedFromFloatingLegs)
+                return ParBasisSpreadTwoLegs(swap);
+            else
+                return ParBasisSpreadTwoIrs(swap);
         }
+
         public double ParBasisSpreadTwoLegs(TenorBasisSwap swap)
         {
-            double PvNoSpread = ValueFloatLegNoSpread(swap.FloatLegNoSpread) / swap.FloatLegNoSpread.Notional;
-            double PvSpread = ValueFloatLegNoSpread(swap.FloatLegSpread) / swap.FloatLegSpread.Notional;
-            double AnnuityNoSpread = Annuity(swap.FloatLegNoSpread.Schedule, Interpolation);
-            return (PvSpread - PvNoSpread) / AnnuityNoSpread;
+            double pvNoSpread = ValueFloatLegNoSpread(swap.FloatLegNoSpread) / swap.FloatLegNoSpread.Notional;
+            double pvSpread = ValueFloatLegNoSpread(swap.FloatLegSpread) / swap.FloatLegSpread.Notional;
+            double annuitySpread = Annuity(swap.FloatLegSpread.Schedule, Interpolation);
+            return (pvNoSpread - pvSpread) / annuitySpread;
+        }
+
+        public double ParBasisSpreadTwoIrs(TenorBasisSwap swap)
+        {
+            // Tedious way
+            //double pvNoSpread = ValueFloatLegNoSpread(swap.FloatLegNoSpread) / swap.FloatLegNoSpread.Notional;
+            //double pvSpread = ValueFloatLegNoSpread(swap.FloatLegSpread) / swap.FloatLegSpread.Notional;
+            //double annuityOfSpreadFixedLeg = Annuity(swap.SwapSpread.FixedLeg.Schedule, Interpolation);
+            //double annuityOfNoSpreadFixedLeg = Annuity(swap.SwapNoSpread.FixedLeg.Schedule, Interpolation);
+            //return pvNoSpread / annuityOfNoSpreadFixedLeg - pvSpread / annuityOfSpreadFixedLeg;
+
+            return IrParSwapRate(swap.SwapNoSpread) - IrParSwapRate(swap.SwapSpread);
         }
 
         // Ois swaps (more functions are located under the Curve-classes)
