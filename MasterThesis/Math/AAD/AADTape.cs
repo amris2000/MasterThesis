@@ -263,7 +263,9 @@ namespace MasterThesis
         public static void PrintTape()
         {
             Console.WriteLine("");
-            Console.WriteLine("----------- Printing AAD tape");
+            Console.WriteLine(" ------------------------------- ");
+            Console.WriteLine("   Tape interpretation");
+            Console.WriteLine(" ------------------------------- ");
             List<string[]> Out = new List<string[]>();
 
             Out.Add(new string[] { "    ", "#", "OPER", "ARG1", "ARG2", "VAL", "ADJ", "CONS" });

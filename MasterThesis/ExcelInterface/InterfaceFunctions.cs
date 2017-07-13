@@ -103,9 +103,17 @@ namespace MasterThesis.ExcelInterface
         public static void RiskEngineNew_StoreZcbRisk(string baseHandle, string riskEngineHandle)
         {
             RiskEngine riskEngine = ObjectMap.RiskEngines[riskEngineHandle];
-            riskEngine.CalculateZcbRiskBumpAndRun();
+            riskEngine.CalculateZcbRisk();
 
             ObjectMap.ZcbRiskOutputContainers[baseHandle] = riskEngine.ZcbRiskOutput;
+        }
+
+        public static void RiskEngineNew_CalcZcbRisk(string baseHandle, string riskEngineHandle, int times)
+        {
+            for (int i = 0; i < times; i++)
+            {
+                    ObjectMap.RiskEngines[riskEngineHandle].CalculateZcbRisk();
+            }
         }
 
         public static void RiskEngineNew_StoreOutrightRisk(string baseHandle, string riskEngineHandle)

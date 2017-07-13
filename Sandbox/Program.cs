@@ -16,10 +16,10 @@ namespace Sandbox
     {
       static void Main(string[] args)
       {
-            AADTests.ResultSetTestOnBlackScholes();
-            AADTests.CollectionOfSimpleFunctionsTest();
+            //AADTests.ResultSetTestOnBlackScholes();
+            //AADTests.CollectionOfSimpleFunctionsTest();
             AADTests.CalculateDerivativesByAd();
-            AADTests.GoalFunctionTest();
+            //AADTests.GoalFunctionTest();
             Console.ReadLine();
         }
     }

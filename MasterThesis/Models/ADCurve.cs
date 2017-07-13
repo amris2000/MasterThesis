@@ -78,7 +78,7 @@ namespace MasterThesis
             ADouble oisAnnuity = OisAnnuityAD(swap.FloatSchedule, interpolation);
             double notional = swap.TradeSign*swap.Notional;
             ADouble oisRate = OisRateSimpleAD(swap, interpolation);
-            return notional * (swap.FixedRate - 1.0*oisRate) * oisAnnuity;
+            return notional * (oisRate - swap.FixedRate) * oisAnnuity;
         }
 
         /// <summary>

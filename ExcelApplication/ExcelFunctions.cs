@@ -574,6 +574,13 @@ namespace ExcelApplication
             return RiskEngineFunctions.ZcbRiskOutput_Get(baseHandle);
         }
 
+        [ExcelFunction(Description = "Some description", Name = "mt.RiskEngine.ZcbRisk.CalculateMultipleTimes")]
+        public static string RiskEngineNew_CalcZcbRiskMultipleTimes(string baseHandle, string riskEngineHandle, int times)
+        {
+            RiskEngineFunctions.RiskEngineNew_CalcZcbRisk(baseHandle, riskEngineHandle, times);
+            return baseHandle;
+        }
+
         // --- RELATED TO RISK ENGINE
         //[ExcelFunction(Description = "some description", Name = "mt.RiskEngine.MakeOld", IsVolatile = true)]
         //public static string RiskEngine_MakeOld(string baseHandle, string linearRateModelHandle, string instrumentFactoryHandle, string portfolioHandle)

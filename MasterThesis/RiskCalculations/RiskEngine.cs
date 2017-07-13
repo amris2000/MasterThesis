@@ -202,7 +202,7 @@ namespace MasterThesis
             return output;
         }
 
-        public void CalculateZcbRiskBumpAndRun()
+        public void CalculateZcbRisk()
         {
             _portfolio.RiskAllInstruments(_linearRateModel, _asOf, _useAd);
             ZcbRiskOutput = _portfolio.AggregateRisk(_asOf);

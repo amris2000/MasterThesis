@@ -65,6 +65,7 @@ namespace Sandbox
 
         public static void CalculateDerivativesByAd()
         {
+            Console.Title = "AD Example.";
             ADouble x1 = 10.0;
             ADouble x2 = 2.0;
             List<ADouble> activeVariables = new List<ADouble>();
