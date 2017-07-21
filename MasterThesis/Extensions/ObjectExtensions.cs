@@ -4,7 +4,13 @@ using System.ArrayExtensions;
 
 namespace System
 {
-    // Courtesy: https://github.com/Burtsev-Alexey/net-object-deep-copy
+    /* General information:
+    *  This file contains the DeepCopy extension used in the thesis.
+    *  This allows the user to make copies of objects that are usually
+    *  accessed by reference.
+    *
+    * Courtesy: https://github.com/Burtsev-Alexey/net-object-deep-copy
+    */
 
     public static class ObjectExtensions
     {
@@ -16,11 +22,6 @@ namespace System
             return (type.IsValueType & type.IsPrimitive);
         }
 
-        /// <summary>
-        /// Deep copy.
-        /// </summary>
-        /// <param name="originalObject"></param>
-        /// <returns></returns>
         public static Object Copy(this Object originalObject)
         {
             return InternalCopy(originalObject, new Dictionary<Object, Object>(new ReferenceEqualityComparer()));

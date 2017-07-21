@@ -8,13 +8,15 @@ using MasterThesis.Extensions;
 namespace MasterThesis
 {
     /* --- General information
-     * 
+     * Contains all functionality related to curves. This includes pricing
+     * discounting instruments, calculating forward rates and discounting factors etc.
      */
 
-    // Create fwd curve representation from zeroCurve.
-    // Works for both AD and non-AD curves.
     public class FwdCurveRepresentation
     {
+        // Create fwd curve representation from zeroCurve.
+        // Works for both AD and non-AD curves.
+
         public List<DateTime> Dates;
         public List<double> Values;
         private List<double> _zcbValues;
@@ -97,11 +99,6 @@ namespace MasterThesis
             this.Dimension = Values.Count;
         }
 
-        /// <summary>
-        /// Used for risk calculations.
-        /// </summary>
-        /// <param name="curvePoint"></param>
-        /// <param name="bump"></param>
         public void BumpCurvePoint(int curvePoint, double bump)
         {
             if (curvePoint < 0)
@@ -142,12 +139,6 @@ namespace MasterThesis
             }
         }
 
-        /// <summary>
-        /// Calculate annuity of an OIS schedule.
-        /// </summary>
-        /// <param name="schedule"></param>
-        /// <param name="interpolation"></param>
-        /// <returns></returns>
         public double OisAnnuity(OisSchedule schedule, InterpMethod interpolation)
         {
             double output = 0.0;
@@ -169,16 +160,6 @@ namespace MasterThesis
             return swap.TradeSign * notional * (oisRate - swap.FixedRate) * oisAnnuity;
         }
 
-        /// <summary>
-        /// Not used
-        /// </summary>
-        /// <param name="asOf"></param>
-        /// <param name="startDate"></param>
-        /// <param name="endDate"></param>
-        /// <param name="dayRule"></param>
-        /// <param name="dayCount"></param>
-        /// <param name="interpolation"></param>
-        /// <returns></returns>
         public double OisCompoundedRate(DateTime asOf, DateTime startDate, DateTime endDate, DayRule dayRule, DayCount dayCount, InterpMethod interpolation)
         {
             double compoundedRate = 1;
@@ -187,7 +168,6 @@ namespace MasterThesis
             while (rollDate.Date < endDate.Date)
             {
                 DateTime NextBusinessDay = DateHandling.AddTenorAdjust(rollDate, "1B", DayRule.F);
-                //double Rate = DiscCurve.ZeroRate(asOf, startDate, RollDate, dayRule, dayCount, method);
                 double rate = ZeroRate(NextBusinessDay, interpolation);
                 double fwdOisRate = FwdRate(asOf, rollDate, NextBusinessDay, DayRule.F, dayCount, interpolation);
 
@@ -204,12 +184,6 @@ namespace MasterThesis
             return (compoundedRate2 - 1) / coverage;
         }
 
-        /// <summary>
-        /// Calculate the par OIS rate by compounding. Slow.
-        /// </summary>
-        /// <param name="swap"></param>
-        /// <param name="interpolation"></param>
-        /// <returns></returns>
         public double OisRate(OisSwap swap, InterpMethod interpolation)
         {
             double floatContribution = 0.0;
@@ -229,15 +203,11 @@ namespace MasterThesis
             return floatContribution / annuity;
         }
 
-        /// <summary>
-        /// Simple calculation of par OIS rate. Holds only under the assumption
-        /// that FRA's can perfecetly hedge something.
-        /// </summary>
-        /// <param name="swap"></param>
-        /// <param name="interpolation"></param>
-        /// <returns></returns>
         public double OisRateSimple(OisSwap swap, InterpMethod interpolation)
         {
+            // Simple calculation of par OIS rate. Holds only under the assumption
+            // that FRA's can perfecetly hedge something.
+
             double annuity = OisAnnuity(swap.FixedSchedule, interpolation);
             DateTime asOf = swap.AsOf;
 

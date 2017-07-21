@@ -7,6 +7,12 @@ using MasterThesis;
 
 namespace MasterThesis.ExcelInterface
 {
+    /* General information:
+     * This file contains the actual methods that are called
+     * when using the Excel functions. These methods calls the
+     * functionality of the library.
+     */
+
     public static class ExcelUtilities
     {
         public static object[,] BuildObjectArrayFromCurve(Curve curve, string header)
@@ -197,10 +203,7 @@ namespace MasterThesis.ExcelInterface
             FwdCurveConstructor constructor = ObjectMap.FwdCurveConstructors[calibrationProblem];
 
             if (useAD)
-            {
-                //constructor.CalibrateCurves_AD(); // Old method that calibrates all curves simultanously
                 constructor.CalibrateAllCurvesBasedOnOrder_AD();
-            }
             else
                 constructor.CalibrateAllCurvesBasedOnOrder();
 
@@ -277,8 +280,8 @@ namespace MasterThesis.ExcelInterface
         {
             return ObjectMap.InstrumentFactories[instrumentFactory].ValueInstrumentFromFactory(ObjectMap.LinearRateModels[linearRateModel], instrument);
         }
-        
-        // Functions to add instruments to instrumentfactory
+
+        #region Functions to add instruments to instrumentfactory
         public static void InstrumentFactory_AddSwaps(string baseName, string[] swapStrings)
         {
             ObjectMap.InstrumentFactories[baseName].AddSwaps(swapStrings);
@@ -333,12 +336,12 @@ namespace MasterThesis.ExcelInterface
             Futures future = ObjectMap.InstrumentFactories[instrumentFactory].Futures[instrument];
             return ObjectMap.LinearRateModels[model].ParFutureRate(future);
         }
+        #endregion
     }
 
     public static class LinearRateFunctions
     {
-        // ------- General Curve functionality
-
+        #region General Curve Functionality
         public static double Curve_GetValue(string baseHandle, DateTime date, InterpMethod interpolation)
         {
             if (ObjectMap.DiscCurves.ContainsKey(baseHandle))
@@ -406,8 +409,9 @@ namespace MasterThesis.ExcelInterface
             else
                 throw new InvalidOperationException("Curve " + originalCurveHandle + " does not exist in the ObjectMap.");
         }
+        #endregion
 
-        // ------- DISC CURVE FUNCTIONS
+        #region Discounting curve functions
         public static void DiscCurve_Make(string baseName, List<DateTime> dates, List<double> values)
         {
                 Curve output = new MasterThesis.Curve(dates, values);
@@ -425,8 +429,9 @@ namespace MasterThesis.ExcelInterface
 
             return ExcelUtilities.BuildObjectArrayFromCurve(ObjectMap.DiscCurves[name], name);
         }
+        #endregion
 
-        // ------- FWD CURVE FUNCTIONS
+        #region Forward curve functions
         public static string FwdCurveCollection_Make(string baseName, string[] fwdCurveNames, CurveTenor[] tenors)
         {
             try
@@ -487,8 +492,9 @@ namespace MasterThesis.ExcelInterface
         {
             ObjectMap.FwdCurves[baseName] = ObjectMap.FwdCurveCollections[collectionName].GetCurve(tenor);
         }
+        #endregion
 
-        // ------- LINEAR RATE MODEL FUNTIONS
+        #region LinearRateModel functions
         public static double LinearRateModel_Value(string linearRateModelHandle, string productHandle)
         {
             LinearRateInstrument product = ObjectMap.LinearRateInstruments[productHandle];
@@ -508,11 +514,11 @@ namespace MasterThesis.ExcelInterface
         {
             LinearRateModel model = ObjectMap.LinearRateModels[baseName];
             IrSwap swap = (IrSwap) ObjectMap.LinearRateInstruments[swapName];
-            //IrSwap swap = ObjectMap.IrSwaps[swapName];
             return model.IrSwapNpv(swap);
         }
+        #endregion
 
-        // .. Value functions
+        #region Methods used to value LinearRateInstruments from LinearRateModels
         public static double LinearRateModel_FixedLegValue(string baseName, string fixedLegName)
         {
             LinearRateModel model = ObjectMap.LinearRateModels[baseName];
@@ -538,7 +544,6 @@ namespace MasterThesis.ExcelInterface
         {
             LinearRateModel model = ObjectMap.LinearRateModels[baseName];
             TenorBasisSwap swap = (TenorBasisSwap) ObjectMap.LinearRateInstruments[swapName];
-            //BasisSwap swap = ObjectMap.BasisSwaps[swapName];
             return model.BasisSwapNpv(swap);
         }
 
@@ -546,7 +551,6 @@ namespace MasterThesis.ExcelInterface
         {
             LinearRateModel model = ObjectMap.LinearRateModels[modelName];
             TenorBasisSwap swap = (TenorBasisSwap)ObjectMap.LinearRateInstruments[basisSwapName];
-            //BasisSwap swap = ObjectMap.BasisSwaps[basisSwapName];
             return model.ParBasisSpread(swap);
         }
 
@@ -570,8 +574,9 @@ namespace MasterThesis.ExcelInterface
             OisSwap swap = (OisSwap)ObjectMap.LinearRateInstruments[oisSwapName];
             return model.DiscCurve.OisRate(swap, InterpMethod.Hermite);
         }
+        #endregion
 
-        // .. Constructors
+        #region Methods used to construct derivative objects.
         public static void FixedLeg_Make(string baseName, DateTime asOf, DateTime startDate, DateTime endDate, double fixedRate,
                         CurveTenor frequency, DayCount dayCount, DayRule dayRule, double notional, StubPlacement stub = StubPlacement.NullStub)
         {
@@ -620,8 +625,6 @@ namespace MasterThesis.ExcelInterface
             ObjectMap.BasisSwaps[baseName] = basisSwap;
 
         }
-
-
-
+        #endregion
     }
 }

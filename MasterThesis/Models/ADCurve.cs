@@ -8,7 +8,8 @@ using MasterThesis.Extensions;
 namespace MasterThesis
 {
     /* --- General information
-    * 
+    * These functions are copies of the "Curves" classes, but
+    * works for the ADouble type instead. 
     */
 
     public class Curve_AD
@@ -54,12 +55,6 @@ namespace MasterThesis
             }
         }
 
-        /// <summary>
-        /// Calculate annuity of an OIS schedule.
-        /// </summary>
-        /// <param name="schedule"></param>
-        /// <param name="interpolation"></param>
-        /// <returns></returns>
         public ADouble OisAnnuityAD(OisSchedule schedule, InterpMethod interpolation)
         {
             ADouble output = 0.0;
@@ -81,16 +76,6 @@ namespace MasterThesis
             return notional * (oisRate - swap.FixedRate) * oisAnnuity;
         }
 
-        /// <summary>
-        /// Not used
-        /// </summary>
-        /// <param name="asOf"></param>
-        /// <param name="startDate"></param>
-        /// <param name="endDate"></param>
-        /// <param name="dayRule"></param>
-        /// <param name="dayCount"></param>
-        /// <param name="interpolation"></param>
-        /// <returns></returns>
         public double OisCompoundedRateAD(DateTime asOf, DateTime startDate, DateTime endDate, DayRule dayRule, DayCount dayCount, InterpMethod interpolation)
         {
             double CompoundedRate = 1;
@@ -99,7 +84,6 @@ namespace MasterThesis
             while (RollDate.Date < endDate.Date)
             {
                 DateTime NextBusinessDay = DateHandling.AddTenorAdjust(RollDate, "1B", DayRule.F);
-                //double Rate = DiscCurve.ZeroRate(asOf, startDate, RollDate, dayRule, dayCount, method);
                 double Rate = ZeroRate(NextBusinessDay, interpolation);
                 double fwdOisRate = FwdRate(asOf, RollDate, NextBusinessDay, DayRule.F, dayCount, interpolation);
 
@@ -116,12 +100,6 @@ namespace MasterThesis
             return (CompoundedRate2 - 1) / coverage;
         }
 
-        /// <summary>
-        /// Calculate the par OIS rate by compounding. Slow and probably not entirely correct (although close)
-        /// </summary>
-        /// <param name="swap"></param>
-        /// <param name="interpolation"></param>
-        /// <returns></returns>
         public ADouble OisRateAD(OisSwap swap, InterpMethod interpolation)
         {
             ADouble floatContribution = 0.0;
@@ -141,15 +119,11 @@ namespace MasterThesis
             return floatContribution / annuity;
         }
 
-        /// <summary>
-        /// Simple calculation of par OIS rate. Holds only under the assumption
-        /// that FRA's can be perfectly hedged by OIS zero coupon bonds.
-        /// </summary>
-        /// <param name="swap"></param>
-        /// <param name="interpolation"></param>
-        /// <returns></returns>
         public ADouble OisRateSimpleAD(OisSwap swap, InterpMethod interpolation)
         {
+            // Simple calculation of par OIS rate. Holds only under the assumption
+            // that FRA's can be perfectly hedged by OIS zero coupon bonds.
+
             ADouble annuity = OisAnnuityAD(swap.FixedSchedule, interpolation);
 
             return (DiscFactor(swap.AsOf, swap.StartDate, swap.FixedSchedule.DayCount, interpolation) - DiscFactor(swap.AsOf, swap.EndDate, swap.FixedSchedule.DayCount, interpolation)) / annuity;

@@ -7,6 +7,12 @@ using MasterThesis;
 
 namespace ExcelApplication
 {
+    /* General information:
+     * This file contains simple functions not directly related to 
+     * interest rate derivative pricing. This includes utility functions
+     * plus date rolling utility.
+     */
+
     public class FreeFunctions
     {
         [ExcelFunction(Description = "Some description", Name = "mt.Helpers.AddTenorAdjust")]
@@ -34,6 +40,12 @@ namespace ExcelApplication
             }
 
             return realOutput;
+        }
+
+        [ExcelFunction(Description = "some description", Name = "mt.Helpers.IsAddinLoaded", IsVolatile = true)]
+        public static bool IsAddinLoaded()
+        {
+            return true;
         }
 
     }

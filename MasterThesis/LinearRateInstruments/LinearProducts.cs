@@ -6,6 +6,13 @@ using System.Threading.Tasks;
 
 namespace MasterThesis
 {
+    /* General information:
+     * This file contains classes for all the linear interest rate
+     * derivatives considered in the thesis. Also, the "LinearRateInstrument"
+     * is defined here as well. This interface contains common functionality, that
+     * a class has to implement in order to be a "LinearRateInstrument".
+     */
+
     public interface LinearRateInstrument
     {
         DateTime GetCurvePoint();
@@ -57,7 +64,6 @@ namespace MasterThesis
         }
     }
 
-    // CONSIDER IF WE REALLY NEED AN "OIS SCHEDULE". Really just schedule with a stub
     public class OisSwap : LinearRateInstrument
     {
         public OisSchedule FloatSchedule, FixedSchedule;

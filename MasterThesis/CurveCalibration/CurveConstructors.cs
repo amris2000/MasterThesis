@@ -7,6 +7,11 @@ using MasterThesis;
 
 namespace MasterThesis
 {
+    /* General information:
+     * The code contained in this class are the actual 
+     * classes used to construct curves from market quotes.
+     */
+
     public class FwdCurveConstructor
     {
         private CurveTenor[] _tenors;

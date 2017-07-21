@@ -7,12 +7,11 @@ using MasterThesis;
 
 namespace MasterThesis
 {
-    /// <summary>
-    /// Used for inspecting instrument schedule in Excel Layer.
-    /// See the "CheckInstrumentSchedule" sheet.
-    /// </summary>
     public static class InstrumentFactoryHeaders
     {
+        // Used for inspecting instrument schedule in Excel Layer.
+        // See the "CheckInstrumentSchedule" sheet.
+
         public static IDictionary<InstrumentFormatType, string> GetHeaders;
 
         static InstrumentFactoryHeaders()
@@ -27,15 +26,15 @@ namespace MasterThesis
         }
     }
 
-    /// <summary>
-    /// The instrumentfactory contains a number of derivative objects
-    /// and a map between names and the objects. This is used when we 
-    /// choose the instruments that makes up the calibration procedure
-    /// from the Excel-interface. This way, we can associate an identifier,
-    /// i.e. EURAB6E15Y for a 15Y fixed-for-floating swap referencing 6M EURIBOR,
-    /// with an actual C# object created from a string of parameter. The class
-    /// contains members to parse strings into objects.
-    /// </summary>
+    /* General information:
+    *  The instrumentfactory contains a number of derivative objects
+    *  and a map between names and the objects. This is used when we 
+    *  choose the instruments that makes up the calibration procedure
+    *  from the Excel-interface. This way, we can associate an identifier,
+    *  i.e. EURAB6E15Y for a 15Y fixed-for-floating swap referencing 6M EURIBOR,
+    *  with an actual C# object created from a string of parameter. The class
+    *  contains members to parse strings into objects.
+    */
     public class InstrumentFactory
     {
         public IDictionary<string, Fra> Fras;
@@ -76,15 +75,13 @@ namespace MasterThesis
             AsOf = asOf;
         }
 
-        /// <summary>
-        /// Given a linear rate model, updates fixed rates of all 
-        /// instruments in factory to par. This is used when we calculate risk.
-        /// We want to hedge with liquid instruments, and trades are usually
-        /// initiated at par. 
-        /// </summary>
-        /// <param name="model"></param>
         public void UpdateAllInstrumentsToParGivenModel(LinearRateModel model)
         {
+            // Given a linear rate model, updates fixed rates of all 
+            // instruments in factory to par. This is used when we calculate risk.
+            // We want to hedge with liquid instruments, and trades are usually
+            // initiated at par. 
+
             foreach (string key in Fras.Keys)
                 Fras[key].UpdateFixedRateToPar(model);
 
@@ -104,16 +101,12 @@ namespace MasterThesis
                 Deposits[key].UpdateFixedRateToPar(model);
         }
 
-        /// <summary>
-        /// Values an instrument contained in the instrument factory using a 
-        /// linear rate model. Note that value here means calculating the value
-        /// par rate (which is how trades are quoted).
-        /// </summary>
-        /// <param name="model"></param>
-        /// <param name="instrument"></param>
-        /// <returns></returns>
         public double ValueInstrumentFromFactory(LinearRateModel model, string instrument)
         {
+            // Values an instrument contained in the instrument factory using a 
+            // linear rate model. Note that value here means calculating the value
+            // par rate (which is how trades are quoted).
+
             QuoteType type = InstrumentTypeMap[instrument];
 
             switch (type)
@@ -135,16 +128,12 @@ namespace MasterThesis
             }
         }
 
-        /// <summary>
-        /// Values an instrument contained in the instrument factory using a 
-        /// linear rate model. Note that value here means calculating the value
-        /// par rate (which is how trades are quoted).
-        /// </summary>
-        /// <param name="model"></param>
-        /// <param name="instrument"></param>
-        /// <returns></returns>
         public ADouble ValueInstrumentFromFactoryAD(LinearRateModel model, string instrument)
         {
+            // Values an instrument contained in the instrument factory using a 
+            // linear rate model. Note that value here means calculating the value
+            // par rate (which is how trades are quoted).
+
             QuoteType type = InstrumentTypeMap[instrument];
 
             switch (type)
@@ -166,6 +155,7 @@ namespace MasterThesis
             }
         }
 
+        #region Add instruments to factory from strings
         /* Functions below takes as input an array of strings in a given format
          * and then parses the string to parameters to be used in the construction
          * of instances of interest rate derivative objects.
@@ -200,7 +190,9 @@ namespace MasterThesis
             for (int i = 0; i < fraString.Length; i++)
                 InterpretFraString(fraString[i]);
         }
+        #endregion
 
+        #region Parsin functionality
         /* Functions below are the actual functions used to 
          * parse instrument strings into actual objects. We've created
          * a method for each of the instrument classes we consider.
@@ -407,6 +399,6 @@ namespace MasterThesis
                 // Ignore instrument.
             }
         }
-
+        #endregion
     }
 }

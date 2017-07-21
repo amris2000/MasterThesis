@@ -21,7 +21,7 @@ namespace MasterThesis
     {
         public int AADType { get; private set; }
         public double Value { get; private set; }
-        public int Count { get; private set; }
+        public int PlacementInTape { get; private set; }
 
         #region Constructors and constructor-related.
 
@@ -30,7 +30,7 @@ namespace MasterThesis
         {
             AADType = (int)AADUtility.AADCalculationType.Undef;
             Value = 0;
-            Count = AADTape._tapeCounter;
+            PlacementInTape = AADTape._tapeCounter;
             //AADTape.AddEntry((int)AADType, Count, 0, 0, Value);
         }
 
@@ -39,8 +39,8 @@ namespace MasterThesis
         {
             AADType = (int)AADUtility.AADCalculationType.Const;
             Value = doubleValue;
-            Count = AADTape._tapeCounter;
-            AADTape.AddEntry((int)AADType, Count, 0, 0, Value);
+            PlacementInTape = AADTape._tapeCounter;
+            AADTape.AddEntry((int)AADType, PlacementInTape, 0, 0, Value);
         }
 
         // This allows us to say "ADouble x = double"
@@ -61,7 +61,7 @@ namespace MasterThesis
         // Assign ADouble to the tape. This is used when instantiating the tape.
         public void Assign()
         {
-            Count = AADTape._tapeCounter;
+            PlacementInTape = AADTape._tapeCounter;
             AADTape.AddEntry((int)AADUtility.AADCalculationType.Const, AADTape._tapeCounter, 0, 0, Value);
         }
 
@@ -208,8 +208,8 @@ namespace MasterThesis
         {
             ADouble temp = new ADouble();
             temp.Value = x1.Value * x2.Value;
-            temp.Count = AADTape._tapeCounter;
-            AADTape.AddEntry((int)AADUtility.AADCalculationType.Mul, x1.Count, x2.Count, 0, temp.Value);
+            temp.PlacementInTape = AADTape._tapeCounter;
+            AADTape.AddEntry((int)AADUtility.AADCalculationType.Mul, x1.PlacementInTape, x2.PlacementInTape, 0, temp.Value);
             return temp;
         }
 
@@ -217,8 +217,8 @@ namespace MasterThesis
         {
             ADouble temp = new MasterThesis.ADouble();
             temp.Value = x.Value * K;
-            temp.Count = AADTape._tapeCounter;
-            AADTape.AddEntry((int)AADUtility.AADCalculationType.ConsMul, x.Count, 0, 0, temp.Value, K);
+            temp.PlacementInTape = AADTape._tapeCounter;
+            AADTape.AddEntry((int)AADUtility.AADCalculationType.ConsMul, x.PlacementInTape, 0, 0, temp.Value, K);
             return temp;
         }
 
@@ -226,8 +226,8 @@ namespace MasterThesis
         {
             ADouble temp = new MasterThesis.ADouble();
             temp.Value = x.Value * K;
-            temp.Count = AADTape._tapeCounter;
-            AADTape.AddEntry((int)AADUtility.AADCalculationType.ConsMul, x.Count, 0, 0, temp.Value, K);
+            temp.PlacementInTape = AADTape._tapeCounter;
+            AADTape.AddEntry((int)AADUtility.AADCalculationType.ConsMul, x.PlacementInTape, 0, 0, temp.Value, K);
             return temp;
         }
         #endregion
@@ -237,8 +237,8 @@ namespace MasterThesis
         {
             ADouble temp = new ADouble();
             temp.Value = x1.Value + x2.Value;
-            temp.Count = AADTape._tapeCounter;
-            AADTape.AddEntry((int)AADUtility.AADCalculationType.Add, x1.Count, x2.Count, 0, temp.Value);
+            temp.PlacementInTape = AADTape._tapeCounter;
+            AADTape.AddEntry((int)AADUtility.AADCalculationType.Add, x1.PlacementInTape, x2.PlacementInTape, 0, temp.Value);
             return temp;
         }
 
@@ -246,8 +246,8 @@ namespace MasterThesis
         {
             ADouble temp = new ADouble();
             temp.Value = x.Value + K;
-            temp.Count = AADTape._tapeCounter;
-            AADTape.AddEntry((int)AADUtility.AADCalculationType.ConsAdd, x.Count, 0, 0, temp.Value, K);
+            temp.PlacementInTape = AADTape._tapeCounter;
+            AADTape.AddEntry((int)AADUtility.AADCalculationType.ConsAdd, x.PlacementInTape, 0, 0, temp.Value, K);
             return temp;
         }
 
@@ -255,8 +255,8 @@ namespace MasterThesis
         {
             ADouble temp = new ADouble();
             temp.Value = x.Value + K;
-            temp.Count = AADTape._tapeCounter;
-            AADTape.AddEntry((int)AADUtility.AADCalculationType.ConsAdd, x.Count, 0, 0, temp.Value, K);
+            temp.PlacementInTape = AADTape._tapeCounter;
+            AADTape.AddEntry((int)AADUtility.AADCalculationType.ConsAdd, x.PlacementInTape, 0, 0, temp.Value, K);
             return temp;
         }
         #endregion
@@ -266,8 +266,8 @@ namespace MasterThesis
         {
             ADouble temp = new ADouble();
             temp.Value = x1.Value - x2.Value;
-            temp.Count = AADTape._tapeCounter;
-            AADTape.AddEntry((int)AADUtility.AADCalculationType.Sub, x1.Count, x2.Count, 0, temp.Value);
+            temp.PlacementInTape = AADTape._tapeCounter;
+            AADTape.AddEntry((int)AADUtility.AADCalculationType.Sub, x1.PlacementInTape, x2.PlacementInTape, 0, temp.Value);
             return temp;
         }
 
@@ -275,8 +275,8 @@ namespace MasterThesis
         {
             ADouble temp = new ADouble();
             temp.Value = x.Value - K;
-            temp.Count = AADTape._tapeCounter;
-            AADTape.AddEntry((int)AADUtility.AADCalculationType.ConsSub, x.Count, 0, 0, temp.Value, K);
+            temp.PlacementInTape = AADTape._tapeCounter;
+            AADTape.AddEntry((int)AADUtility.AADCalculationType.ConsSub, x.PlacementInTape, 0, 0, temp.Value, K);
             return temp;
         }
 
@@ -284,8 +284,8 @@ namespace MasterThesis
         {
             ADouble temp = new ADouble();
             temp.Value = K - x.Value;
-            temp.Count = AADTape._tapeCounter;
-            AADTape.AddEntry((int)AADUtility.AADCalculationType.ConsSubInverse, x.Count, 0, 0, temp.Value, K);
+            temp.PlacementInTape = AADTape._tapeCounter;
+            AADTape.AddEntry((int)AADUtility.AADCalculationType.ConsSubInverse, x.PlacementInTape, 0, 0, temp.Value, K);
             return temp;
         }
         #endregion
@@ -295,8 +295,8 @@ namespace MasterThesis
         {
             ADouble temp = new ADouble();
             temp.Value = x1.Value / x2.Value;
-            temp.Count = AADTape._tapeCounter;
-            AADTape.AddEntry((int)AADUtility.AADCalculationType.Div, x1.Count, x2.Count, 0, temp.Value);
+            temp.PlacementInTape = AADTape._tapeCounter;
+            AADTape.AddEntry((int)AADUtility.AADCalculationType.Div, x1.PlacementInTape, x2.PlacementInTape, 0, temp.Value);
             return temp;
         }
 
@@ -304,8 +304,8 @@ namespace MasterThesis
         {
             ADouble temp = new MasterThesis.ADouble();
             temp.Value = K / x.Value;
-            temp.Count = AADTape._tapeCounter;
-            AADTape.AddEntry((int)AADUtility.AADCalculationType.ConsDiv, x.Count, 0, 0, temp.Value, K);
+            temp.PlacementInTape = AADTape._tapeCounter;
+            AADTape.AddEntry((int)AADUtility.AADCalculationType.ConsDiv, x.PlacementInTape, 0, 0, temp.Value, K);
             return temp;
         }
 
@@ -314,8 +314,8 @@ namespace MasterThesis
             // Note that we store this as a "ConsMul" on the tape
             ADouble temp = new MasterThesis.ADouble();
             temp.Value = x.Value / K;
-            temp.Count = AADTape._tapeCounter;
-            AADTape.AddEntry((int)AADUtility.AADCalculationType.ConsMul, x.Count, 0, 0, temp.Value, 1/K);
+            temp.PlacementInTape = AADTape._tapeCounter;
+            AADTape.AddEntry((int)AADUtility.AADCalculationType.ConsMul, x.PlacementInTape, 0, 0, temp.Value, 1/K);
             return temp;
         }
         #endregion
@@ -332,8 +332,8 @@ namespace MasterThesis
         {
             ADouble Temp = new ADouble();
             Temp.Value = Math.Exp(x1.Value);
-            Temp.Count = AADTape._tapeCounter;
-            AADTape.AddEntry((int)AADUtility.AADCalculationType.Exp, x1.Count, 0, 0, Temp.Value);
+            Temp.PlacementInTape = AADTape._tapeCounter;
+            AADTape.AddEntry((int)AADUtility.AADCalculationType.Exp, x1.PlacementInTape, 0, 0, Temp.Value);
             return Temp;
         }
 
@@ -341,8 +341,8 @@ namespace MasterThesis
         {
             ADouble temp = new ADouble();
             temp.Value = Math.Log(x1.Value);
-            temp.Count = AADTape._tapeCounter;
-            AADTape.AddEntry((int)AADUtility.AADCalculationType.Log, x1.Count, 0, 0, temp.Value);
+            temp.PlacementInTape = AADTape._tapeCounter;
+            AADTape.AddEntry((int)AADUtility.AADCalculationType.Log, x1.PlacementInTape, 0, 0, temp.Value);
             return temp;
         }
 
@@ -350,8 +350,8 @@ namespace MasterThesis
         {
             ADouble temp = new ADouble();
             temp.Value = Math.Pow(x1.Value, exponent);
-            temp.Count = AADTape._tapeCounter;
-            AADTape.AddEntry((int)AADUtility.AADCalculationType.Pow, x1.Count, 0, 0, temp.Value, exponent);
+            temp.PlacementInTape = AADTape._tapeCounter;
+            AADTape.AddEntry((int)AADUtility.AADCalculationType.Pow, x1.PlacementInTape, 0, 0, temp.Value, exponent);
             return temp;
         }
 
