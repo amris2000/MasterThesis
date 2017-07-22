@@ -15,9 +15,10 @@ namespace MasterThesis
     public static class MyMath
     {
         #region Interpolation
-        // Main interpolation method. All other methods calls this
         public static double Interpolate(List<double> xArr, double x, List<double> yArr, InterpMethod Method)
         {
+            // Main interpolation method. All other methods calls this
+
             if (xArr.Count() != yArr.Count())
                 throw new ArgumentException("Number of dates has to correspond to number of values");
 

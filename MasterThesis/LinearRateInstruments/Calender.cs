@@ -360,10 +360,11 @@ namespace MasterThesis
             }
         }
 
-        // Constructer with tenors instead of dates.
         public SwapSchedule(DateTime asOf, string startTenor, string endTenor, DayCount dayCount, DayRule dayRule, CurveTenor frequency)
             : base(asOf, startTenor, endTenor, dayCount, dayRule)
         {
+            // Constructer with tenors instead of dates.
+
             this.Frequency = frequency;
             GenerateSchedule(asOf, StartDate, EndDate, dayCount, dayRule, frequency);
         }

@@ -8,9 +8,10 @@ using MathNet.Numerics.LinearAlgebra;
 
 namespace MasterThesis
 {
-    // Simple container for LinearRateProducts. Used to calculate risk on multiple assets at a time.
     public class Portfolio
     {
+        // Simple container for LinearRateProducts. Used to calculate risk on multiple assets at a time.
+
         public IDictionary<int, LinearRateInstrument> Products { get; private set; }
         public IDictionary<int, ZcbRiskOutputContainer> RiskOutputs { get; private set; }
         int _productCounter;
@@ -128,6 +129,10 @@ namespace MasterThesis
 
     public class RiskEngine
     {
+        // This class takes as input a jacobian and a portfolio.
+        // It is responsible calculating the outright risk based on
+        // the zero-coupon risk and the jacobian.
+
         private LinearRateModel _linearRateModel;
         private Portfolio _portfolio;
         public ZcbRiskOutputContainer ZcbRiskOutput { get; private set; }

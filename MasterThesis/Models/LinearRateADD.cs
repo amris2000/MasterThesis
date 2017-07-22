@@ -36,7 +36,7 @@ namespace MasterThesis
             Interpolation = interpolation;
         }
 
-        // --- Related to risking linear instruments with automatic differentiation 
+        #region Related to risking linear rate instruments using automatic differentiation
         public string[] CreateIdentArray()
         {
             List<string> identifiers = new List<string>();
@@ -105,6 +105,29 @@ namespace MasterThesis
             return toBeScaled;
         }
 
+        public ADouble[] CreateAdVariableArray()
+        {
+            List<ADouble> output = new List<ADouble>();
+
+            output.AddRange(ADDiscCurve.Values);
+
+            foreach (CurveTenor tenor in ADFwdCurveCollection.Curves.Keys)
+                output.AddRange(ADFwdCurveCollection.Curves[tenor].Values);
+
+            return output.ToArray();
+        }
+
+        public ADouble[] CreateAdVariableArrayFwdCurvesOnly()
+        {
+            List<ADouble> output = new List<ADouble>();
+
+            foreach (CurveTenor tenor in ADFwdCurveCollection.Curves.Keys)
+                output.AddRange(ADFwdCurveCollection.Curves[tenor].Values);
+
+            return output.ToArray();
+        }
+
+
         public ZcbRiskOutputContainer ZcbRiskProductOutputContainer(LinearRateInstrument product, DateTime asOf)
         {
             double[] risk = ZcbRiskProductAD(product);
@@ -141,28 +164,9 @@ namespace MasterThesis
 
         }
 
-        public ADouble[] CreateAdVariableArray()
-        {
-            List<ADouble> output = new List<ADouble>();
+        #endregion
 
-            output.AddRange(ADDiscCurve.Values);
-
-            foreach (CurveTenor tenor in ADFwdCurveCollection.Curves.Keys)
-                output.AddRange(ADFwdCurveCollection.Curves[tenor].Values);
-
-            return output.ToArray();
-        }
-
-        public ADouble[] CreateAdVariableArrayFwdCurvesOnly()
-        {
-            List<ADouble> output = new List<ADouble>();
-
-            foreach (CurveTenor tenor in ADFwdCurveCollection.Curves.Keys)
-                output.AddRange(ADFwdCurveCollection.Curves[tenor].Values);
-
-            return output.ToArray();
-        }
-
+        #region Convert model curves to ADcurves
         // The functionality below takes the original "double" curves
         // and converts them to AD curves.
         public void SetAdCurvesFromOrdinaryCurve()
@@ -196,7 +200,9 @@ namespace MasterThesis
             ADDiscCurve = new MasterThesis.Curve_AD(DiscCurve.Dates, discValues);
         }
 
-        // --- Related to pricing linear rate instruments using automatic differentiation
+        #endregion
+
+        #region Related to pricing linear rate instruments using automatic differentiation
         public ADouble ValueLinearRateProductAD(LinearRateInstrument product)
         {
             switch (product.GetInstrumentType())
@@ -390,6 +396,7 @@ namespace MasterThesis
             ADouble cvg = DateHandling.Cvg(deposit.StartDate, deposit.EndDate, deposit.DayCount);
             return 1.0 / cvg * (1.0 / discFactor - 1.0);
         }
+        #endregion
 
     }
 }

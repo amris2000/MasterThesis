@@ -174,9 +174,9 @@ namespace MasterThesis
             this.FloatLegSpread = floatLegSpread.Copy();
 
             // Construct default FixedLeg - quick and dirty
-            FixedLeg tempFixedLeg = new MasterThesis.FixedLeg(floatLegNoSpread.AsOf, floatLegSpread.StartDate, floatLegSpread.EndDate, 0.01, CurveTenor.Fwd1Y, DayCount.THIRTY360, DayRule.MF, floatLegSpread.Notional);
-            SwapSpread = new MasterThesis.IrSwap(floatLegSpread, tempFixedLeg, tradeSign);
-            SwapNoSpread = new MasterThesis.IrSwap(floatLegNoSpread, tempFixedLeg, -1 * tradeSign);
+            FixedLeg tempFixedLeg = new FixedLeg(floatLegNoSpread.AsOf, floatLegSpread.StartDate, floatLegSpread.EndDate, 0.01, CurveTenor.Fwd1Y, DayCount.THIRTY360, DayRule.MF, floatLegSpread.Notional);
+            SwapSpread = new IrSwap(floatLegSpread, tempFixedLeg, tradeSign);
+            SwapNoSpread = new IrSwap(floatLegNoSpread, tempFixedLeg, -1 * tradeSign);
 
             TradeSign = tradeSign;
             CheckTradeSign();

@@ -6,8 +6,24 @@ using System.Threading.Tasks;
 
 namespace MasterThesis
 {
+    /* General information:
+     * This file contains classes that
+     * contains risk calculations for interest rate derivatives.
+     * Separate classes has been implemented for the ZCB and OUTRIGHT risk
+     * representations. This includes functionality to "stack" the individual
+     * zero-coupon delta ladders into a gradient used for calculation
+     * of the jacobian.
+     * 
+     * The risk containers are built to contain risk calculations for
+     * one trade at a time. The "portfolio" class in the RiskEngine-file
+     * has a method to aggregate risk on a group of trades to a single delta
+     * ladder.
+     */
+
     public class OutrightRiskOutput
     {
+        // This class contains outright risk numbers for a single ladder at a time.
+
         public IDictionary<string, double> RiskLookUp { get; private set; }
         public CurveTenor Tenor { get; private set; }
         DateTime _asOf;
@@ -42,11 +58,12 @@ namespace MasterThesis
 
             return output;
         }
-
     }
 
     public class ZcbRiskOutput
     {
+        // This class contains zero-coupon risk numbers for a single ladder at a time.
+
         public IDictionary<string, double> RiskLookUp { get; private set; }
         public IDictionary<DateTime, string> IdentifierToPoint { get; private set; }
         DateTime _asOf;
@@ -67,7 +84,6 @@ namespace MasterThesis
         {
             string tenor = DateHandling.ConvertDateToTenorString(curvePoint, _asOf);
             string riskIdentifier = curveTenor.ToString() + "-" + curvePoint.ToString("dd/MM/yyyy");
-            //string riskIdentifier = curveTenor.ToString() + "-" + tenor;
             RiskLookUp[riskIdentifier] = number;
             IdentifierToPoint[curvePoint] = riskIdentifier;
         }
@@ -82,7 +98,7 @@ namespace MasterThesis
 
             orderedDates.OrderBy(x => x.Date).ToList();
 
-            // Fetch number in an ordered matter
+            // Fetch number in an ordered manner
             foreach (DateTime date in orderedDates)
                 outputList.Add(RiskLookUp[IdentifierToPoint[date]]);
 
@@ -111,6 +127,8 @@ namespace MasterThesis
 
     public class OutrightRiskContainer
     {
+        // This class contains outright risk calculations for all curves for a single trade
+
         public IDictionary<CurveTenor, OutrightRiskOutput> FwdRiskCollection { get; private set; }
         public OutrightRiskOutput DiscRisk { get; private set; }
         public IDictionary<CurveTenor, List<double>> DeltaVectors { get; private set; }
@@ -134,6 +152,8 @@ namespace MasterThesis
 
     public class ZcbRiskOutputContainer
     {
+        // This class contains zero-coupon risk calculations for all curves for a single trade
+
         public IDictionary<CurveTenor, ZcbRiskOutput> FwdRiskCollection { get; private set; }
         public ZcbRiskOutput DiscRisk { get; private set; }
         public IDictionary<CurveTenor, List<double>> DeltaVectors { get; private set; }

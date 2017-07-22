@@ -35,7 +35,7 @@ namespace MasterThesis
             FwdCurveCollection = fwdCurveCollection;
         }
 
-        // --- Related to Bump-and-run risk calculations
+        #region Related to bump-and-run risk calculations
         private LinearRateModel BumpFwdCurveAndReturn(CurveTenor fwdCurve, int curvePoint, double bump = 0.0001)
         {
             Curve newCurve = FwdCurveCollection.GetCurve(fwdCurve).Copy();
@@ -125,7 +125,9 @@ namespace MasterThesis
             output.AddDiscRisk(CalculateZcbRiskBumpAndRun(product, CurveTenor.DiscOis, asOf));
             return output;
         }
+        #endregion
 
+        #region Related to valuing linear rate instruments
         // --- Related to valuing linear rate instrument (non-AD)
         public double ValueLinearRateProduct(LinearRateInstrument product)
         {
@@ -319,6 +321,7 @@ namespace MasterThesis
             double cvg = DateHandling.Cvg(deposit.StartDate, deposit.EndDate, deposit.DayCount);
             return 1.0 / cvg * (1.0 / discFactor - 1.0);
         }
+        #endregion
 
     }
 

@@ -12,6 +12,13 @@ using MasterThesis.ExcelInterface;
 
 namespace MasterThesis
 {
+    /* General information:
+     * This file contains custom defined types used through the thesis.
+     * Also the file contains functionality to convert "enums" to strings and
+     * visa versa. This is needed, when the user input something like "ACT/360" in
+     * Excel as a string.
+     */
+
     // Enums related to scheduling, curves and linear rate instruments
     public enum CurveTenor { Simple, DiscOis, DiscLibor, Fwd1D, Fwd1M, Fwd3M, Fwd6M, Fwd1Y }
     public enum DayRule {  MF, F, P, N }

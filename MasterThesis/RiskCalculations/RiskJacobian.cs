@@ -7,6 +7,11 @@ using MathNet.Numerics.LinearAlgebra;
 
 namespace MasterThesis
 {
+    /* General information:
+     * The RiskJacobian class constructs and contains the jacobian used
+     * for the calculation of out right risk.
+     */
+
     // Class that constructs and holds the Jacobian used to calculate outright risk (in terms of the input instruments).
     public class RiskJacobian
     {
@@ -47,7 +52,6 @@ namespace MasterThesis
         {
             Instruments.AddRange(instruments);
             InstrumentDictionary[tenor] = instruments;
-            SortInstruments();
         }
 
         public void Initialize()
@@ -70,11 +74,6 @@ namespace MasterThesis
         public void SetDimension()
         {
             _dimension = Instruments.Count;
-        }
-
-        private void SortInstruments()
-        {
-            // Idea, create dictionary<int, identififer>
         }
 
         private void VerifyModelDimension()
@@ -167,7 +166,5 @@ namespace MasterThesis
 
             _hasBeenCreated = true;
         }
-
     }
-
 }

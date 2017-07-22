@@ -1,5 +1,9 @@
 <DnaLibrary Name="MasterThesisLibrary" RuntimeVersion="v4.0">
   <ExternalLibrary Path="ExcelApplication.dll" LoadFromBytes="true" Pack="true" />
+  <Reference Path="MasterThesis.dll" LoadFromBytes="true" Pack="true" />
+  <Reference Path="Alglib2.dll" LoadFromBytes="true" Pack="true" />
+  <Reference Path="MathNet.Numerics.dll" LoadFromBytes="true" Pack="true" />
+  <Reference Path="ICSharpCode.SharpZipLib.dll" LoadFromBytes="true" Pack="true" />
   
   <!-- 
        The RuntimeVersion attribute above allows two settings:
